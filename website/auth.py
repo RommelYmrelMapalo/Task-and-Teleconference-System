@@ -101,6 +101,6 @@ def sign_up():
             login_user(new_user, remember=True)
 
             flash('Account Created!', category='success')
-            return redirect(url_for('views.user_dashboard'))
+            return redirect(url_for('auth.login'))
 
     return render_template("sign_up.html", user=current_user)
