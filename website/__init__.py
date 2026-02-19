@@ -18,7 +18,11 @@ def create_app():
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret")
 
     # Prefer Vercel Postgres, fallback to DATABASE_URL (if you set it), else SQLite locally
-    database_url = os.getenv("POSTGRES_URL") or os.getenv("DATABASE_URL")
+    database_url = (
+    os.getenv("POSTGRES_URL")
+    or os.getenv("STORAGE_URL")     # ✅ add this (because your prefix is STORAGE)
+    or os.getenv("DATABASE_URL")
+)
     if database_url:
         # Ensure sslmode=require (common for hosted Postgres)
         if "sslmode=" not in database_url:
