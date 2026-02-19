@@ -1,29 +1,37 @@
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, current_user
-import os
 from dotenv import load_dotenv
+from sqlalchemy.pool import NullPool
 
 db = SQLAlchemy()
 DB_NAME = "database.db"
 
-
 def create_app():
     app = Flask(__name__)
 
-    # Load .env locally only (Vercel already injects env vars)
     if os.getenv("VERCEL") != "1":
         load_dotenv()
 
-    # Secret key (fallback for local dev)
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret")
 
-    # Prefer Postgres on Vercel, fallback to SQLite locally
-    database_url = os.getenv("POSTGRES_URL") or os.getenv("DATABASE_URL")
+    # ✅ Prefer UNPOOLED/NON-POOLING on Vercel (serverless-safe)
+    database_url = (
+        os.getenv("POSTGRES_URL_NON_POOLING")
+        or os.getenv("DATABASE_URL_UNPOOLED")
+        or os.getenv("POSTGRES_URL")
+        or os.getenv("DATABASE_URL")
+    )
 
     if database_url:
-        # Your Neon/Vercel URLs already include sslmode=require, so do NOT append again
         app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+
+        # ✅ Critical for serverless: don't keep/reuse pooled conns
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+            "poolclass": NullPool,
+            "pool_pre_ping": True,
+        }
     else:
         app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_NAME}"
 
@@ -39,7 +47,7 @@ def create_app():
 
     from .models import User
 
-    # Only auto-create for local SQLite (NOT for Postgres/Vercel)
+    # Only auto-create for local SQLite
     if not database_url:
         create_database(app)
 
@@ -55,7 +63,6 @@ def create_app():
     def inject_globals():
         unread_count = 0
         if current_user.is_authenticated:
-            # lazy import avoids circular import
             from .models import Notification
             unread_count = Notification.query.filter_by(
                 user_id=current_user.id,
@@ -67,7 +74,6 @@ def create_app():
 
 
 def create_database(app):
-    # Only intended for local SQLite
     from os import path
     if not path.exists("website/" + DB_NAME):
         with app.app_context():

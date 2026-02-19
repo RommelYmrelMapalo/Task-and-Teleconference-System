@@ -28,7 +28,7 @@ def index():
     if current_user.is_authenticated:
         if getattr(current_user, "is_admin", False):
             return redirect(url_for('views.admin_dashboard'))
-        return redirect(url_for('views.dashboard'))
+        return redirect(url_for('views.user_dashboard'))
     return redirect(url_for('auth.login'))
 
 @views.route('/dashboard')
@@ -258,9 +258,7 @@ def admin_required():
 @login_required
 @admin_only
 def admin_dashboard():
-    if not getattr(current_user, "is_admin", False):
-        return redirect(url_for('views.user_dashboard'))
-    return render_template("admin_dashboard.html", user=current_user)
+    return render_template("admin_dashboard.html")
 
 @views.route('/admin/manage-meetings')
 @login_required
