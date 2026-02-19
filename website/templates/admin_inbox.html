@@ -1,0 +1,160 @@
+{% extends "admin_base.html" %}
+{% block title %}Inbox{% endblock %}
+
+{% block content %}
+
+  <!-- RIGHT CONTENT -->
+  <main class="main-inner">
+
+    <div class="page-card">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <h4 class="mb-0">Notification Inbox</h4>
+          <small class="text-muted">Select a notification to read.</small>
+        </div>
+        <div class="text-muted">
+          <span style="font-size:18px;">🔔</span>
+          {% if notification_count and notification_count > 0 %}
+            <span class="badge badge-danger">{{ notification_count }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fluid px-0 py-3">
+      <div class="row">
+
+        <!-- LEFT: MAIL LIST -->
+        <div class="col-lg-5 col-md-6 mb-3">
+          <div class="mail-panel">
+            <div class="mail-toolbar">
+              <div class="mail-title">Inbox</div>
+              <div class="mail-search">
+                <input id="mailSearch" type="text" class="form-control form-control-sm" placeholder="Search notifications...">
+              </div>
+            </div>
+
+            <div class="mail-list" id="mailList">
+              {% if notifications and notifications|length > 0 %}
+                {% for n in notifications %}
+                  <button type="button"
+                          class="mail-item {% if not n.is_read %}unread{% endif %}"
+                          data-title="{{ n.title|e }}"
+                          data-message="{{ n.message|e }}"
+                          data-date="{{ n.created_at.strftime('%b %d, %Y %I:%M %p') }}"
+                          data-id="{{ n.id }}"
+                          data-read="{{ 1 if n.is_read else 0 }}">
+                    <div class="mail-item-top">
+                      <div class="mail-subject">{{ n.title }}</div>
+                      <div class="mail-date">{{ n.created_at.strftime('%b %d') }}</div>
+                    </div>
+                    <div class="mail-preview">
+                      {{ n.message }}
+                    </div>
+                  </button>
+                {% endfor %}
+              {% else %}
+                <div class="text-muted p-3">No notifications yet.</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: MAIL READER -->
+        <div class="col-lg-7 col-md-6">
+          <div class="reader-panel" id="readerPanel">
+            <div class="reader-empty">
+              <div class="reader-icon">📩</div>
+              <div class="reader-text">Select a notification to read.</div>
+            </div>
+
+            <div class="reader-content d-none" id="readerContent">
+              <div class="reader-header">
+                <div>
+                  <div class="reader-subject" id="rSubject">—</div>
+                  <div class="reader-meta" id="rDate">—</div>
+                </div>
+
+                <button class="btn btn-sm btn-outline-secondary" id="markReadBtn">
+                  Mark as read
+                </button>
+              </div>
+
+              <div class="reader-body" id="rBody">—</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <script>
+      const mailItems = document.querySelectorAll(".mail-item");
+      const readerEmpty = document.querySelector(".reader-empty");
+      const readerContent = document.getElementById("readerContent");
+      const rSubject = document.getElementById("rSubject");
+      const rDate = document.getElementById("rDate");
+      const rBody = document.getElementById("rBody");
+      const markReadBtn = document.getElementById("markReadBtn");
+      const mailSearch = document.getElementById("mailSearch");
+
+      let activeNotifId = null;
+      let activeIsRead = true;
+
+      function openMail(item){
+        activeNotifId = item.dataset.id;
+        activeIsRead = item.dataset.read === "1";
+
+        rSubject.textContent = item.dataset.title;
+        rDate.textContent = item.dataset.date;
+        rBody.textContent = item.dataset.message;
+
+        readerEmpty.classList.add("d-none");
+        readerContent.classList.remove("d-none");
+
+        if(activeIsRead){
+          markReadBtn.disabled = true;
+          markReadBtn.textContent = "Read";
+        } else {
+          markReadBtn.disabled = false;
+          markReadBtn.textContent = "Mark as read";
+        }
+      }
+
+      mailItems.forEach((item) => {
+        item.addEventListener("click", () => {
+          mailItems.forEach(i => i.classList.remove("active"));
+          item.classList.add("active");
+          openMail(item);
+        });
+      });
+
+      markReadBtn.addEventListener("click", async () => {
+        if(!activeNotifId) return;
+
+        const res = await fetch(`/notifications/read/${activeNotifId}`, { method: "POST" });
+        if(res.ok){
+          const activeBtn = document.querySelector(`.mail-item.active`);
+          if(activeBtn){
+            activeBtn.classList.remove("unread");
+            activeBtn.dataset.read = "1";
+          }
+          markReadBtn.disabled = true;
+          markReadBtn.textContent = "Read";
+        }
+      });
+
+      mailSearch.addEventListener("input", () => {
+        const q = mailSearch.value.toLowerCase();
+        mailItems.forEach((item) => {
+          const text = (item.dataset.title + " " + item.dataset.message).toLowerCase();
+          item.style.display = text.includes(q) ? "" : "none";
+        });
+      });
+    </script>
+
+  </main>
+
+</div>
+
+{% endblock %}

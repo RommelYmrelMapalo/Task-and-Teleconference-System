@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+  <link
+    rel="stylesheet"
+    href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+  />
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+  <title>{% block title %}Dashboard{% endblock %}</title>
+</head>
+
+<body>
+
+<div class="app-shell">
+
+  <!-- ===== Sidebar ===== -->
+  <aside class="sidebar-dark">
+
+    <div class="sidebar-brand">
+      <span class="dot"></span>
+      TASK AND TELECONFERENCE SYSTEM
+    </div>
+
+    <div class="sidebar-nav">
+
+      <div class="sidebar-section">MAIN</div>
+
+      <a class="sidebar-link {% if request.endpoint == 'views.user_dashboard' %}active{% endif %}"
+         href="{{ url_for('views.user_dashboard') }}">
+        <span class="sidebar-icon">🏠</span> Dashboard
+      </a>
+
+      <div class="sidebar-section">TASKS</div>
+
+      <a class="sidebar-link {% if request.endpoint == 'views.task_dashboard' %}active{% endif %}"
+         href="{{ url_for('views.task_dashboard') }}">
+        <span class="sidebar-icon">📌</span> Task Dashboard
+      </a>
+
+      <div class="sidebar-section">TELECONFERENCE</div>
+
+      <a class="sidebar-link {% if request.endpoint == 'views.assigned_meetings' %}active{% endif %}"
+         href="{{ url_for('views.assigned_meetings') }}">
+        <span class="sidebar-icon">📅</span> Assigned Meetings
+      </a>
+
+      <a class="sidebar-link {% if request.endpoint == 'views.record_timein' %}active{% endif %}"
+         href="{{ url_for('views.record_timein') }}">
+        <span class="sidebar-icon">⏱</span> Record Time-in
+      </a>
+
+      <a class="sidebar-link {% if request.endpoint == 'views.record_timeout' %}active{% endif %}"
+         href="{{ url_for('views.record_timeout') }}">
+        <span class="sidebar-icon">⏳</span> Record Time-out
+      </a>
+
+      <a class="sidebar-link {% if request.endpoint == 'views.inbox' %}active{% endif %}"
+         href="{{ url_for('views.inbox') }}">
+        <span class="sidebar-icon">🔔</span> Inbox
+        {% if unread_count and unread_count > 0 %}
+          <span class="sidebar-badge">{{ unread_count }}</span>
+        {% endif %}
+      </a>
+
+    </div>
+
+    <!-- Footer User -->
+    {% if current_user.is_authenticated %}
+    <div class="sidebar-footer">
+
+      {% set parts = (current_user.firstname or '').split() %}
+      {% set first = parts[0] if parts|length > 0 else '' %}
+      {% set last = parts[-1] if parts|length > 1 else '' %}
+      {% set initials = (first[:1] ~ (last[:1] if last else (first[1:2] if first|length > 1 else ''))).upper() %}
+
+      <div class="user-box" id="userBox">
+
+        <div class="user-actions" id="userActions">
+          <a class="user-action-link" href="{{ url_for('views.profile') }}">My Profile</a>
+          <a class="user-action-link" href="{{ url_for('auth.logout') }}">Logout</a>
+        </div>
+
+        <button class="user-trigger" type="button" id="userToggle">
+          <div class="user-row">
+            <div class="user-avatar">{{ initials }}</div>
+            <div>
+              <div class="user-name">{{ current_user.firstname }}</div>
+              <div class="user-sub">User</div>
+            </div>
+          </div>
+          <div class="caret">▾</div>
+        </button>
+
+      </div>
+
+    </div>
+    {% endif %}
+
+  </aside>
+
+  <!-- ===== Main Content ===== -->
+  <main class="main-area">
+    <div class="content-wrap">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+</div>
+
+<script>
+  const userBox = document.getElementById("userBox");
+  const userToggle = document.getElementById("userToggle");
+
+  if(userToggle){
+    userToggle.addEventListener("click", () => {
+      userBox.classList.toggle("open");
+    });
+
+    document.addEventListener("click", function(e){
+      if(!userBox.contains(e.target)){
+        userBox.classList.remove("open");
+      }
+    });
+  }
+</script>
+
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+</body>
+</html>

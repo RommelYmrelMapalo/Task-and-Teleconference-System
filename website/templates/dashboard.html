@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="main-inner">
+
+  <div class="td-title">Dashboard</div>
+
+  <div class="planner-wrap">
+
+    {% if planned_days and planned_days|length > 0 %}
+
+      {% for day in planned_days %}
+        <div class="day-block">
+
+          <div class="day-head">
+            <div>
+              <span class="day-title">{{ day.date_label }}</span>
+              {% if day.date_sub %}
+                <span class="day-sub">{{ day.date_sub }}</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="day-line"></div>
+
+          {% set has_tasks = day.tasks and day.tasks|length > 0 %}
+          {% set has_meetings = day.meetings and day.meetings|length > 0 %}
+
+          {% if not has_tasks and not has_meetings %}
+            <div class="nothing">Nothing Planned Yet</div>
+          {% else %}
+
+            {% if has_tasks %}
+              {% for t in day.tasks %}
+                <div class="item">
+                  <div>
+                    <p class="item-title">{{ t.title }}</p>
+                    <div class="item-meta">
+                      Task • {{ t.status|capitalize }}
+                      {% if t.due_time %} • Due {{ t.due_time }}{% endif %}
+                    </div>
+                  </div>
+                  <span class="pill task">Task</span>
+                </div>
+              {% endfor %}
+            {% endif %}
+
+            {% if has_meetings %}
+              {% for m in day.meetings %}
+                <div class="item">
+                  <div>
+                    <p class="item-title">{{ m.title }}</p>
+                    <div class="item-meta">
+                      Meeting
+                      {% if m.time_range %} • {{ m.time_range }}{% endif %}
+                      {% if m.room %} • {{ m.room }}{% endif %}
+                    </div>
+                  </div>
+                  <span class="pill meeting">Meeting</span>
+                </div>
+              {% endfor %}
+            {% endif %}
+
+          {% endif %}
+        </div>
+      {% endfor %}
+
+    {% else %}
+      <div class="day-block">
+        <div class="day-head">
+          <div><span class="day-title">Today</span></div>
+        </div>
+        <div class="day-line"></div>
+        <div class="nothing">Nothing Planned Yet</div>
+      </div>
+    {% endif %}
+
+  </div>
+
+</div>
+
+{% endblock %}

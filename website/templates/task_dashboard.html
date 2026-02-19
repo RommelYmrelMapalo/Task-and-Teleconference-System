@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% block title %}Task Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="main-inner">
+
+  <h1 class="td-title">Dashboard &nbsp;›&nbsp; Tasks</h1>
+  <div class="td-sub">Manage and track your assigned tasks.</div>
+
+  {# ===== counts based on tasks list ===== #}
+  {% set all_count = tasks|length if tasks else 0 %}
+  {% set active_tasks = tasks|selectattr("status","ne","completed")|list if tasks else [] %}
+  {% set active_count = active_tasks|length %}
+  {% set completed_tasks = tasks|selectattr("status","equalto","completed")|list if tasks else [] %}
+  {% set completed_count = completed_tasks|length %}
+
+  {# “Upload Document” group: tasks that are NOT completed (where user can upload) #}
+  {% set upload_tasks = active_tasks %}
+  {% set upload_count = upload_tasks|length %}
+
+  <div class="td-pills">
+    <button class="pill-tab active" type="button" data-filter="all">
+      All Tasks <span class="pill-count">{{ all_count }}</span>
+    </button>
+    <button class="pill-tab" type="button" data-filter="active">
+      Active <span class="pill-count">{{ active_count }}</span>
+    </button>
+    <button class="pill-tab" type="button" data-filter="upload">
+      Upload Document <span class="pill-count">{{ upload_count }}</span>
+    </button>
+    <button class="pill-tab" type="button" data-filter="completed">
+      Completed <span class="pill-count">{{ completed_count }}</span>
+    </button>
+  </div>
+
+  <div class="td-toolbar">
+    <input id="taskSearch" class="form-control td-search" placeholder="Search tasks..." />
+    <select id="priorityFilter" class="form-control td-filter" style="width:160px;">
+      <option value="all">All Priority</option>
+      <option value="high">High</option>
+      <option value="normal">Normal</option>
+      <option value="low">Low</option>
+    </select>
+  </div>
+
+  <!-- ===== Active Tasks ===== -->
+  <div class="sec open" data-section="active">
+    <button class="sec-h" type="button">
+      <div class="sec-h-left">
+        <span class="sec-title">Active Tasks</span>
+        <span class="sec-badge badge-active"></span>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="sec-count">{{ active_count }}</span>
+        <span class="sec-caret">▾</span>
+      </div>
+    </button>
+    <div class="sec-body">
+
+      {% if active_tasks and active_tasks|length > 0 %}
+        {% for task in active_tasks %}
+          <div class="task-row task-item"
+               data-status="{% if task.status == 'completed' %}completed{% else %}active{% endif %}"
+               data-title="{{ (task.title ~ ' ' ~ (task.description or ''))|lower }}"
+               data-priority="{{ (task.priority or 'normal')|lower if task.priority is defined else 'normal' }}">
+
+            <div class="task-left">
+              <div class="task-check"></div>
+              <div style="min-width:0;">
+                <p class="task-title">{{ task.title }}</p>
+                <div class="task-meta">
+                  {{ task.description }}
+                </div>
+              </div>
+            </div>
+
+            <div class="task-right">
+              <span class="status st-active">{{ task.status }}</span>
+            </div>
+
+          </div>
+        {% endfor %}
+      {% else %}
+        <div style="padding:12px 14px; color:#6b7280;">No active tasks.</div>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <!-- ===== Upload Document (replaces Observation) ===== -->
+  <div class="sec open" data-section="upload">
+    <button class="sec-h" type="button">
+      <div class="sec-h-left">
+        <span class="sec-title">Upload Document</span>
+        <span class="sec-badge badge-upload"></span>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="sec-count">{{ upload_count }}</span>
+        <span class="sec-caret">▾</span>
+      </div>
+    </button>
+    <div class="sec-body">
+
+      {% if upload_tasks and upload_tasks|length > 0 %}
+        {% for task in upload_tasks %}
+          <div class="task-row task-item"
+               data-status="upload"
+               data-title="{{ (task.title ~ ' ' ~ (task.description or ''))|lower }}"
+               data-priority="{{ (task.priority or 'normal')|lower if task.priority is defined else 'normal' }}">
+
+            <div class="task-left">
+              <div class="task-check"></div>
+              <div style="min-width:0;">
+                <p class="task-title">{{ task.title }}</p>
+                <div class="task-meta">
+                  Upload a file to complete this task.
+                </div>
+
+                <form class="upload-box"
+                      method="POST"
+                      action="{{ url_for('views.finish_task', task_id=task.id) }}"
+                      enctype="multipart/form-data">
+                  <input type="file" name="file" class="form-control form-control-sm" required>
+                  <button class="btn btn-sm btn-primary">Upload</button>
+                </form>
+
+              </div>
+            </div>
+
+            <div class="task-right">
+              <span class="status st-upload">upload</span>
+            </div>
+
+          </div>
+        {% endfor %}
+      {% else %}
+        <div style="padding:12px 14px; color:#6b7280;">No tasks waiting for upload.</div>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <!-- ===== Completed Tasks ===== -->
+  <div class="sec" data-section="completed">
+    <button class="sec-h" type="button">
+      <div class="sec-h-left">
+        <span class="sec-title">Completed Tasks</span>
+        <span class="sec-badge badge-done"></span>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="sec-count">{{ completed_count }}</span>
+        <span class="sec-caret">▾</span>
+      </div>
+    </button>
+    <div class="sec-body">
+
+      {% if completed_tasks and completed_tasks|length > 0 %}
+        {% for task in completed_tasks %}
+          <div class="task-row task-item"
+               data-status="completed"
+               data-title="{{ (task.title ~ ' ' ~ (task.description or ''))|lower }}"
+               data-priority="{{ (task.priority or 'normal')|lower if task.priority is defined else 'normal' }}">
+
+            <div class="task-left">
+              <div class="task-check" style="background:#10b981; border-color:#10b981;"></div>
+              <div style="min-width:0;">
+                <p class="task-title">{{ task.title }}</p>
+                <div class="task-meta">
+                  Completed ✔
+                </div>
+              </div>
+            </div>
+
+            <div class="task-right">
+              <span class="status st-done">completed</span>
+            </div>
+
+          </div>
+        {% endfor %}
+      {% else %}
+        <div style="padding:12px 14px; color:#6b7280;">No completed tasks yet.</div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Accordion open/close
+  document.querySelectorAll(".sec").forEach((sec) => {
+    const header = sec.querySelector(".sec-h");
+    header.addEventListener("click", () => {
+      sec.classList.toggle("open");
+    });
+  });
+
+  // Pills filter
+  const pills = document.querySelectorAll(".pill-tab");
+  const items = document.querySelectorAll(".task-item");
+  const search = document.getElementById("taskSearch");
+  const priority = document.getElementById("priorityFilter");
+
+  let activeFilter = "all";
+
+  function applyFilter(){
+    const q = (search.value || "").trim().toLowerCase();
+    const p = priority.value;
+
+    items.forEach((el) => {
+      const title = el.dataset.title || "";
+      const status = el.dataset.status || "";
+      const pr = el.dataset.priority || "normal";
+
+      const okSearch = !q || title.includes(q);
+      const okPriority = (p === "all") || (pr === p);
+
+      let okTab = true;
+      if(activeFilter === "active") okTab = (status === "active");
+      if(activeFilter === "upload") okTab = (status === "upload");
+      if(activeFilter === "completed") okTab = (status === "completed");
+
+      el.style.display = (okSearch && okPriority && okTab) ? "" : "none";
+    });
+  }
+
+  pills.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      pills.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      activeFilter = btn.dataset.filter;
+      applyFilter();
+    });
+  });
+
+  search.addEventListener("input", applyFilter);
+  priority.addEventListener("change", applyFilter);
+</script>
+
+{% endblock %}

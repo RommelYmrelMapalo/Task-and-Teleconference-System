@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+  <link rel="stylesheet"
+        href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"/>
+  <link rel="stylesheet"
+        href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+  <title>{% block title %}Admin Panel{% endblock %}</title>
+</head>
+
+<body>
+
+<div class="app-shell">
+
+  <!-- ===== ADMIN SIDEBAR ===== -->
+  <aside class="sidebar-dark">
+
+    <div class="sidebar-brand">
+      <span class="dot"></span>
+      <span>TASK AND TELECONFERENCE SYSTEM</span>
+    </div>
+
+    <div class="sidebar-nav">
+
+      <!-- MAIN -->
+      <div class="sidebar-section">MAIN</div>
+
+      <a class="sidebar-link {% if request.endpoint == 'views.admin_dashboard' %}active{% endif %}"
+         href="{{ url_for('views.admin_dashboard') }}">
+        <span class="sidebar-icon">🏠</span>
+        <span>Dashboard</span>
+      </a>
+
+      <!-- ADMIN MODULES -->
+      <div class="sidebar-section">ADMIN MODULES</div>
+
+      <a class="sidebar-link {% if request.endpoint == 'views.manage_meetings' %}active{% endif %}"
+         href="{{ url_for('views.manage_meetings') }}">
+        <span class="sidebar-icon">🗓️</span>
+        <span>Manage Meetings</span>
+      </a>
+
+      <a class="sidebar-link {% if request.endpoint == 'views.assign_meetings' %}active{% endif %}"
+         href="{{ url_for('views.assign_meetings') }}">
+        <span class="sidebar-icon">👥</span>
+        <span>Assign Meetings</span>
+      </a>
+
+      <a class="sidebar-link {% if request.endpoint == 'views.monitoring_panel' %}active{% endif %}"
+         href="{{ url_for('views.monitoring_panel') }}">
+        <span class="sidebar-icon">📡</span>
+        <span>Monitoring Panel</span>
+      </a>
+
+      <a class="sidebar-link {% if request.endpoint == 'views.inbox_admin' %}active{% endif %}"
+         href="{{ url_for('views.inbox_admin') }}">
+        <span class="sidebar-icon">🔔</span>
+        <span>Inbox</span>
+        {% if unread_count and unread_count > 0 %}
+          <span class="sidebar-badge">{{ unread_count }}</span>
+        {% endif %}
+      </a>
+
+      <a class="sidebar-link {% if request.endpoint == 'views.manage_users' %}active{% endif %}"
+         href="{{ url_for('views.manage_users') }}">
+        <span class="sidebar-icon">🧑‍💼</span>
+        <span>Manage Users</span>
+      </a>
+
+      <a class="sidebar-link {% if request.endpoint == 'views.reports' %}active{% endif %}"
+         href="{{ url_for('views.reports') }}">
+        <span class="sidebar-icon">📄</span>
+        <span>Reports</span>
+      </a>
+
+    </div>
+
+    <!-- ===== ADMIN FOOTER USER PANEL ===== -->
+    {% if current_user.is_authenticated %}
+    <div class="sidebar-footer">
+
+      {% set parts = (current_user.firstname or '').split() %}
+      {% set first = parts[0] if parts|length > 0 else '' %}
+      {% set last = parts[-1] if parts|length > 1 else '' %}
+      {% set initials = (first[:1] ~ (last[:1] if last else (first[1:2] if first|length > 1 else ''))).upper() %}
+
+      <div class="user-box" id="userBox">
+
+        <div class="user-actions" id="userActions">
+          <a class="user-action-link" href="{{ url_for('views.profile') }}">My Profile</a>
+          <a class="user-action-link" href="{{ url_for('auth.logout') }}">Logout</a>
+        </div>
+
+        <button class="user-trigger" type="button" id="userToggle">
+          <div class="user-row">
+            <div class="user-avatar">{{ initials }}</div>
+            <div>
+              <div class="user-name">{{ current_user.firstname }}</div>
+              <div class="user-sub">Administrator</div>
+            </div>
+          </div>
+          <div class="caret">▾</div>
+        </button>
+
+      </div>
+
+    </div>
+    {% endif %}
+
+  </aside>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-area">
+    <div class="content-wrap">
+
+      {% block content %}{% endblock %}
+
+    </div>
+  </main>
+
+</div>
+
+<script>
+  const userBox = document.getElementById("userBox");
+  const userToggle = document.getElementById("userToggle");
+
+  if(userToggle){
+    userToggle.addEventListener("click", () => {
+      userBox.classList.toggle("open");
+    });
+
+    document.addEventListener("click", function(e){
+      if(!userBox.contains(e.target)){
+        userBox.classList.remove("open");
+      }
+    });
+  }
+</script>
+
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+</body>
+</html>

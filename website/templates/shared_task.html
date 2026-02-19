@@ -1,0 +1,15 @@
+<h3>Shared Tasks (Take Over)</h3>
+
+{% for task in tasks %}
+<div class="card mb-3 border-warning">
+  <div class="card-body">
+    <h5>{{ task.title }}</h5>
+    <p>{{ task.description }}</p>
+
+    <a href="{{ url_for('views.take_task', task_id=task.id) }}"
+       class="btn btn-warning btn-sm">
+       Take Over Task
+    </a>
+  </div>
+</div>
+{% endfor %}
