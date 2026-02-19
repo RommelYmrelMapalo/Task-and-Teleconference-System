@@ -18,6 +18,10 @@ def admin_required(func):
         return func(*args, **kwargs)
     return wrapper
 
+@views.route('/')
+def home():
+    return render_template("login.html")
+
 @views.route('/dashboard')
 @login_required
 def user_dashboard():
