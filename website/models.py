@@ -23,6 +23,8 @@ class User(db.Model, UserMixin):
     firstname = db.Column(db.String(150))
     is_admin = db.Column(db.Boolean, default=False)
 
+    role = db.Column(db.String(20), default="user")
+
     notes = db.relationship('Note')
     notifications = db.relationship('Notification', lazy=True, cascade="all, delete-orphan")
 

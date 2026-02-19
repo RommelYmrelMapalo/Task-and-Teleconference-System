@@ -18,9 +18,18 @@ def admin_required(func):
         return func(*args, **kwargs)
     return wrapper
 
+from flask import Blueprint, render_template, redirect, url_for, request
+from flask_login import login_required, current_user
+
+views = Blueprint('views', __name__)
+
 @views.route('/')
-def home():
-    return render_template("login.html")
+def index():
+    if current_user.is_authenticated:
+        if getattr(current_user, "is_admin", False):
+            return redirect(url_for('views.admin_dashboard'))
+        return redirect(url_for('views.dashboard'))
+    return redirect(url_for('auth.login'))
 
 @views.route('/dashboard')
 @login_required
@@ -249,7 +258,9 @@ def admin_required():
 @login_required
 @admin_only
 def admin_dashboard():
-    return render_template("admin_dashboard.html")
+    if not getattr(current_user, "is_admin", False):
+        return redirect(url_for('views.user_dashboard'))
+    return render_template("admin_dashboard.html", user=current_user)
 
 @views.route('/admin/manage-meetings')
 @login_required
