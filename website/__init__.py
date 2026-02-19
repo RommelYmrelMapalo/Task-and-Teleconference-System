@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 db = SQLAlchemy()
 DB_NAME = "database.db"
 
+
 def create_app():
     app = Flask(__name__)
 
@@ -17,16 +18,11 @@ def create_app():
     # Secret key (fallback for local dev)
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret")
 
-    # Prefer Vercel Postgres, fallback to DATABASE_URL (if you set it), else SQLite locally
-    database_url = (
-    os.getenv("POSTGRES_URL")
-    or os.getenv("STORAGE_URL")     # ✅ add this (because your prefix is STORAGE)
-    or os.getenv("DATABASE_URL")
-)
+    # Prefer Postgres on Vercel, fallback to SQLite locally
+    database_url = os.getenv("POSTGRES_URL") or os.getenv("DATABASE_URL")
+
     if database_url:
-        # Ensure sslmode=require (common for hosted Postgres)
-        if "sslmode=" not in database_url:
-            database_url += ("&" if "?" in database_url else "?") + "sslmode=require"
+        # Your Neon/Vercel URLs already include sslmode=require, so do NOT append again
         app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     else:
         app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_NAME}"
@@ -43,9 +39,7 @@ def create_app():
 
     from .models import User
 
-    # IMPORTANT:
-    # Don't run db.create_all() automatically on Vercel serverless.
-    # Only do it locally for SQLite dev:
+    # Only auto-create for local SQLite (NOT for Postgres/Vercel)
     if not database_url:
         create_database(app)
 
@@ -61,6 +55,7 @@ def create_app():
     def inject_globals():
         unread_count = 0
         if current_user.is_authenticated:
+            # lazy import avoids circular import
             from .models import Notification
             unread_count = Notification.query.filter_by(
                 user_id=current_user.id,
