@@ -22,11 +22,6 @@ def admin_required(func):
 def home():
     return render_template("login.html")
 
-@views.route("/init-db")
-def init_db():
-    db.create_all()
-    return "DB initialized"
-
 @views.route('/dashboard')
 @login_required
 def user_dashboard():
