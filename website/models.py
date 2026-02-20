@@ -45,10 +45,13 @@ class Task(db.Model):
     assigned_user = db.relationship('User', foreign_keys=[assigned_to])
 
     status = db.Column(db.String(50), default="assigned")
-    # assigned | in_progress | completed | shared
+    # in_progress | completed
+    priority = db.Column(db.String(20), default="normal")
 
     deadline = db.Column(db.DateTime)
     file_path = db.Column(db.String(300))
 
-    created_at = db.Column(db.DateTime(timezone=True), default=func.now)
+    last_edited_by = db.Column(db.Integer, nullable=True)
+    last_edited_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
+    created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
 

@@ -6,27 +6,47 @@
     <form method="POST" class="auth-box">
         <h3 class="text-center mb-4">User Login</h3>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    {% if category == 'error' %}
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                    {% else %}
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                    {% endif %}
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+        {% if request.endpoint == "auth.login" %}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        {% if category == 'error' %}
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        {% endif %}
+
+        <script>
+            // Auto-dismiss Flask flash messages after 5 seconds
+            window.addEventListener("DOMContentLoaded", () => {
+                const alerts = document.querySelectorAll(".alert");
+
+                alerts.forEach((alert) => {
+                setTimeout(() => {
+                    // smooth fade out
+                    alert.style.transition = "opacity 0.4s ease, transform 0.4s ease";
+                    alert.style.opacity = "0";
+                    alert.style.transform = "translateY(-6px)";
+
+                    setTimeout(() => alert.remove(), 450);
+                }, 5000);
+                });
+            });
+        </script>
 
         <div class="form-group">
             <label for="email">Email Address</label>
@@ -61,4 +81,5 @@
         </div>
     </form>
 </div>
+
 {% endblock %}

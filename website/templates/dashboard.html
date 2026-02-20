@@ -3,14 +3,83 @@
 
 {% block content %}
 
+<style>
+  /* ===============================
+     LAYOUT: keep top controls fixed
+     =============================== */
+  .main-inner{
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    overflow:hidden; /* prevents whole page scroll */
+  }
+
+  /* Keep header elements fixed */
+  .td-title,
+  .td-sub{
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: #f4f6f9; /* match your page background */
+  }
+
+  /* Toast should stay on top too */
+  .toast-wrap{
+    position: sticky;
+    top: 70px; /* below the title/sub; adjust if needed */
+    z-index: 40;
+  }
+
+  /* Only planner area scrolls */
+  .planner-wrap{
+    flex:1;
+    overflow-y:auto;
+    padding-right:8px;
+  }
+
+  /* =========================
+     Dashboard click-highlight
+     ========================= */
+  .plan-row.dash-focus {
+    outline: 3px solid rgba(99, 102, 241, 0.55);
+    box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.12);
+    border-radius: 14px;
+    animation: dashPulse 1.1s ease-in-out 0s 2;
+  }
+  .gcard.dash-focus {
+    outline: 3px solid rgba(99, 102, 241, 0.55);
+    box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.12);
+    border-radius: 18px;
+    animation: dashPulse 1.1s ease-in-out 0s 2;
+  }
+  @keyframes dashPulse{
+    0% { transform: scale(1); }
+    40% { transform: scale(1.01); }
+    100% { transform: scale(1); }
+  }
+</style>
+
 <div class="main-inner">
 
   <div class="td-title">Dashboard</div>
+  <div class="td-sub">Overview of meetings and tasks</div>
 
-  <div class="planner-wrap">
+  {# Flash popup ONLY here #}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="toast-wrap" id="toastWrap">
+        {% for category, message in messages %}
+          <div class="toast-msg {% if category == 'error' %}toast-error{% else %}toast-success{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <div class="planner-wrap" id="plannerWrap">
 
     {% if planned_days and planned_days|length > 0 %}
-
       {% for day in planned_days %}
         <div class="day-block">
 
@@ -32,36 +101,139 @@
             <div class="nothing">Nothing Planned Yet</div>
           {% else %}
 
-            {% if has_tasks %}
-              {% for t in day.tasks %}
-                <div class="item">
-                  <div>
-                    <p class="item-title">{{ t.title }}</p>
-                    <div class="item-meta">
-                      Task • {{ t.status|capitalize }}
-                      {% if t.due_time %} • Due {{ t.due_time }}{% endif %}
-                    </div>
-                  </div>
-                  <span class="pill task">Task</span>
-                </div>
-              {% endfor %}
-            {% endif %}
+            <!-- ================= LIST VIEW (default) ================= -->
+            <div class="list-view">
+              {% if has_tasks %}
+                {% for t in day.tasks %}
+                  <div class="plan-row" data-item-type="task" data-task-id="{{ t.id }}">
+                    <button type="button"
+                            class="plan-check {% if t.status == 'completed' %}is-done{% endif %}"
+                            aria-label="Mark complete"
+                            data-complete-task="{{ t.id }}">✓</button>
 
-            {% if has_meetings %}
-              {% for m in day.meetings %}
-                <div class="item">
-                  <div>
-                    <p class="item-title">{{ m.title }}</p>
-                    <div class="item-meta">
-                      Meeting
-                      {% if m.time_range %} • {{ m.time_range }}{% endif %}
-                      {% if m.room %} • {{ m.room }}{% endif %}
+                    <div class="plan-mid">
+                      <div class="plan-title">
+                        {# ✅ Title click -> highlight on Dashboard, then redirect to Task Dashboard #}
+                        <a class="task-link"
+                           data-jump-task="{{ t.id }}"
+                           href="{{ url_for('views.task_dashboard') }}?open={{ t.id }}&highlight=1#task-{{ t.id }}">
+                          {{ t.title }}
+                        </a>
+                      </div>
+
+                      <div class="plan-sub">
+                        {{ (t.status|replace("_"," ")|title) }}
+                        {% if t.due_time %} • Due {{ t.due_time }}{% endif %}
+                      </div>
+                    </div>
+
+                    <div class="plan-right">
+                      <span class="pill task">Task</span>
                     </div>
                   </div>
-                  <span class="pill meeting">Meeting</span>
-                </div>
-              {% endfor %}
-            {% endif %}
+                {% endfor %}
+              {% endif %}
+
+              {% if has_meetings %}
+                {% for m in day.meetings %}
+                  <div class="plan-row" data-item-type="meeting">
+                    <button type="button" class="plan-check is-disabled" disabled>✓</button>
+
+                    <div class="plan-mid">
+                      <div class="plan-title">{{ m.title }}</div>
+                      <div class="plan-sub">
+                        {% if m.time_range %}{{ m.time_range }}{% endif %}
+                        {% if m.room %} • {{ m.room }}{% endif %}
+                      </div>
+                    </div>
+
+                    <div class="plan-right">
+                      <span class="pill meeting">Meeting</span>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            </div>
+
+            <!-- ================= CARD VIEW (Classroom style) ================= -->
+            <div class="card-view-wrap">
+              <div class="card-grid">
+
+                {% if has_tasks %}
+                  {% for t in day.tasks %}
+                    {% set cover = "cover-teal" %}
+                    {% if t.status == "completed" %}{% set cover = "cover-green" %}{% endif %}
+                    {% if t.status == "for_revision" %}{% set cover = "cover-purple" %}{% endif %}
+
+                    <div class="gcard" data-item-type="task" data-task-id="{{ t.id }}">
+                      <div class="gcard-cover {{ cover }}">
+                        <div class="gcard-menu">⋮</div>
+                      </div>
+
+                      <div class="gcard-body">
+                        <div class="gcard-topline">{{ t.title }}</div>
+                        <div class="gcard-subline">{{ (t.status|replace("_"," ")|title) }}</div>
+                        <div class="gcard-small">
+                          {% if t.due_time %}Due {{ t.due_time }}{% else %}No due time{% endif %}
+                        </div>
+                      </div>
+
+                      <div class="gcard-footer">
+                        <div class="gicons">
+                          {# ✅ Details icon -> highlight on Dashboard, then redirect to Task Dashboard #}
+                          <a class="gicon"
+                             title="Details"
+                             data-jump-task="{{ t.id }}"
+                             href="{{ url_for('views.task_dashboard') }}?open={{ t.id }}&highlight=1#task-{{ t.id }}">
+                            📝
+                          </a>
+                        </div>
+
+                        <div style="display:flex; align-items:center; gap:10px;">
+                          <button type="button"
+                                  class="gcheck {% if t.status == 'completed' %}is-done{% endif %}"
+                                  aria-label="Mark complete"
+                                  data-complete-task="{{ t.id }}">✓</button>
+
+                          <span class="gcard-pill">Task</span>
+                        </div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                {% endif %}
+
+                {% if has_meetings %}
+                  {% for m in day.meetings %}
+                    <div class="gcard" data-item-type="meeting">
+                      <div class="gcard-cover cover-slate">
+                        <div class="gcard-menu">⋮</div>
+                      </div>
+
+                      <div class="gcard-body">
+                        <div class="gcard-topline">{{ m.title }}</div>
+                        <div class="gcard-subline">Meeting</div>
+                        <div class="gcard-small">
+                          {% if m.time_range %}{{ m.time_range }}{% endif %}
+                          {% if m.room %} • {{ m.room }}{% endif %}
+                        </div>
+                      </div>
+
+                      <div class="gcard-footer">
+                        <div class="gicons">
+                          <span class="gicon" title="Details">📝</span>
+                        </div>
+
+                        <div style="display:flex; align-items:center; gap:10px;">
+                          <button type="button" class="gcheck is-disabled" disabled>✓</button>
+                          <span class="gcard-pill">Meeting</span>
+                        </div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                {% endif %}
+
+              </div>
+            </div>
 
           {% endif %}
         </div>
@@ -80,5 +252,129 @@
   </div>
 
 </div>
+
+{# ✅ Floating button group (toggle + create) #}
+<div class="fab-group">
+  <div class="view-toggle">
+    <button type="button" class="view-mini" id="btnList">List View</button>
+    <button type="button" class="view-mini" id="btnCards">Card View</button>
+  </div>
+
+  <button type="button"
+          class="fab-task"
+          data-toggle="modal"
+          data-target="#createTaskModal"
+          aria-label="Create task">
+    <span class="fab-plus">+</span>
+  </button>
+</div>
+
+<script>
+/* ===== toast auto-hide ===== */
+window.addEventListener("DOMContentLoaded", () => {
+  const wrap = document.getElementById("toastWrap");
+  if(!wrap) return;
+
+  const toasts = wrap.querySelectorAll(".toast-msg");
+  if(!toasts.length) return;
+
+  requestAnimationFrame(() => toasts.forEach(t => t.classList.add("show")));
+  setTimeout(() => {
+    toasts.forEach(t => t.classList.remove("show"));
+    setTimeout(() => wrap.remove(), 220);
+  }, 1500);
+});
+
+/* ===== list/card toggle remember ===== */
+(function(){
+  const wrap = document.getElementById("plannerWrap");
+  const btnList = document.getElementById("btnList");
+  const btnCards = document.getElementById("btnCards");
+
+  if(!wrap || !btnList || !btnCards) return;
+
+  function setView(mode){
+    const isCards = (mode === "cards");
+    wrap.classList.toggle("card-view", isCards);
+    btnList.classList.toggle("active", !isCards);
+    btnCards.classList.toggle("active", isCards);
+    localStorage.setItem("dashboard_view_mode", mode);
+  }
+
+  const saved = localStorage.getItem("dashboard_view_mode") || "list";
+  setView(saved);
+
+  btnList.addEventListener("click", () => setView("list"));
+  btnCards.addEventListener("click", () => setView("cards"));
+})();
+
+/* ✅ Dashboard highlight-then-redirect INSIDE scroll container */
+document.addEventListener("click", (e) => {
+  const link = e.target.closest("a[data-jump-task]");
+  if(!link) return;
+
+  e.preventDefault();
+
+  const scrollContainer = document.getElementById("plannerWrap");
+  const card = link.closest(".gcard");
+  const row  = link.closest(".plan-row");
+
+  document.querySelectorAll(".dash-focus").forEach(x => x.classList.remove("dash-focus"));
+
+  const target = card || row;
+  if(target) target.classList.add("dash-focus");
+
+  // ✅ scroll inside plannerWrap (not whole page)
+  if(target && scrollContainer){
+    const containerRect = scrollContainer.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const offset = (targetRect.top - containerRect.top) - (scrollContainer.clientHeight / 3);
+    scrollContainer.scrollBy({ top: offset, behavior: "smooth" });
+  }
+
+  // small delay so user sees highlight + scroll before navigating
+  const href = link.getAttribute("href");
+  setTimeout(() => { window.location.href = href; }, 220);
+});
+
+/* ===== checkmark click to complete task (both views) ===== */
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-complete-task]");
+  if(!btn) return;
+
+  const id = btn.getAttribute("data-complete-task");
+  if(!id) return;
+
+  try{
+    const res = await fetch(`/task/${id}/complete`, {
+      method: "POST",
+      headers: { "X-Requested-With": "fetch" }
+    });
+
+    const data = await res.json();
+    if(!res.ok || !data.ok) return;
+
+    const done = (data.status === "completed");
+
+    document.querySelectorAll(`[data-complete-task="${id}"]`).forEach(b => {
+      b.classList.toggle("is-done", done);
+    });
+
+    document.querySelectorAll(`[data-task-id="${id}"] .plan-sub`).forEach(sub => {
+      const raw = sub.textContent || "";
+      const parts = raw.split("•");
+      const right = parts.length > 1 ? " • " + parts.slice(1).join("•").trim() : "";
+      sub.textContent = (done ? "Completed" : "In Progress") + right;
+    });
+
+    document.querySelectorAll(`[data-task-id="${id}"] .gcard-subline`).forEach(el => {
+      el.textContent = (done ? "Completed" : "In Progress");
+    });
+
+  }catch(err){
+    console.error(err);
+  }
+});
+</script>
 
 {% endblock %}

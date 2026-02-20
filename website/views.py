@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, abort, jsonify, request, redirect, url_for, flash
+from flask import Blueprint, render_template, abort, jsonify, request, redirect, url_for, flash, send_from_directory, current_app
 from flask_login import login_required, current_user
 from functools import wraps
 from flask import abort
@@ -6,6 +6,7 @@ from .models import Notification, Task
 from . import db
 from datetime import datetime, date, timedelta
 import os
+from werkzeug.utils import secure_filename
 
 
 views = Blueprint('views', __name__)
@@ -39,7 +40,30 @@ def user_dashboard():
 
     unread_count = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
 
+    # get tasks assigned to logged-in user (or adjust if admin)
+    user_tasks = Task.query.filter_by(assigned_to=current_user.id).order_by(Task.deadline.asc()).all()
+
     tasks_data = []
+    for t in user_tasks:
+        if not t.deadline:
+            continue
+
+        tasks_data.append({
+            "id": t.id,
+            "title": t.title,
+            "status": t.status,
+            "due_date": t.deadline.date(),                 # IMPORTANT: must be date()
+            "due_time": t.deadline.strftime("%I:%M %p"),   # optional, for dashboard.html
+        })
+
+    meetings_data = []
+
+    planned_days = build_planned_days(
+        tasks=tasks_data,
+        meetings=meetings_data,
+        days_back=1,
+        days_forward=7
+    )
     meetings_data = []
 
     planned_days = build_planned_days(tasks=tasks_data, meetings=meetings_data, days_back=1, days_forward=7)
@@ -141,6 +165,115 @@ def shared_tasks():
         user=current_user,
         tasks=tasks
     )
+
+@views.route("/task/<int:task_id>/update", methods=["POST"])
+@login_required
+def update_task(task_id):
+    task = Task.query.get_or_404(task_id)
+
+    # ✅ Everyone can edit (no restriction)
+
+    title = (request.form.get("title") or "").strip()
+    description = (request.form.get("description") or "").strip()
+    status = (request.form.get("status") or task.status).strip().lower()
+    priority = (request.form.get("priority") or getattr(task, "priority", "normal")).strip().lower()
+
+    due_date_raw = request.form.get("due_date")
+    due_time_raw = (request.form.get("due_time") or "").strip()
+
+    if not title:
+        flash("Title is required.", "error")
+        return redirect(request.referrer or url_for("views.task_dashboard"))
+
+    task.title = title
+    task.description = description if description else None
+    task.status = status
+
+    if hasattr(task, "priority"):
+        task.priority = priority
+
+    if due_date_raw:
+        try:
+            d = datetime.strptime(due_date_raw, "%Y-%m-%d").date()
+            if due_time_raw:
+                try:
+                    t = datetime.strptime(due_time_raw, "%H:%M").time()
+                except Exception:
+                    t = datetime.strptime(due_time_raw, "%I:%M %p").time()
+            else:
+                t = datetime.strptime("09:00 AM", "%I:%M %p").time()
+
+            task.deadline = datetime.combine(d, t)
+        except Exception:
+            flash("Invalid due date/time.", "error")
+
+    file = request.files.get("file")
+    if file and file.filename:
+        os.makedirs("website/static/uploads", exist_ok=True)
+        filename = secure_filename(file.filename)
+        file.save(os.path.join("website/static/uploads", filename))
+        task.file_path = filename
+
+    db.session.commit()
+    flash("Task updated!", "success")
+    return redirect(request.referrer or url_for("views.task_dashboard"))
+
+@views.route("/task/<int:task_id>/file/view", methods=["GET"])
+@login_required
+def task_file_view(task_id):
+    task = Task.query.get_or_404(task_id)
+    if not task.file_path:
+        abort(404)
+
+    upload_dir = os.path.join(current_app.root_path, "static", "uploads")
+    return send_from_directory(upload_dir, task.file_path, as_attachment=False)
+
+@views.route("/task/<int:task_id>/file/download", methods=["GET"])
+@login_required
+def task_file_download(task_id):
+    task = Task.query.get_or_404(task_id)
+    if not task.file_path:
+        abort(404)
+
+    upload_dir = os.path.join(current_app.root_path, "static", "uploads")
+    return send_from_directory(
+        upload_dir,
+        task.file_path,
+        as_attachment=True,
+        download_name=task.file_path
+    )
+
+@views.route("/task/<int:task_id>/json", methods=["GET"])
+@login_required
+def task_json(task_id):
+    task = Task.query.get_or_404(task_id)
+
+    # deadline -> "YYYY-MM-DD HH:MM" (easy for your drawer JS)
+    deadline_str = ""
+    if task.deadline:
+        deadline_str = task.deadline.strftime("%Y-%m-%d %H:%M")
+
+    return jsonify({
+        "id": task.id,
+        "title": task.title,
+        "description": task.description or "",
+        "status": task.status or "",
+        "priority": getattr(task, "priority", None) or "normal",
+        "deadline": deadline_str,
+        "file_path": task.file_path or ""
+    })
+    
+@views.route("/task/<int:task_id>/complete", methods=["POST"])
+@login_required
+def complete_task(task_id):
+    task = Task.query.get_or_404(task_id)
+
+    # toggle behavior (optional)
+    new_status = "completed" if task.status != "completed" else "in_progress"
+    task.status = new_status
+
+    db.session.commit()
+    return jsonify({"ok": True, "status": task.status})
     
 @views.route('/task/take/<int:task_id>')
 @login_required
@@ -185,6 +318,84 @@ def finish_task(task_id):
     return redirect(url_for('views.task_dashboard'))
 
 
+@views.route('/task/create', methods=['POST'])
+@login_required
+def create_task():
+    title = (request.form.get("title") or "").strip()
+    description = (request.form.get("description") or "").strip()
+
+    due_date_raw = request.form.get("due_date")
+    due_time_raw = (request.form.get("due_time") or "").strip()
+
+    priority = (request.form.get("priority") or "normal").strip().lower()
+    status = (request.form.get("status") or "assigned").strip().lower()
+
+    if not title:
+        flash("Title is required.", "error")
+        return redirect(url_for("views.task_dashboard"))
+
+    try:
+        d = datetime.strptime(due_date_raw, "%Y-%m-%d").date()
+    except Exception:
+        flash("Invalid due date.", "error")
+        return redirect(url_for("views.task_dashboard"))
+
+    if due_time_raw:
+        try:
+            t = datetime.strptime(due_time_raw, "%I:%M %p").time()
+        except Exception:
+            try:
+                t = datetime.strptime(due_time_raw, "%H:%M").time()
+            except Exception:
+                flash("Invalid time format. Use like 09:50 AM.", "error")
+                return redirect(url_for("views.task_dashboard"))
+    else:
+        t = datetime.strptime("09:00 AM", "%I:%M %p").time()
+
+    deadline_dt = datetime.combine(d, t)
+
+    uploaded = request.files.get("file")
+    saved_filename = None
+
+    if uploaded and uploaded.filename:
+        os.makedirs(current_app.config["UPLOAD_FOLDER"], exist_ok=True)
+
+        filename = secure_filename(uploaded.filename)
+        saved_path = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
+
+        # avoid overwriting files with same name
+        if os.path.exists(saved_path):
+            base, ext = os.path.splitext(filename)
+            filename = f"{base}_{int(datetime.now().timestamp())}{ext}"
+            saved_path = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
+
+        uploaded.save(saved_path)
+        saved_filename = filename
+    
+    new_task = Task(
+        title=title,
+        description=description if description else None,
+        assigned_to=current_user.id,
+        status=status,
+        priority=priority,          # ✅ save priority too (your model has this)
+        deadline=deadline_dt
+    )
+
+    # ✅ handle file upload (document attachment)
+    file = request.files.get("file")
+    if file and file.filename:
+        os.makedirs("website/static/uploads", exist_ok=True)
+        filename = secure_filename(file.filename)
+        filepath = os.path.join("website/static/uploads", filename)
+        file.save(filepath)
+        new_task.file_path = filename
+
+    db.session.add(new_task)
+    db.session.commit()
+
+    flash("Task created!", "success")
+    return redirect(url_for("views.task_dashboard"))   # ✅ go back to planner overview
+
 @views.route('/task-dashboard')
 @login_required
 def task_dashboard():
@@ -202,7 +413,6 @@ def task_dashboard():
         tasks=tasks,
         unread_count=unread_count
     )
-
 
 
 @views.route('/assigned-meetings')

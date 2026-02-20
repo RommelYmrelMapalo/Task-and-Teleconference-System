@@ -3,32 +3,132 @@
 
 {% block content %}
 
+<style>
+  /* ===============================
+     LAYOUT: keep top controls fixed
+     =============================== */
+
+  /* main-inner becomes a full-height column; only .scroll will scroll */
+  .main-inner{
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    overflow:hidden; /* prevents whole page scroll */
+  }
+
+  /* sticky top area */
+  .td-title,
+  .td-sub,
+  .td-pills,
+  .td-toolbar{
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: #f4f6f9; /* match your page bg */
+  }
+
+  .td-title{ padding-top: 12px; }
+  .td-toolbar{ padding-bottom: 10px; }
+
+  /* only the task list scrolls */
+  .scroll{
+    flex:1;
+    overflow-y:auto;
+    padding-right:8px;
+  }
+
+  /* =========================
+     Task focus highlight
+     ========================= */
+  .task-item.task-focus {
+    outline: 3px solid rgba(99, 102, 241, 0.55);
+    box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.12);
+    border-radius: 14px;
+    animation: taskPulse 1.2s ease-in-out 0s 2;
+  }
+  @keyframes taskPulse {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.01); }
+    100% { transform: scale(1); }
+  }
+
+  /* clickable titles */
+  .task-title-link{
+    display:inline-block;
+    margin:0;
+    font-weight:900;
+    color:inherit;
+    text-decoration:none;
+    cursor:pointer;
+  }
+  .task-title-link:hover{ text-decoration: underline; }
+
+  /* icon-style button */
+  .btn-icon{
+    width:34px;
+    height:34px;
+    border-radius:10px;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    padding:0;
+    line-height:1;
+  }
+  .btn-icon.ghost{ background:transparent; }
+</style>
+
 <div class="main-inner">
 
   <h1 class="td-title">Dashboard &nbsp;›&nbsp; Tasks</h1>
-  <div class="td-sub">Manage and track your assigned tasks.</div>
+  <div class="td-sub">Manage and track your assigned tasks</div>
+
+  {% if request.endpoint == "views.task_dashboard" %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="modal-overlay show autoModal">
+            <div class="modal-popup {{ category }}">
+              <div class="modal-icon">
+                {% if category == "error" %}❌{% else %}✅{% endif %}
+              </div>
+              <div class="modal-text">{{ message }}</div>
+            </div>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  {% endif %}
 
   {# ===== counts based on tasks list ===== #}
   {% set all_count = tasks|length if tasks else 0 %}
-  {% set active_tasks = tasks|selectattr("status","ne","completed")|list if tasks else [] %}
-  {% set active_count = active_tasks|length %}
+
+  {% set revision_tasks = tasks|selectattr("status","equalto","for_revision")|list if tasks else [] %}
+  {% set revision_count = revision_tasks|length %}
+
   {% set completed_tasks = tasks|selectattr("status","equalto","completed")|list if tasks else [] %}
   {% set completed_count = completed_tasks|length %}
 
-  {# “Upload Document” group: tasks that are NOT completed (where user can upload) #}
-  {% set upload_tasks = active_tasks %}
-  {% set upload_count = upload_tasks|length %}
+  {% set active_tasks = tasks|rejectattr("status","equalto","completed")
+                            |rejectattr("status","equalto","for_revision")
+                            |list if tasks else [] %}
+  {% set active_count = active_tasks|length %}
 
   <div class="td-pills">
     <button class="pill-tab active" type="button" data-filter="all">
       All Tasks <span class="pill-count">{{ all_count }}</span>
     </button>
+
     <button class="pill-tab" type="button" data-filter="active">
       Active <span class="pill-count">{{ active_count }}</span>
     </button>
-    <button class="pill-tab" type="button" data-filter="upload">
-      Upload Document <span class="pill-count">{{ upload_count }}</span>
+
+    <button class="pill-tab" type="button" data-filter="revision">
+      For Revision <span class="pill-count">{{ revision_count }}</span>
     </button>
+
     <button class="pill-tab" type="button" data-filter="completed">
       Completed <span class="pill-count">{{ completed_count }}</span>
     </button>
@@ -44,149 +144,197 @@
     </select>
   </div>
 
-  <!-- ===== Active Tasks ===== -->
-  <div class="sec open" data-section="active">
-    <button class="sec-h" type="button">
-      <div class="sec-h-left">
-        <span class="sec-title">Active Tasks</span>
-        <span class="sec-badge badge-active"></span>
-      </div>
-      <div style="display:flex; align-items:center; gap:10px;">
-        <span class="sec-count">{{ active_count }}</span>
-        <span class="sec-caret">▾</span>
-      </div>
-    </button>
-    <div class="sec-body">
+  <div class="scroll">
 
-      {% if active_tasks and active_tasks|length > 0 %}
-        {% for task in active_tasks %}
-          <div class="task-row task-item"
-               data-status="{% if task.status == 'completed' %}completed{% else %}active{% endif %}"
-               data-title="{{ (task.title ~ ' ' ~ (task.description or ''))|lower }}"
-               data-priority="{{ (task.priority or 'normal')|lower if task.priority is defined else 'normal' }}">
+    <!-- ===== Active Tasks ===== -->
+    <div class="sec open" data-section="active">
+      <button class="sec-h" type="button">
+        <div class="sec-h-left">
+          <span class="sec-title">Active Tasks</span>
+          <span class="sec-badge badge-active"></span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="sec-count">{{ active_count }}</span>
+          <span class="sec-caret">▾</span>
+        </div>
+      </button>
 
-            <div class="task-left">
-              <div class="task-check"></div>
-              <div style="min-width:0;">
-                <p class="task-title">{{ task.title }}</p>
-                <div class="task-meta">
-                  {{ task.description }}
+      <div class="sec-body">
+        {% if active_tasks and active_tasks|length > 0 %}
+          {% for task in active_tasks %}
+            <div class="task-row task-item"
+                 id="task-{{ task.id }}"
+                 data-task-id="{{ task.id }}"
+                 data-status="{{ task.status }}"
+                 data-title="{{ (task.title ~ ' ' ~ (task.description or ''))|lower }}"
+                 data-priority="{{ (task.priority or 'normal')|lower if task.priority is defined else 'normal' }}">
+
+              <div class="task-left">
+                <div class="task-check"></div>
+
+                <div class="task-info">
+                  <a class="task-title-link"
+                     href="{{ url_for('views.task_dashboard') }}?focus={{ task.id }}#task-{{ task.id }}"
+                     data-focus-task="{{ task.id }}">
+                    {{ task.title }}
+                  </a>
+
+                  <div class="task-meta">
+                    {{ task.description }}
+                  </div>
+                </div>
+
+                <div class="task-tags">
+                  <span class="status st-active">{{ task.status|replace("_"," ")|upper }}</span>
+                  {% set pr = (task.priority or 'normal')|lower %}
+                  <span class="prio prio-{{ pr }}">{{ pr|upper }}</span>
+                </div>
+              </div>
+
+              <div class="task-right">
+                <div class="task-actions">
+                  <button type="button" class="btn-mini" data-open-task="{{ task.id }}">Open</button>
+                  <button type="button" class="btn-mini ghost" data-edit-task="{{ task.id }}">Edit</button>
                 </div>
               </div>
             </div>
-
-            <div class="task-right">
-              <span class="status st-active">{{ task.status }}</span>
-            </div>
-
-          </div>
-        {% endfor %}
-      {% else %}
-        <div style="padding:12px 14px; color:#6b7280;">No active tasks.</div>
-      {% endif %}
-
+          {% endfor %}
+        {% else %}
+          <div style="padding:12px 14px; color:#6b7280;">No active tasks.</div>
+        {% endif %}
+      </div>
     </div>
-  </div>
 
-  <!-- ===== Upload Document (replaces Observation) ===== -->
-  <div class="sec open" data-section="upload">
-    <button class="sec-h" type="button">
-      <div class="sec-h-left">
-        <span class="sec-title">Upload Document</span>
-        <span class="sec-badge badge-upload"></span>
-      </div>
-      <div style="display:flex; align-items:center; gap:10px;">
-        <span class="sec-count">{{ upload_count }}</span>
-        <span class="sec-caret">▾</span>
-      </div>
-    </button>
-    <div class="sec-body">
+    <!-- ===== For Revision Tasks ===== -->
+    <div class="sec open" data-section="revision">
+      <button class="sec-h" type="button">
+        <div class="sec-h-left">
+          <span class="sec-title">For Revision</span>
+          <span class="sec-badge" style="background:#6366f1;"></span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="sec-count">{{ revision_count }}</span>
+          <span class="sec-caret">▾</span>
+        </div>
+      </button>
 
-      {% if upload_tasks and upload_tasks|length > 0 %}
-        {% for task in upload_tasks %}
-          <div class="task-row task-item"
-               data-status="upload"
-               data-title="{{ (task.title ~ ' ' ~ (task.description or ''))|lower }}"
-               data-priority="{{ (task.priority or 'normal')|lower if task.priority is defined else 'normal' }}">
+      <div class="sec-body">
+        {% if revision_tasks and revision_tasks|length > 0 %}
+          {% for task in revision_tasks %}
+            <div class="task-row task-item"
+                 id="task-{{ task.id }}"
+                 data-task-id="{{ task.id }}"
+                 data-status="{{ task.status }}"
+                 data-title="{{ (task.title ~ ' ' ~ (task.description or ''))|lower }}"
+                 data-priority="{{ (task.priority or 'normal')|lower }}">
 
-            <div class="task-left">
-              <div class="task-check"></div>
-              <div style="min-width:0;">
-                <p class="task-title">{{ task.title }}</p>
-                <div class="task-meta">
-                  Upload a file to complete this task.
+              <div class="task-left">
+                <div class="task-check"></div>
+
+                <div class="task-info">
+                  <a class="task-title-link"
+                     href="{{ url_for('views.task_dashboard') }}?focus={{ task.id }}#task-{{ task.id }}"
+                     data-focus-task="{{ task.id }}">
+                    {{ task.title }}
+                  </a>
+                  <div class="task-meta">{{ task.description }}</div>
                 </div>
 
-                <form class="upload-box"
-                      method="POST"
-                      action="{{ url_for('views.finish_task', task_id=task.id) }}"
-                      enctype="multipart/form-data">
-                  <input type="file" name="file" class="form-control form-control-sm" required>
-                  <button class="btn btn-sm btn-primary">Upload</button>
-                </form>
-
+                <div class="task-tags">
+                  <span class="status" style="background:#eef2ff;border-color:#c7d2fe;">
+                    {{ task.status|replace("_"," ")|upper }}
+                  </span>
+                  {% set pr = (task.priority or 'normal')|lower %}
+                  <span class="prio prio-{{ pr }}">{{ pr|upper }}</span>
+                </div>
               </div>
-            </div>
 
-            <div class="task-right">
-              <span class="status st-upload">upload</span>
-            </div>
+              <div class="task-right">
+                <div class="task-actions">
+                  <button type="button" class="btn-mini" data-open-task="{{ task.id }}">Open</button>
 
-          </div>
-        {% endfor %}
-      {% else %}
-        <div style="padding:12px 14px; color:#6b7280;">No tasks waiting for upload.</div>
-      {% endif %}
+                  <button type="button"
+                          class="btn-icon ghost"
+                          title="Details"
+                          aria-label="Details"
+                          data-focus-task="{{ task.id }}">
+                    ⓘ
+                  </button>
 
-    </div>
-  </div>
-
-  <!-- ===== Completed Tasks ===== -->
-  <div class="sec" data-section="completed">
-    <button class="sec-h" type="button">
-      <div class="sec-h-left">
-        <span class="sec-title">Completed Tasks</span>
-        <span class="sec-badge badge-done"></span>
-      </div>
-      <div style="display:flex; align-items:center; gap:10px;">
-        <span class="sec-count">{{ completed_count }}</span>
-        <span class="sec-caret">▾</span>
-      </div>
-    </button>
-    <div class="sec-body">
-
-      {% if completed_tasks and completed_tasks|length > 0 %}
-        {% for task in completed_tasks %}
-          <div class="task-row task-item"
-               data-status="completed"
-               data-title="{{ (task.title ~ ' ' ~ (task.description or ''))|lower }}"
-               data-priority="{{ (task.priority or 'normal')|lower if task.priority is defined else 'normal' }}">
-
-            <div class="task-left">
-              <div class="task-check" style="background:#10b981; border-color:#10b981;"></div>
-              <div style="min-width:0;">
-                <p class="task-title">{{ task.title }}</p>
-                <div class="task-meta">
-                  Completed ✔
+                  <button type="button" class="btn-mini ghost" data-edit-task="{{ task.id }}">Edit</button>
                 </div>
               </div>
             </div>
-
-            <div class="task-right">
-              <span class="status st-done">completed</span>
-            </div>
-
-          </div>
-        {% endfor %}
-      {% else %}
-        <div style="padding:12px 14px; color:#6b7280;">No completed tasks yet.</div>
-      {% endif %}
-
+          {% endfor %}
+        {% else %}
+          <div style="padding:12px 14px; color:#6b7280;">No tasks for revision.</div>
+        {% endif %}
+      </div>
     </div>
-  </div>
 
+    <!-- ===== Completed Tasks ===== -->
+    <div class="sec open" data-section="completed">
+      <button class="sec-h" type="button">
+        <div class="sec-h-left">
+          <span class="sec-title">Completed Tasks</span>
+          <span class="sec-badge badge-done"></span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="sec-count">{{ completed_count }}</span>
+          <span class="sec-caret">▾</span>
+        </div>
+      </button>
+
+      <div class="sec-body">
+        {% if completed_tasks and completed_tasks|length > 0 %}
+          {% for task in completed_tasks %}
+            <div class="task-row task-item"
+                 id="task-{{ task.id }}"
+                 data-task-id="{{ task.id }}"
+                 data-status="{{ task.status }}"
+                 data-title="{{ (task.title ~ ' ' ~ (task.description or ''))|lower }}"
+                 data-priority="{{ (task.priority or 'normal')|lower }}">
+
+              <div class="task-left">
+                <div class="task-check" style="background:#10b981; border-color:#10b981;"></div>
+
+                <div class="task-info">
+                  <a class="task-title-link"
+                     href="{{ url_for('views.task_dashboard') }}?focus={{ task.id }}#task-{{ task.id }}"
+                     data-focus-task="{{ task.id }}">
+                    {{ task.title }}
+                  </a>
+                  <div class="task-meta">{{ task.description }}</div>
+                </div>
+
+                <div class="task-tags">
+                  <span class="status st-done">{{ task.status|replace("_"," ")|upper }}</span>
+                  {% set pr = (task.priority or 'normal')|lower %}
+                  <span class="prio prio-{{ pr }}">{{ pr|upper }}</span>
+                </div>
+              </div>
+
+              <div class="task-right">
+                <div class="task-actions">
+                  <button type="button" class="btn-mini" data-open-task="{{ task.id }}">Open</button>
+                  <button type="button" class="btn-mini ghost" data-edit-task="{{ task.id }}">Edit</button>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div style="padding:12px 14px; color:#6b7280;">No completed tasks yet.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <br><br>
+  </div>
 </div>
 
+<!-- =========================
+     FILTER + ACCORDION JS
+========================== -->
 <script>
   // Accordion open/close
   document.querySelectorAll(".sec").forEach((sec) => {
@@ -202,9 +350,10 @@
   const search = document.getElementById("taskSearch");
   const priority = document.getElementById("priorityFilter");
 
-  let activeFilter = "all";
+  // IMPORTANT: put these on window so other scripts can call them if needed
+  window.activeFilter = "all";
 
-  function applyFilter(){
+  window.applyFilter = function applyFilter(){
     const q = (search.value || "").trim().toLowerCase();
     const p = priority.value;
 
@@ -217,9 +366,16 @@
       const okPriority = (p === "all") || (pr === p);
 
       let okTab = true;
-      if(activeFilter === "active") okTab = (status === "active");
-      if(activeFilter === "upload") okTab = (status === "upload");
-      if(activeFilter === "completed") okTab = (status === "completed");
+
+      if(window.activeFilter === "active"){
+        okTab = (status !== "completed" && status !== "for_revision");
+      }
+      if(window.activeFilter === "revision"){
+        okTab = (status === "for_revision");
+      }
+      if(window.activeFilter === "completed"){
+        okTab = (status === "completed");
+      }
 
       el.style.display = (okSearch && okPriority && okTab) ? "" : "none";
     });
@@ -229,13 +385,484 @@
     btn.addEventListener("click", () => {
       pills.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
-      activeFilter = btn.dataset.filter;
-      applyFilter();
+      window.activeFilter = btn.dataset.filter;
+      window.applyFilter();
     });
   });
 
-  search.addEventListener("input", applyFilter);
-  priority.addEventListener("change", applyFilter);
+  search.addEventListener("input", window.applyFilter);
+  priority.addEventListener("change", window.applyFilter);
+</script>
+
+<!-- =========================================
+     FLOATING ADD TASK + CREATE TASK DRAWER
+========================================= -->
+
+<button type="button" class="fab-task" id="openTaskDrawer" aria-label="Create task">
+  <span class="fab-plus">+</span>
+</button>
+
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+
+<aside class="task-drawer" id="taskDrawer" aria-hidden="true">
+  <div class="drawer-head">
+    <div>
+      <div class="drawer-title">New Task</div>
+      <div class="drawer-sub">Create and publish a task</div>
+    </div>
+    <button type="button" class="drawer-x" id="closeTaskDrawer" aria-label="Close">×</button>
+  </div>
+
+  <form method="POST" action="{{ url_for('views.create_task') }}" class="drawer-body" enctype="multipart/form-data">
+    <div class="drawer-field">
+      <div class="drawer-label">TITLE</div>
+      <input name="title" class="drawer-input" placeholder="Task title..." required>
+    </div>
+
+    <div class="drawer-grid3">
+      <div class="drawer-field">
+        <div class="drawer-label">STATUS</div>
+        <select name="status" class="drawer-input">
+          <option value="in_progress" selected>In Progress</option>
+          <option value="for_revision">For Revision</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+
+      <div class="drawer-field">
+        <div class="drawer-label">TYPE</div>
+        <select name="type" class="drawer-input">
+          <option value="operational">Operational</option>
+          <option value="meeting">Meeting</option>
+          <option value="documentation">Documentation</option>
+        </select>
+      </div>
+
+      <div class="drawer-field">
+        <div class="drawer-label">PRIORITY</div>
+        <select name="priority" class="drawer-input">
+          <option value="low">Low</option>
+          <option value="normal" selected>Normal</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="drawer-grid3">
+      <div class="drawer-field">
+        <div class="drawer-label">DUE DATE</div>
+        <input type="date" name="due_date" class="drawer-input" required>
+      </div>
+
+      <div class="drawer-field">
+        <div class="drawer-label">DUE TIME</div>
+        <input type="time" name="due_time" class="drawer-input">
+      </div>
+
+      <div class="drawer-field">
+        <div class="drawer-label">EST. TIME</div>
+        <input name="est_time" class="drawer-input" placeholder="30 min">
+      </div>
+    </div>
+
+    <div class="drawer-field">
+      <div class="drawer-label">ASSIGNEES</div>
+      <div class="assignee-pill">
+        <span class="assignee-dot"></span>
+        <span>Assigned to you</span>
+      </div>
+      <small class="drawer-hint">For now, tasks are assigned to the logged-in user.</small>
+      <small class="drawer-hint">Everyone can see and edit tasks.</small>
+    </div>
+
+    <div class="drawer-card">
+      <div style="font-weight:900; margin-bottom:6px;">Attach Documents</div>
+      <div class="drawer-muted" style="font-size:12px; margin-bottom:10px;">
+        Upload a file to include with this task (PDF, DOCX, PNG, JPG).
+      </div>
+      <input type="file" name="file" class="drawer-file" />
+    </div>
+
+    <div class="drawer-field">
+      <div class="drawer-label">DESCRIPTION</div>
+      <textarea name="description" class="drawer-textarea" rows="5"
+        placeholder="Write details..."></textarea>
+    </div>
+
+    <div class="drawer-footer">
+      <button type="button" class="btn btn-light" id="cancelTaskDrawer">Cancel</button>
+      <button type="submit" class="btn btn-primary">Publish</button>
+    </div>
+  </form>
+</aside>
+
+<script>
+  (function () {
+    const fab = document.getElementById("openTaskDrawer");
+    const closeBtn = document.getElementById("closeTaskDrawer");
+    const cancelBtn = document.getElementById("cancelTaskDrawer");
+    const drawer = document.getElementById("taskDrawer");
+    const backdrop = document.getElementById("drawerBackdrop");
+
+    function openDrawer(){
+      drawer.classList.add("open");
+      backdrop.classList.add("open");
+      drawer.setAttribute("aria-hidden", "false");
+      document.body.classList.add("drawer-open");
+      if(fab) fab.classList.add("fab-hidden");
+    }
+
+    function closeDrawer(){
+      drawer.classList.remove("open");
+      backdrop.classList.remove("open");
+      drawer.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("drawer-open");
+      if(fab) fab.classList.remove("fab-hidden");
+    }
+
+    if(fab) fab.addEventListener("click", openDrawer);
+    if(closeBtn) closeBtn.addEventListener("click", closeDrawer);
+    if(cancelBtn) cancelBtn.addEventListener("click", closeDrawer);
+    if(backdrop) backdrop.addEventListener("click", closeDrawer);
+
+    document.addEventListener("keydown", (e) => {
+      if(e.key === "Escape") closeDrawer();
+    });
+  })();
+</script>
+
+<!-- =========================================
+     VIEW TASK DRAWER
+========================================= -->
+<div class="drawer-backdrop" id="viewBackdrop"></div>
+
+<aside class="task-drawer" id="viewDrawer" aria-hidden="true">
+  <div class="drawer-head">
+    <div>
+      <div class="drawer-title" id="viewTitle">Task</div>
+      <div class="drawer-sub" id="viewSub">Details</div>
+    </div>
+    <button type="button" class="drawer-x" id="closeView" aria-label="Close">×</button>
+  </div>
+
+  <div class="drawer-body">
+    <div class="drawer-kv"><div class="k">Status</div><div class="v" id="viewStatus">-</div></div>
+    <div class="drawer-kv"><div class="k">Priority</div><div class="v" id="viewPriority">-</div></div>
+    <div class="drawer-kv"><div class="k">Deadline</div><div class="v" id="viewDeadline">-</div></div>
+
+    <div class="drawer-card">
+      <div style="font-weight:900; margin-bottom:6px;">Description</div>
+      <div class="drawer-muted" id="viewDesc">—</div>
+    </div>
+
+    <div class="drawer-card" id="viewFileCard" style="display:none;">
+      <div style="font-weight:900; margin-bottom:10px;">Attachment</div>
+      <div class="drawer-muted" id="viewFileName"></div>
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <a class="btn-mini" id="btnViewFile" target="_blank">View</a>
+        <a class="btn-mini ghost" id="btnDownloadFile">Download</a>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- =========================================
+     EDIT TASK DRAWER
+========================================= -->
+<div class="drawer-backdrop" id="editBackdrop"></div>
+
+<aside class="task-drawer" id="editDrawer" aria-hidden="true">
+  <div class="drawer-head">
+    <div>
+      <div class="drawer-title">Edit Task</div>
+      <div class="drawer-sub">Update and save changes</div>
+    </div>
+    <button type="button" class="drawer-x" id="closeEdit" aria-label="Close">×</button>
+  </div>
+
+  <form class="drawer-body" id="editForm" method="POST" enctype="multipart/form-data">
+    <div class="drawer-field">
+      <div class="drawer-label">TITLE</div>
+      <input class="drawer-input" name="title" id="editTitle" required>
+    </div>
+
+    <div class="drawer-grid3">
+      <div class="drawer-field">
+        <div class="drawer-label">STATUS</div>
+        <select class="drawer-input" name="status" id="editStatus">
+          <option value="in_progress">In Progress</option>
+          <option value="for_revision">For Revision</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+
+      <div class="drawer-field">
+        <div class="drawer-label">PRIORITY</div>
+        <select class="drawer-input" name="priority" id="editPriority">
+          <option value="low">Low</option>
+          <option value="normal">Normal</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+
+      <div class="drawer-field">
+        <div class="drawer-label">DUE DATE</div>
+        <input type="date" class="drawer-input" name="due_date" id="editDate">
+      </div>
+    </div>
+
+    <div class="drawer-field">
+      <div class="drawer-label">DUE TIME</div>
+      <input type="time" class="drawer-input" name="due_time" id="editTime">
+    </div>
+
+    <div class="drawer-field">
+      <div class="drawer-label">DESCRIPTION</div>
+      <textarea class="drawer-textarea" name="description" id="editDesc" rows="6"></textarea>
+    </div>
+
+    <div class="drawer-card">
+      <div style="font-weight:900; margin-bottom:6px;">Replace Attachment (optional)</div>
+      <input type="file" name="file" class="drawer-file">
+    </div>
+
+    <div class="drawer-footer">
+      <button type="button" class="btn btn-light" id="cancelEdit">Cancel</button>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
+</aside>
+
+<!-- =========================================
+     OPEN/EDIT + FOCUS/HIGHLIGHT JS
+     (scrolls INSIDE .scroll, header stays)
+========================================= -->
+<script>
+(function(){
+  const fab = document.getElementById("openTaskDrawer");
+
+  const viewDrawer = document.getElementById("viewDrawer");
+  const viewBackdrop = document.getElementById("viewBackdrop");
+  const closeView = document.getElementById("closeView");
+
+  const editDrawer = document.getElementById("editDrawer");
+  const editBackdrop = document.getElementById("editBackdrop");
+  const closeEdit = document.getElementById("closeEdit");
+  const cancelEdit = document.getElementById("cancelEdit");
+
+  const editForm = document.getElementById("editForm");
+  const scrollContainer = document.querySelector(".scroll");
+
+  const LAST_EDIT_KEY = "lastEditedTaskId";
+
+  function hideFab(){ if(fab) fab.classList.add("fab-hidden"); }
+  function showFab(){ if(fab) fab.classList.remove("fab-hidden"); }
+
+  function openDrawer(el, back){
+    el.classList.add("open");
+    back.classList.add("open");
+    el.setAttribute("aria-hidden","false");
+    hideFab();
+  }
+
+  function closeDrawer(el, back){
+    el.classList.remove("open");
+    back.classList.remove("open");
+    el.setAttribute("aria-hidden","true");
+
+    const anyOpen =
+      (viewDrawer && viewDrawer.classList.contains("open")) ||
+      (editDrawer && editDrawer.classList.contains("open"));
+
+    if(!anyOpen) showFab();
+  }
+
+  function setLastEdited(id){
+    if(id !== null && id !== undefined && String(id).trim() !== ""){
+      sessionStorage.setItem(LAST_EDIT_KEY, String(id));
+    }
+  }
+  function getLastEdited(){ return sessionStorage.getItem(LAST_EDIT_KEY); }
+  function clearLastEdited(){ sessionStorage.removeItem(LAST_EDIT_KEY); }
+
+  if(closeView) closeView.onclick = () => closeDrawer(viewDrawer, viewBackdrop);
+  if(viewBackdrop) viewBackdrop.onclick = () => closeDrawer(viewDrawer, viewBackdrop);
+
+  if(closeEdit) closeEdit.onclick = () => { clearLastEdited(); closeDrawer(editDrawer, editBackdrop); };
+  if(cancelEdit) cancelEdit.onclick = () => { clearLastEdited(); closeDrawer(editDrawer, editBackdrop); };
+  if(editBackdrop) editBackdrop.onclick = () => { clearLastEdited(); closeDrawer(editDrawer, editBackdrop); };
+
+  async function loadTask(taskId){
+    const res = await fetch(`/task/${taskId}/json`);
+    if(!res.ok) return null;
+    return await res.json();
+  }
+
+  function highlightRow(taskId){
+    const row = document.querySelector(`.task-item[data-task-id="${taskId}"]`);
+    if(!row) return;
+
+    document.querySelectorAll(".task-item.task-focus").forEach(x => x.classList.remove("task-focus"));
+    row.classList.add("task-focus");
+
+    // open all sections so row is visible
+    document.querySelectorAll(".sec").forEach(sec => sec.classList.add("open"));
+
+    // ✅ scroll INSIDE the list container (.scroll), not the whole page
+    if(scrollContainer){
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const rowRect = row.getBoundingClientRect();
+
+      // bring row near upper-middle of the scroll container
+      const offset = (rowRect.top - containerRect.top) - (scrollContainer.clientHeight / 3);
+
+      scrollContainer.scrollBy({ top: offset, behavior: "smooth" });
+    } else {
+      // fallback
+      row.scrollIntoView({ behavior:"smooth", block:"center" });
+    }
+
+    setTimeout(() => row.classList.remove("task-focus"), 2800);
+  }
+
+  async function openViewTask(taskId){
+    const data = await loadTask(taskId);
+    if(!data) return;
+
+    document.getElementById("viewTitle").textContent = data.title || "Task";
+    document.getElementById("viewStatus").textContent = (data.status || "-").replaceAll("_"," ").toUpperCase();
+    document.getElementById("viewPriority").textContent = (data.priority || "-").toUpperCase();
+    document.getElementById("viewDeadline").textContent = data.deadline || "-";
+    document.getElementById("viewDesc").textContent = data.description || "—";
+
+    const fileCard = document.getElementById("viewFileCard");
+    if(data.file_path){
+      fileCard.style.display = "block";
+      document.getElementById("viewFileName").textContent = data.file_path;
+      document.getElementById("btnViewFile").href = `/task/${taskId}/file/view`;
+      document.getElementById("btnDownloadFile").href = `/task/${taskId}/file/download`;
+    } else {
+      fileCard.style.display = "none";
+    }
+
+    openDrawer(viewDrawer, viewBackdrop);
+  }
+
+  async function openEditTask(taskId){
+    const data = await loadTask(taskId);
+    if(!data) return;
+
+    setLastEdited(taskId);
+
+    editForm.action = `/task/${taskId}/update`;
+    document.getElementById("editTitle").value = data.title || "";
+    document.getElementById("editStatus").value = data.status || "in_progress";
+    document.getElementById("editPriority").value = data.priority || "normal";
+    document.getElementById("editDesc").value = data.description || "";
+
+    if(data.deadline){
+      const parts = data.deadline.split(" ");
+      if(parts[0]) document.getElementById("editDate").value = parts[0];
+      if(parts[1]) document.getElementById("editTime").value = parts[1];
+    } else {
+      document.getElementById("editDate").value = "";
+      document.getElementById("editTime").value = "";
+    }
+
+    openDrawer(editDrawer, editBackdrop);
+  }
+
+  if(editForm){
+    editForm.addEventListener("submit", () => {
+      const action = editForm.getAttribute("action") || "";
+      const m = action.match(/\/task\/(\d+)\/update/);
+      if(m && m[1]) setLastEdited(m[1]);
+    });
+  }
+
+  document.addEventListener("click", async (e) => {
+    const openBtn = e.target.closest("[data-open-task]");
+    const editBtn = e.target.closest("[data-edit-task]");
+    const focusBtn = e.target.closest("[data-focus-task]");
+
+    if(openBtn){
+      const id = openBtn.getAttribute("data-open-task");
+      highlightRow(id);
+      await openViewTask(id);
+      return;
+    }
+
+    if(editBtn){
+      const id = editBtn.getAttribute("data-edit-task");
+      highlightRow(id);
+      await openEditTask(id);
+      return;
+    }
+
+    if(focusBtn){
+      if(focusBtn.tagName.toLowerCase() === "a") e.preventDefault();
+      const id = focusBtn.getAttribute("data-focus-task");
+      highlightRow(id);
+      await openViewTask(id);
+      return;
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    const editedId = getLastEdited();
+    if(editedId){
+      highlightRow(editedId);
+      clearLastEdited();
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const openId = params.get("open");
+    const focusId = params.get("focus");
+    const highlight = params.get("highlight");
+
+    const id = openId || focusId;
+    if(!id) return;
+
+    if(highlight === "1" || highlight === "true"){
+      highlightRow(id);
+    }
+
+    if(openId){
+      await openViewTask(openId);
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if(e.key !== "Escape") return;
+
+    if(viewDrawer && viewDrawer.classList.contains("open")){
+      closeDrawer(viewDrawer, viewBackdrop);
+    }
+    if(editDrawer && editDrawer.classList.contains("open")){
+      clearLastEdited();
+      closeDrawer(editDrawer, editBackdrop);
+    }
+  });
+})();
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const modals = document.querySelectorAll(".autoModal");
+  if(!modals.length) return;
+
+  modals.forEach((m) => {
+    m.style.transition = "opacity 300ms ease";
+  });
+
+  setTimeout(() => {
+    modals.forEach((m) => m.style.opacity = "0");
+    setTimeout(() => {
+      modals.forEach((m) => m.remove());
+    }, 320);
+  }, 1500);
+});
 </script>
 
 {% endblock %}
