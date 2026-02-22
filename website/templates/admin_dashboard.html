@@ -91,20 +91,7 @@
           </ul>
 
           {% if upcoming_meetings|length > 3 %}
-            <button type="button"
-                    class="btn btn-sm btn-outline-primary view-all-btn"
-                    data-target="meetings-extra">View all</button>
-
-            <ul class="timeline-list extra-list" id="meetings-extra">
-              {% for meeting in upcoming_meetings[3:] %}
-                <li>
-                  <strong>{{ meeting.title }}</strong>
-                  <div class="text-muted small">
-                    {{ meeting.deadline.strftime('%b %d, %Y %I:%M %p') if meeting.deadline else 'No schedule' }}
-                  </div>
-                </li>
-              {% endfor %}
-            </ul>
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('views.manage_meetings') }}">View all</a>
           {% endif %}
 
         {% else %}
@@ -130,21 +117,7 @@
           </ul>
 
           {% if delayed_tasks|length > 3 %}
-            <button type="button"
-                    class="btn btn-sm btn-outline-primary view-all-btn"
-                    data-target="delayed-extra">View all</button>
-
-            <ul class="timeline-list extra-list" id="delayed-extra">
-              {% for task in delayed_tasks[3:] %}
-                <li>
-                  <strong>{{ task.title }}</strong>
-                  <div class="text-muted small">
-                    {{ task.deadline.strftime('%b %d, %Y %I:%M %p') if task.deadline else 'No deadline' }}
-                    • {{ task.status|replace('_', ' ')|title }}
-                  </div>
-                </li>
-              {% endfor %}
-            </ul>
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('views.manage_tasks', filter='delayed') }}">View all</a>
           {% endif %}
 
         {% else %}
@@ -170,21 +143,7 @@
           </ul>
 
           {% if pending_task_list|length > 3 %}
-            <button type="button"
-                    class="btn btn-sm btn-outline-primary view-all-btn"
-                    data-target="pending-extra">View all</button>
-
-            <ul class="timeline-list extra-list" id="pending-extra">
-              {% for task in pending_task_list[3:] %}
-                <li>
-                  <strong>{{ task.title }}</strong>
-                  <div class="text-muted small">
-                    {{ task.deadline.strftime('%b %d, %Y %I:%M %p') if task.deadline else 'No deadline' }}
-                    • {{ task.status|replace('_', ' ')|title }}
-                  </div>
-                </li>
-              {% endfor %}
-            </ul>
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('views.manage_tasks', filter='pending') }}">View all</a>
           {% endif %}
 
         {% else %}
@@ -210,21 +169,7 @@
           </ul>
 
           {% if completed_task_list|length > 3 %}
-            <button type="button"
-                    class="btn btn-sm btn-outline-primary view-all-btn"
-                    data-target="completed-extra">View all</button>
-
-            <ul class="timeline-list extra-list" id="completed-extra">
-              {% for task in completed_task_list[3:] %}
-                <li>
-                  <strong>{{ task.title }}</strong>
-                  <div class="text-muted small">
-                    {{ task.deadline.strftime('%b %d, %Y %I:%M %p') if task.deadline else 'No deadline' }}
-                    • Completed
-                  </div>
-                </li>
-              {% endfor %}
-            </ul>
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('views.manage_tasks', filter='completed') }}">View all</a>
           {% endif %}
 
         {% else %}
@@ -236,15 +181,6 @@
 </main>
 
 <script>
-  document.querySelectorAll('.view-all-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const target = document.getElementById(btn.dataset.target);
-      if (!target) return;
-
-      target.classList.toggle('open');
-      btn.textContent = target.classList.contains('open') ? 'Show less' : 'View all';
-    });
-  });
   document.querySelectorAll('.calendar-more').forEach((btn) => {
     btn.addEventListener('click', () => {
       const target = document.getElementById(btn.dataset.target);

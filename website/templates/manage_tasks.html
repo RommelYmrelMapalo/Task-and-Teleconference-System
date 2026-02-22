@@ -153,6 +153,7 @@
                 {% endif %}
               </div>
               <div class="modal-progress" aria-hidden="true"></div>
+            </div>
           </div>
         {% endfor %}
       {% endif %}
@@ -162,10 +163,10 @@
   {% set completed_tasks = tasks|selectattr("status","equalto","completed")|list if tasks else [] %}
 
   <div class="td-pills mb-2">
-    <button class="pill-tab active" type="button" data-filter="all">All <span class="pill-count">{{ tasks|length }}</span></button>
-    <button class="pill-tab" type="button" data-filter="delayed">Delayed</button>
-    <button class="pill-tab" type="button" data-filter="pending">Pending</button>
-    <button class="pill-tab" type="button" data-filter="completed">Completed <span class="pill-count">{{ completed_tasks|length }}</span></button>
+    <button class="pill-tab active" type="button" data-filter="all" id="pill-all">All <span class="pill-count">{{ tasks|length }}</span></button>
+    <button class="pill-tab" type="button" data-filter="delayed" id="pill-delayed">Delayed</button>
+    <button class="pill-tab" type="button" data-filter="pending" id="pill-pending">Pending</button>
+    <button class="pill-tab" type="button" data-filter="completed" id="pill-completed">Completed <span class="pill-count">{{ completed_tasks|length }}</span></button>
   </div>
 
   <div class="mt-toolbar">
@@ -314,7 +315,9 @@
   const pills = document.querySelectorAll('.pill-tab');
   const search = document.getElementById('taskSearch');
   const priorityFilter = document.getElementById('priorityFilter');
-  let activeFilter = 'all';
+  const allowedFilters = new Set(['all', 'delayed', 'pending', 'completed']);
+  const selectedFilterFromUrl = {{ selected_filter|tojson }};
+  let activeFilter = allowedFilters.has(selectedFilterFromUrl) ? selectedFilterFromUrl : 'all';
 
   function normalizeState(row){
     const status = (row.dataset.status || '').toLowerCase();
@@ -373,15 +376,21 @@
     sortRows();
   }
 
+  function setActivePill(filterValue){
+    pills.forEach((pill)=>{
+      pill.classList.toggle('active', pill.dataset.filter === filterValue);
+    });
+  }
+
   pills.forEach((pill)=> pill.addEventListener('click', ()=>{
-    pills.forEach(p => p.classList.remove('active'));
-    pill.classList.add('active');
     activeFilter = pill.dataset.filter;
+    setActivePill(activeFilter);
     applyFilter();
   }));
 
   search.addEventListener('input', applyFilter);
   priorityFilter.addEventListener('change', applyFilter);
+  setActivePill(activeFilter);
   applyFilter();
 
   const createDrawer = document.getElementById('taskDrawer');

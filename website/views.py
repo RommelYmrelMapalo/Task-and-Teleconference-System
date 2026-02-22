@@ -667,7 +667,18 @@ def manage_meetings():
 def manage_tasks():
     users = User.query.filter_by(is_admin=False).order_by(User.firstname.asc()).all()
     tasks = Task.query.order_by(Task.created_at.desc()).all()
-    return render_template("manage_tasks.html", user=current_user, users=users, tasks=tasks)
+    selected_filter = (request.args.get("filter") or "all").strip().lower()
+    allowed_filters = {"all", "delayed", "pending", "completed"}
+    if selected_filter not in allowed_filters:
+        selected_filter = "all"
+
+    return render_template(
+        "manage_tasks.html",
+        user=current_user,
+        users=users,
+        tasks=tasks,
+        selected_filter=selected_filter,
+    )
 
 
 @views.route('/admin/manage-tasks/create', methods=['POST'])
