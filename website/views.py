@@ -41,7 +41,7 @@ def user_dashboard():
     unread_count = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
 
     # get tasks assigned to logged-in user (or adjust if admin)
-    user_tasks = Task.query.filter_by(assigned_to=current_user.id).order_by(Task.deadline.asc()).all()
+    user_tasks = tasks = Task.query.all()
 
     tasks_data = []
     for t in user_tasks:
@@ -402,8 +402,7 @@ def task_dashboard():
     if current_user.is_admin:
         tasks = Task.query.order_by(Task.created_at.desc()).all()
     else:
-        tasks = Task.query.filter_by(assigned_to=current_user.id)\
-            .order_by(Task.created_at.desc()).all()
+        tasks = Task.query.all()
 
     unread_count = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
 

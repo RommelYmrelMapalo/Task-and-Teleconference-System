@@ -41,6 +41,12 @@
 
       <a class="sidebar-link {% if request.endpoint == 'views.manage_meetings' %}active{% endif %}"
          href="{{ url_for('views.manage_meetings') }}">
+        <span class="sidebar-icon">📌</span>
+        <span>Manage Tasks</span>
+      </a>
+
+      <a class="sidebar-link {% if request.endpoint == 'views.manage_meetings' %}active{% endif %}"
+         href="{{ url_for('views.manage_meetings') }}">
         <span class="sidebar-icon">🗓️</span>
         <span>Manage Meetings</span>
       </a>
@@ -57,15 +63,6 @@
         <span>Monitoring Panel</span>
       </a>
 
-      <a class="sidebar-link {% if request.endpoint == 'views.inbox_admin' %}active{% endif %}"
-         href="{{ url_for('views.inbox_admin') }}">
-        <span class="sidebar-icon">🔔</span>
-        <span>Inbox</span>
-        {% if unread_count and unread_count > 0 %}
-          <span class="sidebar-badge">{{ unread_count }}</span>
-        {% endif %}
-      </a>
-
       <a class="sidebar-link {% if request.endpoint == 'views.manage_users' %}active{% endif %}"
          href="{{ url_for('views.manage_users') }}">
         <span class="sidebar-icon">🧑‍💼</span>
@@ -76,6 +73,15 @@
          href="{{ url_for('views.reports') }}">
         <span class="sidebar-icon">📄</span>
         <span>Reports</span>
+      </a>
+
+      <a class="sidebar-link {% if request.endpoint == 'views.inbox_admin' %}active{% endif %}"
+         href="{{ url_for('views.inbox_admin') }}">
+        <span class="sidebar-icon">🔔</span>
+        <span>Inbox</span>
+        {% if unread_count and unread_count > 0 %}
+          <span class="sidebar-badge">{{ unread_count }}</span>
+        {% endif %}
       </a>
 
     </div>
@@ -92,7 +98,7 @@
       <div class="user-box" id="userBox">
 
         <div class="user-actions" id="userActions">
-          <a class="user-action-link" href="{{ url_for('views.profile') }}">My Profile</a>
+          <a class="user-action-link" href="{{ url_for('views.admin_profile') }}">My Profile</a>
           <a class="user-action-link" href="{{ url_for('auth.logout') }}">Logout</a>
         </div>
 

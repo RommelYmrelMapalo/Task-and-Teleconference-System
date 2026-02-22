@@ -609,6 +609,20 @@ body {
   margin-bottom: 6px;
 }
 
+/* one sticky header */
+.td-topbar{
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #f4f6f9;
+  padding: 12px 0 10px;
+}
+
+/* remove sticky from the individual pieces */
+.td-title, .td-sub, .td-pills, .td-toolbar{
+  position: static;
+}
+
 .td-title {
   position: sticky;
   top: 0;
