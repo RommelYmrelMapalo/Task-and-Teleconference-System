@@ -138,10 +138,21 @@
       {% if messages %}
         {% for category, message in messages %}
           <div class="modal-overlay show autoModal">
-            <div class="modal-popup {{ category }}">
-              <div class="modal-icon">{% if category == "error" %}❌{% else %}✅{% endif %}</div>
+            <div class="modal-popup {{ category }} modern-popup" role="status" aria-live="polite">
+              <div class="modal-icon-wrap">
+                <div class="modal-icon" aria-hidden="true">
+                  {% if category == "error" %}✕{% else %}✓{% endif %}
+                </div>
+              </div>
               <div class="modal-text">{{ message }}</div>
-            </div>
+              <div class="modal-subtext">
+                {% if category == "error" %}
+                  Please review the task details and try saving again.
+                {% else %}
+                  Your task updates were saved successfully.
+                {% endif %}
+              </div>
+              <div class="modal-progress" aria-hidden="true"></div>
           </div>
         {% endfor %}
       {% endif %}

@@ -71,68 +71,164 @@
       </div>
     </section>
 
-    <section>
-      <div class="page-card mb-3">
-        <h5 class="mb-3 panel-title-banner banner-delay">Delays</h5>
-        {% if delayed_tasks %}
-          <ul class="timeline-list">
-            {% for task in delayed_tasks %}
+    <section class="admin-dashboard-side">
+
+      {# ================= Upcoming Meetings ================= #}
+      <div class="page-card mb-3 dashboard-side-card">
+        <h5 class="mb-3 panel-title-banner banner-meeting">Upcoming Meetings</h5>
+
+        {% if upcoming_meetings and upcoming_meetings|length > 0 %}
+          <ul class="timeline-list side-scroll-list">
+            {# show first 3 #}
+            {% for meeting in upcoming_meetings[:3] %}
               <li>
-                <strong>{{ task.title }}</strong>
-                <div class="text-muted small">{{ task.deadline.strftime('%b %d, %Y %I:%M %p') }} • {{ task.status|replace('_', ' ')|title }}</div>
+                <strong>{{ meeting.title }}</strong>
+                <div class="text-muted small">
+                  {{ meeting.deadline.strftime('%b %d, %Y %I:%M %p') if meeting.deadline else 'No schedule' }}
+                </div>
               </li>
             {% endfor %}
           </ul>
+
+          {% if upcoming_meetings|length > 3 %}
+            <button type="button"
+                    class="btn btn-sm btn-outline-primary view-all-btn"
+                    data-target="meetings-extra">View all</button>
+
+            <ul class="timeline-list extra-list" id="meetings-extra">
+              {% for meeting in upcoming_meetings[3:] %}
+                <li>
+                  <strong>{{ meeting.title }}</strong>
+                  <div class="text-muted small">
+                    {{ meeting.deadline.strftime('%b %d, %Y %I:%M %p') if meeting.deadline else 'No schedule' }}
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+
+        {% else %}
+          <p class="text-muted mb-0">No meetings found.</p>
+        {% endif %}
+      </div>
+
+      {# ================= Delays ================= #}
+      <div class="page-card mb-3 dashboard-side-card">
+        <h5 class="mb-3 panel-title-banner banner-delay">Delays</h5>
+
+        {% if delayed_tasks and delayed_tasks|length > 0 %}
+          <ul class="timeline-list side-scroll-list">
+            {% for task in delayed_tasks[:3] %}
+              <li>
+                <strong>{{ task.title }}</strong>
+                <div class="text-muted small">
+                  {{ task.deadline.strftime('%b %d, %Y %I:%M %p') if task.deadline else 'No deadline' }}
+                  • {{ task.status|replace('_', ' ')|title }}
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+
+          {% if delayed_tasks|length > 3 %}
+            <button type="button"
+                    class="btn btn-sm btn-outline-primary view-all-btn"
+                    data-target="delayed-extra">View all</button>
+
+            <ul class="timeline-list extra-list" id="delayed-extra">
+              {% for task in delayed_tasks[3:] %}
+                <li>
+                  <strong>{{ task.title }}</strong>
+                  <div class="text-muted small">
+                    {{ task.deadline.strftime('%b %d, %Y %I:%M %p') if task.deadline else 'No deadline' }}
+                    • {{ task.status|replace('_', ' ')|title }}
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+
         {% else %}
           <p class="text-muted mb-0">No delayed tasks.</p>
         {% endif %}
       </div>
 
-      <div class="page-card mb-3">
+      {# ================= Pending Tasks ================= #}
+      <div class="page-card mb-3 dashboard-side-card">
         <h5 class="mb-3 panel-title-banner banner-pending">Pending Tasks</h5>
-        {% if pending_task_list %}
-          <ul class="timeline-list">
-            {% for task in pending_task_list %}
+
+        {% if pending_task_list and pending_task_list|length > 0 %}
+          <ul class="timeline-list side-scroll-list">
+            {% for task in pending_task_list[:3] %}
               <li>
                 <strong>{{ task.title }}</strong>
-                <div class="text-muted small">{{ task.deadline.strftime('%b %d, %Y %I:%M %p') }} • {{ task.status|replace('_', ' ')|title }}</div>
+                <div class="text-muted small">
+                  {{ task.deadline.strftime('%b %d, %Y %I:%M %p') if task.deadline else 'No deadline' }}
+                  • {{ task.status|replace('_', ' ')|title }}
+                </div>
               </li>
             {% endfor %}
           </ul>
+
+          {% if pending_task_list|length > 3 %}
+            <button type="button"
+                    class="btn btn-sm btn-outline-primary view-all-btn"
+                    data-target="pending-extra">View all</button>
+
+            <ul class="timeline-list extra-list" id="pending-extra">
+              {% for task in pending_task_list[3:] %}
+                <li>
+                  <strong>{{ task.title }}</strong>
+                  <div class="text-muted small">
+                    {{ task.deadline.strftime('%b %d, %Y %I:%M %p') if task.deadline else 'No deadline' }}
+                    • {{ task.status|replace('_', ' ')|title }}
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+
         {% else %}
           <p class="text-muted mb-0">No pending tasks.</p>
         {% endif %}
       </div>
 
-      <div class="page-card mb-3">
+      {# ================= Completed ================= #}
+      <div class="page-card mb-3 dashboard-side-card">
         <h5 class="mb-3 panel-title-banner banner-completed">Completed</h5>
-        {% if completed_task_list %}
-          <ul class="timeline-list">
-            {% for task in completed_task_list %}
+
+        {% if completed_task_list and completed_task_list|length > 0 %}
+          <ul class="timeline-list side-scroll-list">
+            {% for task in completed_task_list[:3] %}
               <li>
                 <strong>{{ task.title }}</strong>
-                <div class="text-muted small">{{ task.deadline.strftime('%b %d, %Y %I:%M %p') }} • Completed</div>
+                <div class="text-muted small">
+                  {{ task.deadline.strftime('%b %d, %Y %I:%M %p') if task.deadline else 'No deadline' }}
+                  • Completed
+                </div>
               </li>
             {% endfor %}
           </ul>
+
+          {% if completed_task_list|length > 3 %}
+            <button type="button"
+                    class="btn btn-sm btn-outline-primary view-all-btn"
+                    data-target="completed-extra">View all</button>
+
+            <ul class="timeline-list extra-list" id="completed-extra">
+              {% for task in completed_task_list[3:] %}
+                <li>
+                  <strong>{{ task.title }}</strong>
+                  <div class="text-muted small">
+                    {{ task.deadline.strftime('%b %d, %Y %I:%M %p') if task.deadline else 'No deadline' }}
+                    • Completed
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+
         {% else %}
           <p class="text-muted mb-0">No completed tasks yet.</p>
-        {% endif %}
-      </div>
-
-      <div class="page-card">
-        <h5 class="mb-3 panel-title-banner banner-meeting">Upcoming Meetings</h5>
-        {% if upcoming_meetings %}
-          <ul class="timeline-list">
-            {% for meeting in upcoming_meetings %}
-              <li>
-                <strong>{{ meeting.title }}</strong>
-                <div class="text-muted small">{{ meeting.deadline.strftime('%b %d, %Y %I:%M %p') if meeting.deadline else 'No schedule' }}</div>
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="text-muted mb-0">No meetings found.</p>
         {% endif %}
       </div>
     </section>
@@ -140,6 +236,15 @@
 </main>
 
 <script>
+  document.querySelectorAll('.view-all-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.target);
+      if (!target) return;
+
+      target.classList.toggle('open');
+      btn.textContent = target.classList.contains('open') ? 'Show less' : 'View all';
+    });
+  });
   document.querySelectorAll('.calendar-more').forEach((btn) => {
     btn.addEventListener('click', () => {
       const target = document.getElementById(btn.dataset.target);

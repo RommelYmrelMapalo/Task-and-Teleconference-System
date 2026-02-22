@@ -53,36 +53,42 @@
 
       <a class="sidebar-link {% if request.endpoint == 'views.user_dashboard' %}active{% endif %}"
          href="{{ url_for('views.user_dashboard') }}">
-        <span class="sidebar-icon">🏠</span> Dashboard
+        <i data-lucide="layout-dashboard" class="sidebar-icon" aria-hidden="true"></i>
+        <span>Dashboard</span>
       </a>
 
       <div class="sidebar-section">TASKS</div>
 
       <a class="sidebar-link {% if request.endpoint == 'views.task_dashboard' %}active{% endif %}"
          href="{{ url_for('views.task_dashboard') }}">
-        <span class="sidebar-icon">📌</span> Task Dashboard
+        <i data-lucide="check-square" class="sidebar-icon" aria-hidden="true"></i>
+        <span>Tasks Dashboard</span>
       </a>
 
       <div class="sidebar-section">TELECONFERENCE</div>
 
       <a class="sidebar-link {% if request.endpoint == 'views.assigned_meetings' %}active{% endif %}"
          href="{{ url_for('views.assigned_meetings') }}">
-        <span class="sidebar-icon">📅</span> Assigned Meetings
+        <i data-lucide="calendar-days" class="sidebar-icon" aria-hidden="true"></i>
+        <span>Assigned Meetings</span>
       </a>
 
       <a class="sidebar-link {% if request.endpoint == 'views.record_timein' %}active{% endif %}"
          href="{{ url_for('views.record_timein') }}">
-        <span class="sidebar-icon">⏱</span> Record Time-in
+        <i data-lucide="clock" class="sidebar-icon" aria-hidden="true"></i>
+        <span>Record Time-in</span>
       </a>
 
       <a class="sidebar-link {% if request.endpoint == 'views.record_timeout' %}active{% endif %}"
          href="{{ url_for('views.record_timeout') }}">
-        <span class="sidebar-icon">⏳</span> Record Time-out
+        <i data-lucide="hourglass" class="sidebar-icon" aria-hidden="true"></i>
+        <span>Record Time-out</span>
       </a>
 
       <a class="sidebar-link {% if request.endpoint == 'views.inbox' %}active{% endif %}"
          href="{{ url_for('views.inbox') }}">
-        <span class="sidebar-icon">🔔</span> Inbox
+        <i data-lucide="bell" class="sidebar-icon" aria-hidden="true"></i>
+        <span>Inbox</span>
         {% if unread_count and unread_count > 0 %}
           <span class="sidebar-badge">{{ unread_count }}</span>
         {% endif %}
@@ -153,6 +159,10 @@
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  lucide.createIcons();
+</script>
 
 </body>
 </html>

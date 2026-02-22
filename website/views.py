@@ -615,20 +615,20 @@ def admin_dashboard():
             if task["status"] in {"in_progress", "for_revision"} and task["deadline"] < now
         ],
         key=lambda item: item["deadline"]
-    )[:5]
+    )
     pending_task_list = sorted(
         [
             task for task in tasks_data
             if task["status"] in {"in_progress", "for_revision"} and task["deadline"] >= now
         ],
         key=lambda item: item["deadline"]
-    )[:5]
+    )
     completed_task_list = sorted(
         [task for task in tasks_data if task["status"] == "completed"],
         key=lambda item: item["deadline"],
         reverse=True
-    )[:5]
-    upcoming_meetings = sorted(meetings_data, key=lambda item: item["deadline"] or datetime.min)[:5]
+    )
+    upcoming_meetings = sorted(meetings_data, key=lambda item: item["deadline"] or datetime.min)
 
     return render_template(
         "admin_dashboard.html",

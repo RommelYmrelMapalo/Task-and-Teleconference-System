@@ -10,6 +10,12 @@
         href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"/>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    lucide.createIcons();
+  </script>
+
+
   <title>{% block title %}Admin Panel{% endblock %}</title>
 </head>
 
@@ -32,7 +38,7 @@
 
       <a class="sidebar-link {% if request.endpoint == 'views.admin_dashboard' %}active{% endif %}"
          href="{{ url_for('views.admin_dashboard') }}">
-        <span class="sidebar-icon">🏠</span>
+        <i data-lucide="layout-dashboard" class="sidebar-icon" aria-hidden="true"></i>
         <span>Dashboard</span>
       </a>
 
@@ -41,37 +47,37 @@
 
       <a class="sidebar-link {% if request.endpoint == 'views.manage_tasks' %}active{% endif %}"
          href="{{ url_for('views.manage_tasks') }}">
-        <span class="sidebar-icon">📌</span>
+        <i data-lucide="check-square" class="sidebar-icon" aria-hidden="true"></i>
         <span>Manage Tasks</span>
       </a>
 
       <a class="sidebar-link {% if request.endpoint == 'views.manage_meetings' %}active{% endif %}"
          href="{{ url_for('views.manage_meetings') }}">
-        <span class="sidebar-icon">🗓️</span>
+        <i data-lucide="calendar-days" class="sidebar-icon" aria-hidden="true"></i>
         <span>Manage Meetings</span>
       </a>
 
       <a class="sidebar-link {% if request.endpoint == 'views.monitoring_panel' %}active{% endif %}"
          href="{{ url_for('views.monitoring_panel') }}">
-        <span class="sidebar-icon">📡</span>
+        <i data-lucide="activity" class="sidebar-icon" aria-hidden="true"></i>
         <span>Monitoring Panel</span>
       </a>
 
       <a class="sidebar-link {% if request.endpoint == 'views.manage_users' %}active{% endif %}"
          href="{{ url_for('views.manage_users') }}">
-        <span class="sidebar-icon">🧑‍💼</span>
+        <i data-lucide="users" class="sidebar-icon" aria-hidden="true"></i>
         <span>Manage Users</span>
       </a>
 
       <a class="sidebar-link {% if request.endpoint == 'views.reports' %}active{% endif %}"
          href="{{ url_for('views.reports') }}">
-        <span class="sidebar-icon">📄</span>
+        <i data-lucide="file-text" class="sidebar-icon" aria-hidden="true"></i>
         <span>Reports</span>
       </a>
 
       <a class="sidebar-link {% if request.endpoint == 'views.inbox_admin' %}active{% endif %}"
          href="{{ url_for('views.inbox_admin') }}">
-        <span class="sidebar-icon">🔔</span>
+        <i data-lucide="bell" class="sidebar-icon" aria-hidden="true"></i>
         <span>Inbox</span>
         {% if unread_count and unread_count > 0 %}
           <span class="sidebar-badge">{{ unread_count }}</span>
@@ -145,6 +151,10 @@
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  lucide.createIcons();
+</script>
 
 </body>
 </html>

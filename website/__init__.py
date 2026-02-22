@@ -1,13 +1,31 @@
 import os
 from pathlib import Path
-
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, current_user
+from sqlalchemy import inspect, text
 from sqlalchemy.pool import NullPool
 from flask_migrate import Migrate
 
 db = SQLAlchemy()
+
+
+def _ensure_task_priority_column():
+    """Backfill schema drift in environments where migrations were not applied."""
+    inspector = inspect(db.engine)
+
+    if not inspector.has_table("task"):
+        return
+
+    task_columns = {column["name"] for column in inspector.get_columns("task")}
+    if "priority" in task_columns:
+        return
+
+    db.session.execute(
+        text("ALTER TABLE task ADD COLUMN priority VARCHAR(20) DEFAULT 'normal'")
+    )
+    db.session.commit()
+
 
 
 def create_app():
@@ -52,6 +70,10 @@ def create_app():
 
     # Init Migrations (this enables: flask db ...)
     Migrate(app, db)
+
+    with app.app_context():
+        _ensure_task_priority_column()
+
 
     # Blueprints
     from .views import views
