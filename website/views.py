@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, abort, jsonify, request, redirect, url_for, flash, send_from_directory, send_file, current_app, session
+from flask import Blueprint, render_template, abort, jsonify, request, redirect, url_for, flash, send_from_directory, Response, current_app, session
 from flask_login import login_required, current_user
 from functools import wraps
 from flask import abort
@@ -38,6 +38,25 @@ def _task_file_directory(filename):
 
     return None
 
+def _guess_inline_mime(filename):
+    ext = os.path.splitext(filename)[1].lower()
+    explicit_mimes = {
+        ".pdf": "application/pdf",
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        ".svg": "image/svg+xml",
+        ".txt": "text/plain",
+        ".csv": "text/csv",
+        ".json": "application/json",
+    }
+    if ext in explicit_mimes:
+        return explicit_mimes[ext]
+
+    guessed, _ = mimetypes.guess_type(filename)
+    return guessed or "application/octet-stream"
 
 def _save_uploaded_file(uploaded_file):
     filename = secure_filename(uploaded_file.filename)
@@ -266,17 +285,13 @@ def task_file_view(task_id):
     file_dir = _task_file_directory(task.file_path)
     if not file_dir:
         abort(404)
-
     file_path = os.path.join(file_dir, task.file_path)
-    mime_type, _ = mimetypes.guess_type(file_path)
+    mime_type = _guess_inline_mime(task.file_path)
 
-    response = send_file(
-        file_path,
-        mimetype=mime_type or "application/octet-stream",
-        as_attachment=False,
-        download_name=task.file_path,
-    )
+    with open(file_path, "rb") as file_handle:
+        file_data = file_handle.read()
 
+    response = Response(file_data, mimetype=mime_type)
     response.headers["Content-Disposition"] = f'inline; filename="{task.file_path}"'
     return response
 
