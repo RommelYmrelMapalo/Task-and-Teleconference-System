@@ -10,7 +10,7 @@ from flask_migrate import Migrate
 db = SQLAlchemy()
 
 
-def _ensure_task_priority_column():
+def _ensure_task_schema_columns():
     """Backfill schema drift in environments where migrations were not applied."""
     inspector = inspect(db.engine)
 
@@ -18,15 +18,31 @@ def _ensure_task_priority_column():
         return
 
     task_columns = {column["name"] for column in inspector.get_columns("task")}
-    if "priority" in task_columns:
-        return
+    statements = []
 
-    db.session.execute(
-        text("ALTER TABLE task ADD COLUMN priority VARCHAR(20) DEFAULT 'normal'")
-    )
-    db.session.commit()
+    if "priority" not in task_columns:
+        statements.append(
+            "ALTER TABLE task ADD COLUMN priority VARCHAR(20) DEFAULT 'normal'"
+        )
 
+    if "last_edited_by" not in task_columns:
+        statements.append("ALTER TABLE task ADD COLUMN last_edited_by INTEGER")
 
+    if "last_edited_at" not in task_columns:
+        statements.append(
+            "ALTER TABLE task ADD COLUMN last_edited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+        )
+
+    if "created_at" not in task_columns:
+        statements.append(
+            "ALTER TABLE task ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+        )
+
+    for statement in statements:
+        db.session.execute(text(statement))
+
+    if statements:
+        db.session.commit()
 
 def create_app():
     app = Flask(__name__)
@@ -72,7 +88,8 @@ def create_app():
     Migrate(app, db)
 
     with app.app_context():
-        _ensure_task_priority_column()
+        _ensure_task_schema_columns()
+
 
 
     # Blueprints
