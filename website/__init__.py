@@ -44,6 +44,8 @@ def _ensure_task_schema_columns():
     if statements:
         db.session.commit()
 
+
+
 def create_app():
     app = Flask(__name__)
 
@@ -79,7 +81,11 @@ def create_app():
         app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{sqlite_path.as_posix()}"
 
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["UPLOAD_FOLDER"] = "website/static/uploads"
+
+    if os.getenv("VERCEL") == "1":
+        app.config["UPLOAD_FOLDER"] = "/tmp/task_uploads"
+    else:
+        app.config["UPLOAD_FOLDER"] = str(Path(app.root_path) / "static" / "uploads")
 
     # Init DB
     db.init_app(app)
@@ -89,7 +95,6 @@ def create_app():
 
     with app.app_context():
         _ensure_task_schema_columns()
-
 
 
     # Blueprints
