@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, abort, jsonify, request, redirect, url_for, flash, send_from_directory, current_app, session
+from flask import Blueprint, render_template, abort, jsonify, request, redirect, url_for, flash, send_from_directory, send_file, current_app, session
 from flask_login import login_required, current_user
 from functools import wraps
 from flask import abort
@@ -7,6 +7,7 @@ from . import db
 from datetime import datetime, date, timedelta
 import calendar
 import os
+import mimetypes
 from werkzeug.utils import secure_filename
 
 
@@ -171,7 +172,6 @@ def build_planned_days(tasks=None, meetings=None, days_back=1, days_forward=7):
 
     return planned_days
 
-
 @views.route('/notifications/read/<int:notif_id>', methods=['POST'])
 @login_required
 def mark_notification_read(notif_id):
@@ -267,7 +267,18 @@ def task_file_view(task_id):
     if not file_dir:
         abort(404)
 
-    return send_from_directory(file_dir, task.file_path, as_attachment=False)
+    file_path = os.path.join(file_dir, task.file_path)
+    mime_type, _ = mimetypes.guess_type(file_path)
+
+    response = send_file(
+        file_path,
+        mimetype=mime_type or "application/octet-stream",
+        as_attachment=False,
+        download_name=task.file_path,
+    )
+
+    response.headers["Content-Disposition"] = f'inline; filename="{task.file_path}"'
+    return response
 
 @views.route("/task/<int:task_id>/file/download", methods=["GET"])
 @login_required
