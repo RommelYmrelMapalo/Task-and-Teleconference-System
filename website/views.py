@@ -12,6 +12,46 @@ from werkzeug.utils import secure_filename
 
 views = Blueprint('views', __name__)
 
+
+def _legacy_upload_dir():
+    return os.path.join(current_app.root_path, "static", "uploads")
+
+
+def _upload_dir(create=True):
+    upload_dir = current_app.config.get("UPLOAD_FOLDER")
+    if not upload_dir:
+        upload_dir = _legacy_upload_dir()
+    if create:
+        os.makedirs(upload_dir, exist_ok=True)
+    return upload_dir
+
+
+def _task_file_directory(filename):
+    primary_dir = _upload_dir(create=False)
+    if primary_dir and os.path.exists(os.path.join(primary_dir, filename)):
+        return primary_dir
+
+    legacy_dir = _legacy_upload_dir()
+    if legacy_dir != primary_dir and os.path.exists(os.path.join(legacy_dir, filename)):
+        return legacy_dir
+
+    return None
+
+
+def _save_uploaded_file(uploaded_file):
+    filename = secure_filename(uploaded_file.filename)
+    save_dir = _upload_dir()
+    saved_path = os.path.join(save_dir, filename)
+
+    if os.path.exists(saved_path):
+        base, ext = os.path.splitext(filename)
+        filename = f"{base}_{int(datetime.now().timestamp())}{ext}"
+        saved_path = os.path.join(save_dir, filename)
+
+    uploaded_file.save(saved_path)
+    return filename
+
+
 def admin_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -210,10 +250,7 @@ def update_task(task_id):
 
     file = request.files.get("file")
     if file and file.filename:
-        os.makedirs("website/static/uploads", exist_ok=True)
-        filename = secure_filename(file.filename)
-        file.save(os.path.join("website/static/uploads", filename))
-        task.file_path = filename
+        task.file_path = _save_uploaded_file(file)
 
     db.session.commit()
     flash("Task updated!", "success")
@@ -226,8 +263,11 @@ def task_file_view(task_id):
     if not task.file_path:
         abort(404)
 
-    upload_dir = os.path.join(current_app.root_path, "static", "uploads")
-    return send_from_directory(upload_dir, task.file_path, as_attachment=False)
+    file_dir = _task_file_directory(task.file_path)
+    if not file_dir:
+        abort(404)
+
+    return send_from_directory(file_dir, task.file_path, as_attachment=False)
 
 @views.route("/task/<int:task_id>/file/download", methods=["GET"])
 @login_required
@@ -236,9 +276,12 @@ def task_file_download(task_id):
     if not task.file_path:
         abort(404)
 
-    upload_dir = os.path.join(current_app.root_path, "static", "uploads")
+    file_dir = _task_file_directory(task.file_path)
+    if not file_dir:
+        abort(404)
+
     return send_from_directory(
-        upload_dir,
+        file_dir,
         task.file_path,
         as_attachment=True,
         download_name=task.file_path
@@ -301,15 +344,8 @@ def finish_task(task_id):
 
         file = request.files.get("file")
 
-        if file:
-            filename = file.filename
-            filepath = os.path.join(
-                "website/static/uploads",
-                filename
-            )
-            file.save(filepath)
-
-            task.file_path = filename
+        if file and file.filename:
+            task.file_path = _save_uploaded_file(file)
 
         task.status = "completed"
         db.session.commit()
@@ -359,19 +395,7 @@ def create_task():
     saved_filename = None
 
     if uploaded and uploaded.filename:
-        os.makedirs(current_app.config["UPLOAD_FOLDER"], exist_ok=True)
-
-        filename = secure_filename(uploaded.filename)
-        saved_path = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
-
-        # avoid overwriting files with same name
-        if os.path.exists(saved_path):
-            base, ext = os.path.splitext(filename)
-            filename = f"{base}_{int(datetime.now().timestamp())}{ext}"
-            saved_path = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
-
-        uploaded.save(saved_path)
-        saved_filename = filename
+        saved_filename = _save_uploaded_file(uploaded)
     
     new_task = Task(
         title=title,
@@ -382,14 +406,8 @@ def create_task():
         deadline=deadline_dt
     )
 
-    # ✅ handle file upload (document attachment)
-    file = request.files.get("file")
-    if file and file.filename:
-        os.makedirs("website/static/uploads", exist_ok=True)
-        filename = secure_filename(file.filename)
-        filepath = os.path.join("website/static/uploads", filename)
-        file.save(filepath)
-        new_task.file_path = filename
+    if saved_filename:
+        new_task.file_path = saved_filename
 
     db.session.add(new_task)
     db.session.commit()
@@ -735,15 +753,7 @@ def manage_tasks_create():
     uploaded = request.files.get("file")
     saved_filename = None
     if uploaded and uploaded.filename:
-        os.makedirs(current_app.config["UPLOAD_FOLDER"], exist_ok=True)
-        filename = secure_filename(uploaded.filename)
-        saved_path = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
-        if os.path.exists(saved_path):
-            base, ext = os.path.splitext(filename)
-            filename = f"{base}_{int(datetime.now().timestamp())}{ext}"
-            saved_path = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
-        uploaded.save(saved_path)
-        saved_filename = filename
+        saved_filename = _save_uploaded_file(uploaded)
 
     task = Task(
         title=title,
