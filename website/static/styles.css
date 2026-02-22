@@ -222,6 +222,28 @@ body {
   background: #1f2430;
 }
 
+.admin-toast{
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translate(-50%, -14px);
+  opacity: 0;
+  z-index: 2500;
+  background: #dcfce7;
+  color: #14532d;
+  border: 1px solid #86efac;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+  font-weight: 700;
+  padding: 12px 18px;
+  transition: opacity .28s ease, transform .28s ease;
+}
+
+.admin-toast.show{
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 /* Main content scrolls */
 .main-area{
   margin-left: 270px;
@@ -1333,41 +1355,103 @@ body.drawer-open{
 
 /* Popup */
 .modal-popup{
-  background: white;
-  padding: 28px 40px;
-  border-radius: 14px;
+  background: linear-gradient(165deg, #ffffff 0%, #f8fbff 100%);
+  padding: 28px 34px 24px;
+  border-radius: 20px;
   text-align: center;
-  min-width: 280px;
+  min-width: 320px;
   max-width: 90%;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.2);
-  transform: scale(.8);
-  animation: popIn .25s ease forwards;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 30px 70px rgba(15,23,42,0.25);
+  transform: translateY(8px) scale(.94);
+  animation: popIn .35s cubic-bezier(.2,.8,.2,1) forwards;
 }
 
 .modal-popup.success{
-  border-top: 5px solid #10b981;
+  border-top: 4px solid #10b981;
 }
 
 .modal-popup.error{
-  border-top: 5px solid #ef4444;
+  border-top: 4px solid #ef4444;
+}
+
+.modal-icon-wrap{
+  display:flex;
+  justify-content:center;
+  margin-bottom: 14px;
 }
 
 .modal-icon{
-  font-size: 36px;
-  margin-bottom: 10px;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size: 30px;
+  font-weight: 900;
+  box-shadow: 0 10px 30px rgba(15,23,42,0.15);
+}
+
+.modal-popup.success .modal-icon{
+  color:#047857;
+  background: linear-gradient(140deg, #d1fae5 0%, #86efac 100%);
+}
+
+.modal-popup.error .modal-icon{
+  color:#b91c1c;
+  background: linear-gradient(140deg, #fee2e2 0%, #fca5a5 100%);
 }
 
 .modal-text{
-  font-weight: 600;
-  font-size: 16px;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.01em;
   color: #111827;
+}
+
+.modal-subtext{
+  margin-top: 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.modal-progress{
+  margin-top: 16px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(148,163,184,.2);
+  overflow: hidden;
+}
+
+.modal-progress::before{
+  content:"";
+  display:block;
+  width:100%;
+  height:100%;
+  border-radius: inherit;
+  transform-origin: left;
+  animation: modalCountdown 1.5s linear forwards;
+}
+
+.modal-popup.success .modal-progress::before{
+  background: linear-gradient(90deg, #10b981 0%, #22c55e 100%);
+}
+
+.modal-popup.error .modal-progress::before{
+  background: linear-gradient(90deg, #ef4444 0%, #f97316 100%);
 }
 
 @keyframes popIn{
   to{
-    transform: scale(1);
+    transform: translateY(0) scale(1);
   }
 }
+
+@keyframes modalCountdown{
+  to{ transform: scaleX(0); }
+}
+
 
 /* ===== Dashboard toast popup ===== */
 .toast-wrap{
@@ -1417,7 +1501,7 @@ body.drawer-open{
   margin: 10px 0 14px;
 }
 .view-btn{
-  border:1px solid #e2e8f0;
+  border:1px solid #3d6fb4;
   background:#fff;
   border-radius:10px;
   padding:8px 12px;
@@ -1807,4 +1891,269 @@ body.drawer-open{
 
 .view-mini:hover{
   background: #e2e8f0;
+}
+
+/* =========================================================
+   ADMIN DASHBOARD OVERVIEW
+   ========================================================= */
+.admin-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.overview-card {
+  border-left: 4px solid #3b82f6;
+}
+
+.overview-label {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.admin-dashboard-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.calendar-cell {
+  min-height: 108px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 8px;
+  background: #fff;
+}
+
+.calendar-cell.is-muted {
+  background: #f8fafc;
+  opacity: .65;
+}
+
+.calendar-cell.is-today {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59,130,246,.16);
+}
+
+.calendar-date {
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.calendar-events {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.calendar-event {
+  font-size: 11px;
+  border-radius: 7px;
+  padding: 3px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendar-event.task {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.calendar-event.meeting {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.calendar-more {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.timeline-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.timeline-list li {
+  padding: 0 0 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.timeline-list li:last-child {
+  border-bottom: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+@media (max-width: 1100px) {
+  .admin-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cal-header-wrap {
+  gap: 8px;
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.calendar-nav-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.calendar-nav-btn:hover {
+  text-decoration: none;
+  background: #e2e8f0;
+}
+
+.calendar-event.delay {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.calendar-event.completed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.calendar-event.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.event-time {
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.calendar-extra {
+  display: none;
+  margin-top: 4px;
+  gap: 5px;
+  flex-direction: column;
+}
+
+.calendar-extra.open {
+  display: flex;
+}
+
+.calendar-more {
+  border: 0;
+  background: transparent;
+  color: #334155;
+  font-size: 11px;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+  .admin-dashboard-main {
+    padding-bottom: 36px;
+  }
+}
+
+@media (max-height: 780px) {
+  .admin-dashboard-main {
+    padding-bottom: 48px;
+  }
+}
+
+.panel-title-banner {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 800;
+  margin-bottom: 14px !important;
+}
+
+.banner-delay {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.banner-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.banner-completed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.banner-meeting {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+
+/* Admin dashboard specific scrolling/spacing fixes */
+.admin-dashboard-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto !important;
+  box-sizing: border-box;
+  padding-bottom: 96px;
+}
+
+/* Keep breathing room after the last dashboard card */
+.admin-dashboard-main::after {
+  content: "";
+  display: block;
+  height: 36px;
+}
+
+@media (max-width: 1100px) {
+  .admin-dashboard-main {
+    padding-bottom: 120px;
+  }
+}
+
+@media (max-height: 780px) {
+  .admin-dashboard-main {
+    padding-bottom: 132px;
+  }
 }

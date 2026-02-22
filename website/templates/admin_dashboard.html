@@ -2,15 +2,154 @@
 {% block title %}Admin Dashboard{% endblock %}
 
 {% block content %}
-
-  <!-- RIGHT CONTENT -->
-  <main class="main-inner ">
-    <div class="page-card">
-      <h3 class="mb-1">Welcome, {{ user.firstname }}</h3>
-      <p class="text-muted mb-0">Select an admin module from the left navigation panel.</p>
+<main class="main-inner admin-dashboard-main">
+  <div class="admin-overview-grid mb-4">
+    <div class="page-card overview-card">
+      <p class="overview-label mb-1">Total Tasks</p>
+      <h3 class="mb-0">{{ total_tasks }}</h3>
     </div>
-  </main>
+    <div class="page-card overview-card">
+      <p class="overview-label mb-1">Completed Tasks</p>
+      <h3 class="mb-0">{{ completed_tasks }}</h3>
+    </div>
+    <div class="page-card overview-card">
+      <p class="overview-label mb-1">Pending Tasks</p>
+      <h3 class="mb-0">{{ pending_tasks }}</h3>
+    </div>
+    <div class="page-card overview-card">
+      <p class="overview-label mb-1">Meetings</p>
+      <h3 class="mb-0">{{ total_meetings }}</h3>
+    </div>
+  </div>
 
-</div>
+  <div class="admin-dashboard-layout">
+    <section class="page-card">
+      <div class="d-flex justify-content-between align-items-center mb-3 cal-header-wrap">
+        <h4 class="mb-0">Calendar Overview</h4>
+        <div class="calendar-nav">
+          <a class="calendar-nav-btn" href="{{ url_for('views.admin_dashboard', month=prev_month, year=prev_year) }}">‹</a>
+          <span class="text-muted">{{ month_name }}</span>
+          <a class="calendar-nav-btn" href="{{ url_for('views.admin_dashboard', month=next_month, year=next_year) }}">›</a>
+        </div>
+      </div>
 
+      <div class="calendar-weekdays">
+        <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+      </div>
+
+      <div class="calendar-grid">
+        {% for week in month_calendar %}
+          {% for day in week %}
+            {% set day_events = events_by_day.get(day, []) %}
+            <div class="calendar-cell {% if day.month != selected_month %}is-muted{% endif %} {% if day == today %}is-today{% endif %}">
+              <div class="calendar-date">{{ day.day }}</div>
+              {% if day_events %}
+                <div class="calendar-events">
+                  {% for event in day_events[:3] %}
+                    <div class="calendar-event {{ event.kind }}" title="{{ event.time }} {{ event.title }}">
+                      {% if event.time %}<span class="event-time">{{ event.time }}</span>{% endif %}
+                      {{ event.title }}
+                    </div>
+                  {% endfor %}
+
+                  {% if day_events|length > 3 %}
+                    <button type="button" class="calendar-more" data-target="extra-{{ day.strftime('%Y%m%d') }}">+{{ day_events|length - 3 }} more</button>
+                    <div class="calendar-extra" id="extra-{{ day.strftime('%Y%m%d') }}">
+                      {% for event in day_events[3:] %}
+                        <div class="calendar-event {{ event.kind }}" title="{{ event.time }} {{ event.title }}">
+                          {% if event.time %}<span class="event-time">{{ event.time }}</span>{% endif %}
+                          {{ event.title }}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        {% endfor %}
+      </div>
+    </section>
+
+    <section>
+      <div class="page-card mb-3">
+        <h5 class="mb-3 panel-title-banner banner-delay">Delays</h5>
+        {% if delayed_tasks %}
+          <ul class="timeline-list">
+            {% for task in delayed_tasks %}
+              <li>
+                <strong>{{ task.title }}</strong>
+                <div class="text-muted small">{{ task.deadline.strftime('%b %d, %Y %I:%M %p') }} • {{ task.status|replace('_', ' ')|title }}</div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted mb-0">No delayed tasks.</p>
+        {% endif %}
+      </div>
+
+      <div class="page-card mb-3">
+        <h5 class="mb-3 panel-title-banner banner-pending">Pending Tasks</h5>
+        {% if pending_task_list %}
+          <ul class="timeline-list">
+            {% for task in pending_task_list %}
+              <li>
+                <strong>{{ task.title }}</strong>
+                <div class="text-muted small">{{ task.deadline.strftime('%b %d, %Y %I:%M %p') }} • {{ task.status|replace('_', ' ')|title }}</div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted mb-0">No pending tasks.</p>
+        {% endif %}
+      </div>
+
+      <div class="page-card mb-3">
+        <h5 class="mb-3 panel-title-banner banner-completed">Completed</h5>
+        {% if completed_task_list %}
+          <ul class="timeline-list">
+            {% for task in completed_task_list %}
+              <li>
+                <strong>{{ task.title }}</strong>
+                <div class="text-muted small">{{ task.deadline.strftime('%b %d, %Y %I:%M %p') }} • Completed</div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted mb-0">No completed tasks yet.</p>
+        {% endif %}
+      </div>
+
+      <div class="page-card">
+        <h5 class="mb-3 panel-title-banner banner-meeting">Upcoming Meetings</h5>
+        {% if upcoming_meetings %}
+          <ul class="timeline-list">
+            {% for meeting in upcoming_meetings %}
+              <li>
+                <strong>{{ meeting.title }}</strong>
+                <div class="text-muted small">{{ meeting.deadline.strftime('%b %d, %Y %I:%M %p') if meeting.deadline else 'No schedule' }}</div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted mb-0">No meetings found.</p>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+  document.querySelectorAll('.calendar-more').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.target);
+      if (!target) return;
+
+      target.classList.toggle('open');
+      if (target.classList.contains('open')) {
+        btn.style.display = 'none';
+      }
+    });
+  });
+</script>
 {% endblock %}

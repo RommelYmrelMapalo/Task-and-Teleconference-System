@@ -1,10 +1,11 @@
-from flask import Blueprint, render_template, abort, jsonify, request, redirect, url_for, flash, send_from_directory, current_app
+from flask import Blueprint, render_template, abort, jsonify, request, redirect, url_for, flash, send_from_directory, current_app, session
 from flask_login import login_required, current_user
 from functools import wraps
 from flask import abort
-from .models import Notification, Task
+from .models import Notification, Task, User
 from . import db
 from datetime import datetime, date, timedelta
+import calendar
 import os
 from werkzeug.utils import secure_filename
 
@@ -463,17 +464,303 @@ def is_admin_user():
 def admin_required():
     return current_user.is_authenticated and getattr(current_user, "role", "") == "admin"
 
+def build_admin_calendar(tasks=None, meetings=None):
+    tasks = tasks or []
+    meetings = meetings or []
+
+    today = date.today()
+    month_matrix = calendar.Calendar(firstweekday=0).monthdatescalendar(today.year, today.month)
+
+    event_by_day = {}
+    for item in tasks:
+        day = item.get("deadline_date")
+        if isinstance(day, date):
+            event_by_day.setdefault(day, {"tasks": [], "meetings": []})["tasks"].append(item)
+
+    for item in meetings:
+        day = item.get("meeting_date")
+        if isinstance(day, date):
+            event_by_day.setdefault(day, {"tasks": [], "meetings": []})["meetings"].append(item)
+
+    weeks = []
+    for week in month_matrix:
+        week_cells = []
+        for day in week:
+            day_events = event_by_day.get(day, {"tasks": [], "meetings": []})
+            week_cells.append({
+                "date": day,
+                "day_number": day.day,
+                "is_current_month": day.month == today.month,
+                "is_today": day == today,
+                "tasks": day_events["tasks"],
+                "meetings": day_events["meetings"],
+            })
+        weeks.append(week_cells)
+
+    return {
+        "month_label": today.strftime("%B %Y"),
+        "week_days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        "weeks": weeks,
+    }
+
+
 @views.route('/admin')
 @login_required
 @admin_only
 def admin_dashboard():
-    return render_template("admin_dashboard.html")
+    tasks = Task.query.order_by(Task.deadline.asc()).all()
+    notifications = Notification.query.order_by(Notification.created_at.desc()).all()
+    unread_count = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
+
+    tasks_data = []
+    for task in tasks:
+        if not task.deadline:
+            continue
+        tasks_data.append({
+            "id": task.id,
+            "title": task.title,
+            "status": (task.status or "").strip().lower(),
+            "deadline": task.deadline,
+        })
+
+    meetings_data = []
+    for notif in notifications:
+        title = (notif.title or "").strip()
+        message = (notif.message or "").strip()
+        label = f"{title} {message}".lower()
+        if "meeting" not in label:
+            continue
+
+        meetings_data.append({
+            "id": notif.id,
+            "title": title or "Meeting",
+            "description": message,
+            "deadline": notif.created_at,
+        })
+
+    total_tasks = len(tasks_data)
+    completed_tasks = sum(1 for task in tasks_data if task["status"] == "completed")
+    pending_tasks = total_tasks - completed_tasks
+    total_meetings = len(meetings_data)
+
+    today = date.today()
+    selected_month = request.args.get("month", type=int) or today.month
+    selected_year = request.args.get("year", type=int) or today.year
+
+    if selected_month < 1 or selected_month > 12:
+        selected_month = today.month
+
+    if selected_year < 1970 or selected_year > 2100:
+        selected_year = today.year
+
+    month_calendar = calendar.Calendar(firstweekday=6).monthdatescalendar(selected_year, selected_month)
+
+    first_of_month = date(selected_year, selected_month, 1)
+
+    if selected_month == 1:
+        prev_month, prev_year = 12, selected_year - 1
+    else:
+        prev_month, prev_year = selected_month - 1, selected_year
+
+    if selected_month == 12:
+        next_month, next_year = 1, selected_year + 1
+    else:
+        next_month, next_year = selected_month + 1, selected_year
+
+    events_by_day = {}
+    now = datetime.now()
+
+    for task in tasks_data:
+        event_day = task["deadline"].date()
+        task_status = task["status"]
+        is_overdue = task["deadline"] < now
+
+        if task_status in {"in_progress", "for_revision"} and is_overdue:
+            event_kind = "delay"
+        elif task_status == "completed":
+            event_kind = "completed"
+        elif task_status in {"in_progress", "for_revision"}:
+            event_kind = "pending"
+        else:
+            event_kind = "task"
+
+        events_by_day.setdefault(event_day, []).append({
+            "type": "task",
+            "kind": event_kind,
+            "title": task["title"],
+            "time": task["deadline"].strftime("%I:%M %p"),
+        })
+
+    for meeting in meetings_data:
+        if not meeting["deadline"]:
+            continue
+
+        if hasattr(meeting["deadline"], "date"):
+            event_day = meeting["deadline"].date()
+            event_time = meeting["deadline"].strftime("%I:%M %p")
+        else:
+            event_day = meeting["deadline"]
+            event_time = ""
+
+        events_by_day.setdefault(event_day, []).append({
+            "type": "meeting",
+            "kind": "meeting",
+            "title": meeting["title"],
+            "time": event_time,
+        })
+
+    delayed_tasks = sorted(
+        [
+            task for task in tasks_data
+            if task["status"] in {"in_progress", "for_revision"} and task["deadline"] < now
+        ],
+        key=lambda item: item["deadline"]
+    )[:5]
+    pending_task_list = sorted(
+        [
+            task for task in tasks_data
+            if task["status"] in {"in_progress", "for_revision"} and task["deadline"] >= now
+        ],
+        key=lambda item: item["deadline"]
+    )[:5]
+    completed_task_list = sorted(
+        [task for task in tasks_data if task["status"] == "completed"],
+        key=lambda item: item["deadline"],
+        reverse=True
+    )[:5]
+    upcoming_meetings = sorted(meetings_data, key=lambda item: item["deadline"] or datetime.min)[:5]
+
+    return render_template(
+        "admin_dashboard.html",
+        user=current_user,
+        unread_count=unread_count,
+        total_tasks=total_tasks,
+        completed_tasks=completed_tasks,
+        pending_tasks=pending_tasks,
+        total_meetings=total_meetings,
+        month_name=first_of_month.strftime("%B %Y"),
+        month_calendar=month_calendar,
+        today=today,
+        events_by_day=events_by_day,
+        delayed_tasks=delayed_tasks,
+        pending_task_list=pending_task_list,
+        completed_task_list=completed_task_list,
+        upcoming_meetings=upcoming_meetings,
+        prev_month=prev_month,
+        prev_year=prev_year,
+        next_month=next_month,
+        next_year=next_year,
+        selected_month=selected_month,
+        selected_year=selected_year,
+    )
 
 @views.route('/admin/manage-meetings')
 @login_required
 @admin_only
 def manage_meetings():
     return render_template("manage_meetings.html")
+
+
+@views.route('/admin/manage-tasks')
+@login_required
+@admin_only
+def manage_tasks():
+    users = User.query.filter_by(is_admin=False).order_by(User.firstname.asc()).all()
+    tasks = Task.query.order_by(Task.created_at.desc()).all()
+    return render_template("manage_tasks.html", user=current_user, users=users, tasks=tasks)
+
+
+@views.route('/admin/manage-tasks/create', methods=['POST'])
+@login_required
+@admin_only
+def manage_tasks_create():
+    title = (request.form.get("title") or "").strip()
+    description = (request.form.get("description") or "").strip()
+    due_date_raw = (request.form.get("due_date") or "").strip()
+    due_time_raw = (request.form.get("due_time") or "").strip()
+    priority = (request.form.get("priority") or "normal").strip().lower()
+    status = (request.form.get("status") or "assigned").strip().lower()
+    assigned_user_ids = request.form.getlist("assigned_users")
+
+    if not title:
+        flash("Title is required.", "error")
+        return redirect(url_for("views.manage_tasks"))
+
+    if not due_date_raw:
+        flash("Due date is required.", "error")
+        return redirect(url_for("views.manage_tasks"))
+
+    try:
+        due_date = datetime.strptime(due_date_raw, "%Y-%m-%d").date()
+    except Exception:
+        flash("Invalid due date.", "error")
+        return redirect(url_for("views.manage_tasks"))
+
+    if due_time_raw:
+        try:
+            due_time = datetime.strptime(due_time_raw, "%H:%M").time()
+        except Exception:
+            try:
+                due_time = datetime.strptime(due_time_raw, "%I:%M %p").time()
+            except Exception:
+                flash("Invalid due time.", "error")
+                return redirect(url_for("views.manage_tasks"))
+    else:
+        due_time = datetime.strptime("09:00", "%H:%M").time()
+
+    deadline_dt = datetime.combine(due_date, due_time)
+
+    selected_ids = []
+    for raw_id in assigned_user_ids:
+        try:
+            selected_ids.append(int(raw_id))
+        except (TypeError, ValueError):
+            continue
+
+    assigned_users = []
+    if selected_ids:
+        assigned_users = User.query.filter(User.id.in_(selected_ids), User.is_admin.is_(False)).all()
+
+    uploaded = request.files.get("file")
+    saved_filename = None
+    if uploaded and uploaded.filename:
+        os.makedirs(current_app.config["UPLOAD_FOLDER"], exist_ok=True)
+        filename = secure_filename(uploaded.filename)
+        saved_path = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
+        if os.path.exists(saved_path):
+            base, ext = os.path.splitext(filename)
+            filename = f"{base}_{int(datetime.now().timestamp())}{ext}"
+            saved_path = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
+        uploaded.save(saved_path)
+        saved_filename = filename
+
+    task = Task(
+        title=title,
+        description=description if description else None,
+        assigned_to=assigned_users[0].id if assigned_users else None,
+        status=status,
+        priority=priority,
+        deadline=deadline_dt,
+        file_path=saved_filename
+    )
+    db.session.add(task)
+
+    for assigned_user in assigned_users:
+        db.session.add(Notification(
+            title="New Task Assigned",
+            message=f"You have been assigned to task: {title}",
+            user_id=assigned_user.id
+        ))
+
+    db.session.commit()
+
+    if assigned_users:
+        flash(f"Task created and {len(assigned_users)} assigned user(s) notified.", "success")
+    else:
+        flash("Task created. No assigned users were selected.", "success")
+    return redirect(url_for("views.manage_tasks"))
+
+
 
 @views.route('/admin/assign-meetings')
 @login_required

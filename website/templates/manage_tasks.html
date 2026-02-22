@@ -1,0 +1,520 @@
+{% extends "admin_base.html" %}
+{% block title %}Manage Tasks{% endblock %}
+
+{% block content %}
+<style>
+  .mt-wrap{ display:flex; flex-direction:column; height:calc(100vh - 30px); }
+  .mt-head{ margin-bottom:14px; }
+  .mt-sub{ color:#64748b; font-size:14px; margin-top:4px; }
+  .mt-toolbar{ display:flex; gap:10px; margin-bottom:12px; }
+  .mt-search{ max-width:300px; }
+  .mt-priority{ width:170px; }
+
+  .mt-list{ overflow:auto; padding-right:6px; }
+  .task-row{
+    background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px;
+    display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:10px;
+    box-shadow:0 4px 14px rgba(15,23,42,.04);
+  }
+  .task-main{ flex:1; min-width:0; }
+  .task-side{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .task-title{ font-size:16px; font-weight:800; color:#0f172a; margin-bottom:2px; }
+  .task-meta{ font-size:12px; color:#64748b; margin-bottom:4px; }
+  .task-desc{
+    font-size:12px;
+    color:#475569;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .task-actions{ display:flex; align-items:center; gap:8px; margin-right:8px; }
+  .tag{ display:inline-block; padding:4px 10px; border-radius:999px; font-size:11px; font-weight:800; margin-left:6px; }
+  .tag.status-pending{ background:#fef3c7; border:1px solid #f7c900; color:#92400e; }
+  .tag.status-delayed{ background:#fef2f2; border:1px solid #fa0000; color:#b91c1c; }
+  .tag.status-completed{ background:#ecfdf5; border:1px solid #00ff59; color:#065f46; }
+  .tag.prio-low{ background:#eff6ff; color:#1e40af; }
+  .tag.prio-normal{ background:#f5f3ff; color:#6d28d9; }
+  .tag.prio-high{ background:#fff7ed; color:#c2410c; }
+  .empty{ color:#64748b; font-size:13px; padding:10px; }
+
+  .drawer-grid2{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .drawer-grid3{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+  @media (max-width: 980px){
+    .task-row{ align-items:flex-start; }
+    .task-side{ width:100%; justify-content:space-between; flex-wrap:wrap; }
+  }
+  @media (max-width: 860px){
+    .drawer-grid2,.drawer-grid3{ grid-template-columns:1fr; }
+    .mt-toolbar{ flex-direction:column; }
+    .mt-priority,.mt-search{ width:100%; max-width:100%; }
+    .task-actions{ margin-right:0; }
+  }
+
+  @media (max-width: 560px){
+    .task-row{
+      flex-direction:column;
+      align-items:stretch;
+      gap:10px;
+      padding:10px;
+    }
+    .task-main{ width:100%; }
+    .task-title{
+      font-size:15px;
+      overflow-wrap:anywhere;
+      word-break:break-word;
+    }
+    .task-side{
+      width:100%;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+      flex-wrap:nowrap;
+    }
+    .task-side > div:first-child{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+    .task-actions{
+      margin-right:0;
+      flex-shrink:0;
+      gap:6px;
+    }
+    .task-actions .btn-mini{
+      padding:6px 10px;
+      font-size:12px;
+    }
+    .tag{ margin-left:0; }
+  }
+
+   @media (max-width: 1000px){
+    .task-row{
+      flex-direction:column;
+      align-items:stretch;
+      gap:10px;
+      padding:10px;
+    }
+    .task-main{ width:100%; }
+    .task-title{
+      font-size:15px;
+      overflow-wrap:anywhere;
+      word-break:break-word;
+    }
+    .task-side{
+      width:100%;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+      flex-wrap:nowrap;
+    }
+    .task-side > div:first-child{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+    .task-actions{
+      margin-right:0;
+      flex-shrink:0;
+      gap:6px;
+    }
+    .task-actions .btn-mini{
+      padding:6px 10px;
+      font-size:12px;
+    }
+    .tag{ margin-left:0; }
+  }
+
+</style>
+
+<div class="mt-wrap">
+  <div class="mt-head">
+    <h1 class="td-title" style="margin:0;">Admin › Manage Tasks</h1>
+    <div class="mt-sub">Create tasks with notifications and filter by delayed, pending, completed, and priority.</div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="modal-overlay show autoModal">
+            <div class="modal-popup {{ category }}">
+              <div class="modal-icon">{% if category == "error" %}❌{% else %}✅{% endif %}</div>
+              <div class="modal-text">{{ message }}</div>
+            </div>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  {% set completed_tasks = tasks|selectattr("status","equalto","completed")|list if tasks else [] %}
+
+  <div class="td-pills mb-2">
+    <button class="pill-tab active" type="button" data-filter="all">All <span class="pill-count">{{ tasks|length }}</span></button>
+    <button class="pill-tab" type="button" data-filter="delayed">Delayed</button>
+    <button class="pill-tab" type="button" data-filter="pending">Pending</button>
+    <button class="pill-tab" type="button" data-filter="completed">Completed <span class="pill-count">{{ completed_tasks|length }}</span></button>
+  </div>
+
+  <div class="mt-toolbar">
+    <select id="priorityFilter" class="form-control mt-priority">
+      <option value="all">All Priority</option>
+      <option value="high">High</option>
+      <option value="normal">Normal</option>
+      <option value="low">Low</option>
+    </select>
+    <input id="taskSearch" class="form-control mt-search" placeholder="Search task title, description, or assignee...">
+  </div>
+
+  <div class="mt-list" id="taskList">
+    {% for t in tasks %}
+      {% set pr = (t.priority or 'normal')|lower %}
+      <div class="task-row task-item"
+           data-task-id="{{ t.id }}"
+           data-status="{{ t.status or '' }}"
+           data-priority="{{ pr }}"
+           data-title="{{ (t.title ~ ' ' ~ (t.description or '') ~ ' ' ~ ((t.assigned_user.firstname if t.assigned_user else 'unassigned')))|lower }}"
+           data-deadline="{{ t.deadline.strftime('%Y-%m-%dT%H:%M:%S') if t.deadline else '' }}">
+        <div class="task-main">
+          <div class="task-title">{{ t.title }}</div>
+          <div class="task-meta">
+            Assigned: {{ t.assigned_user.firstname if t.assigned_user else 'Unassigned' }}
+          </div>
+          <div class="task-meta">
+            Deadline: {{ t.deadline.strftime('%Y-%m-%d %I:%M %p') if t.deadline else '-' }}
+          </div>
+          <div class="task-desc">{{ t.description or 'No description provided.' }}</div>
+        </div>
+
+        <div class="task-side">
+          <div>
+            <span class="tag state-tag">PENDING</span>
+            <span class="tag prio-{{ pr }}">{{ pr|upper }}</span>
+          </div>
+          <div class="task-actions">
+            <button type="button" class="btn-mini" data-open-task="{{ t.id }}">Open</button>
+            <button type="button" class="btn-mini ghost" data-edit-task="{{ t.id }}">Edit</button>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="empty">No tasks yet. Click the + button to create one.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<button type="button" class="fab-task" id="openTaskDrawer" aria-label="Create task"><span class="fab-plus">+</span></button>
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+
+<aside class="task-drawer" id="taskDrawer" aria-hidden="true">
+  <div class="drawer-head">
+    <div><div class="drawer-title">New Task</div><div class="drawer-sub">Create task and notify selected users</div></div>
+    <button type="button" class="drawer-x" id="closeTaskDrawer" aria-label="Close">×</button>
+  </div>
+
+  <form method="POST" action="{{ url_for('views.manage_tasks_create') }}" class="drawer-body" enctype="multipart/form-data">
+    <div class="drawer-field"><div class="drawer-label">TITLE</div><input name="title" class="drawer-input" required></div>
+
+    <div class="drawer-grid3">
+      <div class="drawer-field"><div class="drawer-label">STATUS</div>
+        <select name="status" class="drawer-input">
+          <option value="in_progress">In Progress</option><option value="for_revision">For Revision</option><option value="completed">Completed</option>
+        </select>
+      </div>
+      <div class="drawer-field"><div class="drawer-label">PRIORITY</div>
+        <select name="priority" class="drawer-input"><option value="low">Low</option><option value="normal" selected>Normal</option><option value="high">High</option></select>
+      </div>
+      <div class="drawer-field"><div class="drawer-label">ATTACHMENT</div><input type="file" name="file" class="drawer-file"></div>
+    </div>
+
+    <div class="drawer-grid2">
+      <div class="drawer-field"><div class="drawer-label">DUE DATE</div><input type="date" name="due_date" class="drawer-input" required></div>
+      <div class="drawer-field"><div class="drawer-label">DUE TIME</div><input type="time" name="due_time" class="drawer-input"></div>
+    </div>
+
+    <div class="drawer-field">
+      <div class="drawer-label">ASSIGN USERS (NOTIFIED)</div>
+      <select class="drawer-input" name="assigned_users" multiple size="7">
+        {% for u in users %}<option value="{{ u.id }}">{{ u.firstname }} ({{ u.email }})</option>{% endfor %}
+      </select>
+      <small class="drawer-hint">Tasks are still visible to all users in task dashboard.</small>
+    </div>
+
+    <div class="drawer-field"><div class="drawer-label">DESCRIPTION</div><textarea name="description" class="drawer-textarea" rows="4"></textarea></div>
+    <div class="drawer-footer"><button type="button" class="btn btn-light" id="cancelTaskDrawer">Cancel</button><button type="submit" class="btn btn-primary">Create Task</button></div>
+  </form>
+</aside>
+
+<div class="drawer-backdrop" id="viewBackdrop"></div>
+<aside class="task-drawer" id="viewDrawer" aria-hidden="true">
+  <div class="drawer-head">
+    <div><div class="drawer-title" id="viewTitle">Task</div><div class="drawer-sub">Task details</div></div>
+    <button type="button" class="drawer-x" id="closeView" aria-label="Close">×</button>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-grid3" style="margin-bottom:12px;">
+      <div class="drawer-field"><div class="drawer-label">STATUS</div><div id="viewStatus" class="drawer-input" style="display:flex;align-items:center;">-</div></div>
+      <div class="drawer-field"><div class="drawer-label">PRIORITY</div><div id="viewPriority" class="drawer-input" style="display:flex;align-items:center;">-</div></div>
+      <div class="drawer-field"><div class="drawer-label">DEADLINE</div><div id="viewDeadline" class="drawer-input" style="display:flex;align-items:center;">-</div></div>
+    </div>
+    <div class="drawer-field"><div class="drawer-label">DESCRIPTION</div><div id="viewDesc" class="drawer-textarea" style="min-height:110px;">—</div></div>
+
+    <div class="drawer-card" id="viewFileCard" style="display:none;">
+      <div style="font-weight:900; margin-bottom:6px;">Attachment</div>
+      <div id="viewFileName" class="drawer-muted" style="margin-bottom:8px;"></div>
+      <div style="display:flex; gap:8px;"><a id="btnViewFile" class="btn btn-light btn-sm" target="_blank">View</a><a id="btnDownloadFile" class="btn btn-primary btn-sm">Download</a></div>
+    </div>
+  </div>
+</aside>
+
+<div class="drawer-backdrop" id="editBackdrop"></div>
+<aside class="task-drawer" id="editDrawer" aria-hidden="true">
+  <div class="drawer-head">
+    <div><div class="drawer-title">Edit Task</div><div class="drawer-sub">Update task details</div></div>
+    <button type="button" class="drawer-x" id="closeEdit" aria-label="Close">×</button>
+  </div>
+
+  <form method="POST" id="editForm" class="drawer-body" enctype="multipart/form-data">
+    <div class="drawer-field"><div class="drawer-label">TITLE</div><input type="text" class="drawer-input" name="title" id="editTitle" required></div>
+    <div class="drawer-grid3">
+      <div class="drawer-field"><div class="drawer-label">STATUS</div><select class="drawer-input" name="status" id="editStatus"><option value="in_progress">In Progress</option><option value="for_revision">For Revision</option><option value="completed">Completed</option></select></div>
+      <div class="drawer-field"><div class="drawer-label">PRIORITY</div><select class="drawer-input" name="priority" id="editPriority"><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option></select></div>
+      <div class="drawer-field"><div class="drawer-label">DUE DATE</div><input type="date" class="drawer-input" name="due_date" id="editDate"></div>
+    </div>
+    <div class="drawer-field"><div class="drawer-label">DUE TIME</div><input type="time" class="drawer-input" name="due_time" id="editTime"></div>
+    <div class="drawer-field"><div class="drawer-label">DESCRIPTION</div><textarea class="drawer-textarea" name="description" id="editDesc" rows="6"></textarea></div>
+    <div class="drawer-card" id="editCurrentFileCard" style="display:none; margin-bottom:10px;">
+      <div style="font-weight:900; margin-bottom:6px;">Current Attachment</div>
+      <div id="editCurrentFileName" class="drawer-muted" style="margin-bottom:8px;"></div>
+      <div style="display:flex; gap:8px;">
+        <a id="editBtnViewFile" class="btn btn-light btn-sm" target="_blank">View</a>
+        <a id="editBtnDownloadFile" class="btn btn-primary btn-sm">Download</a>
+      </div>
+    </div>
+    <div class="drawer-card"><div style="font-weight:900; margin-bottom:6px;">Replace Attachment (optional)</div><input type="file" name="file" class="drawer-file"></div>
+    <div class="drawer-footer"><button type="button" class="btn btn-light" id="cancelEdit">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
+  </form>
+</aside>
+
+<script>
+(function(){
+  const items = document.querySelectorAll('.task-item');
+  const pills = document.querySelectorAll('.pill-tab');
+  const search = document.getElementById('taskSearch');
+  const priorityFilter = document.getElementById('priorityFilter');
+  let activeFilter = 'all';
+
+  function normalizeState(row){
+    const status = (row.dataset.status || '').toLowerCase();
+    const deadlineRaw = row.dataset.deadline;
+    const isCompleted = status === 'completed';
+    let delayed = false;
+    if(deadlineRaw && !isCompleted){
+      const d = new Date(deadlineRaw);
+      delayed = !isNaN(d.getTime()) && d.getTime() < Date.now();
+    }
+    const state = isCompleted ? 'completed' : (delayed ? 'delayed' : 'pending');
+    const badge = row.querySelector('.state-tag');
+    if(badge){
+      badge.textContent = state.toUpperCase();
+      badge.classList.remove('status-pending','status-delayed','status-completed');
+      badge.classList.add(`status-${state}`);
+    }
+    row.dataset.state = state;
+  }
+
+  function deadlineValue(row){
+    const raw = row.dataset.deadline;
+    if(!raw) return Number.POSITIVE_INFINITY;
+    const d = new Date(raw);
+    return isNaN(d.getTime()) ? Number.POSITIVE_INFINITY : d.getTime();
+  }
+
+  function stateRank(row){
+    const s = row.dataset.state;
+    if(s === 'delayed') return 0;
+    if(s === 'pending') return 1;
+    return 2;
+  }
+
+  function sortRows(){
+    const rows = Array.from(items);
+    rows.sort((a,b)=>{
+      const rankDiff = stateRank(a) - stateRank(b);
+      if(rankDiff !== 0) return rankDiff;
+      return deadlineValue(a) - deadlineValue(b);
+    });
+    rows.forEach((row)=> row.parentNode.appendChild(row));
+  }
+
+  function applyFilter(){
+    const q = (search.value || '').trim().toLowerCase();
+    const p = priorityFilter.value;
+
+    items.forEach((row)=>{
+      normalizeState(row);
+      const okQuery = !q || (row.dataset.title || '').includes(q);
+      const okState = activeFilter === 'all' || row.dataset.state === activeFilter;
+      const okPriority = p === 'all' || (row.dataset.priority || 'normal') === p;
+      row.style.display = (okQuery && okState && okPriority) ? '' : 'none';
+    });
+    sortRows();
+  }
+
+  pills.forEach((pill)=> pill.addEventListener('click', ()=>{
+    pills.forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    activeFilter = pill.dataset.filter;
+    applyFilter();
+  }));
+
+  search.addEventListener('input', applyFilter);
+  priorityFilter.addEventListener('change', applyFilter);
+  applyFilter();
+
+  const createDrawer = document.getElementById('taskDrawer');
+  const createBackdrop = document.getElementById('drawerBackdrop');
+  const openCreateBtn = document.getElementById('openTaskDrawer');
+  const closeCreateBtn = document.getElementById('closeTaskDrawer');
+  const cancelCreateBtn = document.getElementById('cancelTaskDrawer');
+
+  const viewDrawer = document.getElementById('viewDrawer');
+  const viewBackdrop = document.getElementById('viewBackdrop');
+  const closeView = document.getElementById('closeView');
+
+  const editDrawer = document.getElementById('editDrawer');
+  const editBackdrop = document.getElementById('editBackdrop');
+  const closeEdit = document.getElementById('closeEdit');
+  const cancelEdit = document.getElementById('cancelEdit');
+  const editForm = document.getElementById('editForm');
+
+  function hideFab(){ openCreateBtn.classList.add('fab-hidden'); }
+  function showFab(){ openCreateBtn.classList.remove('fab-hidden'); }
+
+  function openDrawer(el, back){
+    el.classList.add('open');
+    back.classList.add('open');
+    el.setAttribute('aria-hidden','false');
+    hideFab();
+  }
+
+  function closeDrawer(el, back){
+    el.classList.remove('open');
+    back.classList.remove('open');
+    el.setAttribute('aria-hidden','true');
+
+    const anyOpen =
+      createDrawer.classList.contains('open') ||
+      viewDrawer.classList.contains('open') ||
+      editDrawer.classList.contains('open');
+
+    if(!anyOpen){
+      showFab();
+    }
+  }
+
+  openCreateBtn.addEventListener('click', ()=>openDrawer(createDrawer, createBackdrop));
+  closeCreateBtn.addEventListener('click', ()=>closeDrawer(createDrawer, createBackdrop));
+  cancelCreateBtn.addEventListener('click', ()=>closeDrawer(createDrawer, createBackdrop));
+  createBackdrop.addEventListener('click', ()=>closeDrawer(createDrawer, createBackdrop));
+
+  closeView.addEventListener('click', ()=>closeDrawer(viewDrawer, viewBackdrop));
+  viewBackdrop.addEventListener('click', ()=>closeDrawer(viewDrawer, viewBackdrop));
+
+  closeEdit.addEventListener('click', ()=>closeDrawer(editDrawer, editBackdrop));
+  cancelEdit.addEventListener('click', ()=>closeDrawer(editDrawer, editBackdrop));
+  editBackdrop.addEventListener('click', ()=>closeDrawer(editDrawer, editBackdrop));
+
+  async function loadTask(taskId){
+    const res = await fetch(`/task/${taskId}/json`);
+    if(!res.ok) return null;
+    return await res.json();
+  }
+
+  async function openViewTask(taskId){
+    const data = await loadTask(taskId);
+    if(!data) return;
+    document.getElementById('viewTitle').textContent = data.title || 'Task';
+    document.getElementById('viewStatus').textContent = (data.status || '-').replaceAll('_',' ').toUpperCase();
+    document.getElementById('viewPriority').textContent = (data.priority || '-').toUpperCase();
+    document.getElementById('viewDeadline').textContent = data.deadline || '-';
+    document.getElementById('viewDesc').textContent = data.description || '—';
+
+    const fileCard = document.getElementById('viewFileCard');
+    if(data.file_path){
+      fileCard.style.display = 'block';
+      document.getElementById('viewFileName').textContent = data.file_path;
+      document.getElementById('btnViewFile').href = `/task/${taskId}/file/view`;
+      document.getElementById('btnDownloadFile').href = `/task/${taskId}/file/download`;
+    } else {
+      fileCard.style.display = 'none';
+    }
+
+    openDrawer(viewDrawer, viewBackdrop);
+  }
+
+  async function openEditTask(taskId){
+    const data = await loadTask(taskId);
+    if(!data) return;
+
+    editForm.action = `/task/${taskId}/update`;
+    document.getElementById('editTitle').value = data.title || '';
+    document.getElementById('editStatus').value = data.status || 'in_progress';
+    document.getElementById('editPriority').value = data.priority || 'normal';
+    document.getElementById('editDesc').value = data.description || '';
+
+    if(data.deadline && data.deadline.includes(' ')){
+      const [d, t] = data.deadline.split(' ');
+      document.getElementById('editDate').value = d || '';
+      document.getElementById('editTime').value = t || '';
+    } else {
+      document.getElementById('editDate').value = '';
+      document.getElementById('editTime').value = '';
+    }
+
+    const currentFileCard = document.getElementById('editCurrentFileCard');
+    if(data.file_path){
+      currentFileCard.style.display = 'block';
+      document.getElementById('editCurrentFileName').textContent = data.file_path;
+      document.getElementById('editBtnViewFile').href = `/task/${taskId}/file/view`;
+      document.getElementById('editBtnDownloadFile').href = `/task/${taskId}/file/download`;
+    } else {
+      currentFileCard.style.display = 'none';
+      document.getElementById('editCurrentFileName').textContent = '';
+      document.getElementById('editBtnViewFile').removeAttribute('href');
+      document.getElementById('editBtnDownloadFile').removeAttribute('href');
+    }
+
+    openDrawer(editDrawer, editBackdrop);
+  }
+
+  document.querySelectorAll('[data-open-task]').forEach((btn)=>{
+    btn.addEventListener('click', ()=> openViewTask(btn.getAttribute('data-open-task')));
+  });
+  document.querySelectorAll('[data-edit-task]').forEach((btn)=>{
+    btn.addEventListener('click', ()=> openEditTask(btn.getAttribute('data-edit-task')));
+  });
+
+  const createForm = document.querySelector('#taskDrawer form');
+  if(createForm){
+    createForm.addEventListener('submit', hideFab);
+  }
+  if(editForm){
+    editForm.addEventListener('submit', hideFab);
+  }
+})();
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const modals = document.querySelectorAll(".autoModal");
+  if(!modals.length) return;
+  modals.forEach((m) => { m.style.transition = "opacity 300ms ease"; });
+  setTimeout(() => {
+    modals.forEach((m) => m.style.opacity = "0");
+    setTimeout(() => { modals.forEach((m) => m.remove()); }, 320);
+  }, 1500);
+});
+</script>
+{% endblock %}

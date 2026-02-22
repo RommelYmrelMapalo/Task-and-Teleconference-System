@@ -67,13 +67,34 @@
   {# Flash popup ONLY here #}
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-      <div class="toast-wrap" id="toastWrap">
-        {% for category, message in messages %}
-          <div class="toast-msg {% if category == 'error' %}toast-error{% else %}toast-success{% endif %}">
-            {{ message }}
+      {% for category, message in messages %}
+        {% if message == "Task updated!" %}
+          <div class="modal-overlay show autoModal">
+            <div class="modal-popup {{ category }} modern-popup" role="status" aria-live="polite">
+              <div class="modal-icon-wrap">
+                <div class="modal-icon" aria-hidden="true">
+                  {% if category == "error" %}✕{% else %}✓{% endif %}
+                </div>
+              </div>
+              <div class="modal-text">{{ message }}</div>
+              <div class="modal-subtext">
+                {% if category == "error" %}
+                  Please review your changes and try again.
+                {% else %}
+                  Your latest task changes were saved successfully.
+                {% endif %}
+              </div>
+              <div class="modal-progress" aria-hidden="true"></div>
+            </div>
           </div>
-        {% endfor %}
-      </div>
+        {% else %}
+          <div class="toast-wrap" id="toastWrap">
+            <div class="toast-msg {% if category == 'error' %}toast-error{% else %}toast-success{% endif %}">
+              {{ message }}
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
     {% endif %}
   {% endwith %}
 
@@ -253,35 +274,43 @@
 
 </div>
 
-{# ✅ Floating button group (toggle + create) #}
+{# ✅ Floating button group (toggle) #}
 <div class="fab-group">
   <div class="view-toggle">
     <button type="button" class="view-mini" id="btnList">List View</button>
     <button type="button" class="view-mini" id="btnCards">Card View</button>
   </div>
-
-  <button type="button"
-          class="fab-task"
-          data-toggle="modal"
-          data-target="#createTaskModal"
-          aria-label="Create task">
-    <span class="fab-plus">+</span>
-  </button>
 </div>
 
 <script>
 /* ===== toast auto-hide ===== */
 window.addEventListener("DOMContentLoaded", () => {
   const wrap = document.getElementById("toastWrap");
-  if(!wrap) return;
+  if(wrap){
+    const toasts = wrap.querySelectorAll(".toast-msg");
+    if(toasts.length){
+      requestAnimationFrame(() => toasts.forEach(t => t.classList.add("show")));
+      setTimeout(() => {
+        toasts.forEach(t => t.classList.remove("show"));
+        setTimeout(() => wrap.remove(), 220);
+      }, 1500);
+    }
+  }
+
+  const modals = document.querySelectorAll(".autoModal");
+  if(!modals.length) return;
+
 
   const toasts = wrap.querySelectorAll(".toast-msg");
-  if(!toasts.length) return;
+  modals.forEach((m) => {
+    m.style.transition = "opacity 300ms ease";
+  });
 
-  requestAnimationFrame(() => toasts.forEach(t => t.classList.add("show")));
   setTimeout(() => {
-    toasts.forEach(t => t.classList.remove("show"));
-    setTimeout(() => wrap.remove(), 220);
+    modals.forEach((m) => m.style.opacity = "0");
+    setTimeout(() => {
+      modals.forEach((m) => m.remove());
+    }, 320);
   }, 1500);
 });
 

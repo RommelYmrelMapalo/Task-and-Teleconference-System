@@ -39,8 +39,8 @@
       <!-- ADMIN MODULES -->
       <div class="sidebar-section">ADMIN MODULES</div>
 
-      <a class="sidebar-link {% if request.endpoint == 'views.manage_meetings' %}active{% endif %}"
-         href="{{ url_for('views.manage_meetings') }}">
+      <a class="sidebar-link {% if request.endpoint == 'views.manage_tasks' %}active{% endif %}"
+         href="{{ url_for('views.manage_tasks') }}">
         <span class="sidebar-icon">📌</span>
         <span>Manage Tasks</span>
       </a>
@@ -49,12 +49,6 @@
          href="{{ url_for('views.manage_meetings') }}">
         <span class="sidebar-icon">🗓️</span>
         <span>Manage Meetings</span>
-      </a>
-
-      <a class="sidebar-link {% if request.endpoint == 'views.assign_meetings' %}active{% endif %}"
-         href="{{ url_for('views.assign_meetings') }}">
-        <span class="sidebar-icon">👥</span>
-        <span>Assign Meetings</span>
       </a>
 
       <a class="sidebar-link {% if request.endpoint == 'views.monitoring_panel' %}active{% endif %}"

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask import Blueprint, render_template, request, flash, redirect, url_for, session
 from .models import User
 from . import db
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -50,7 +50,7 @@ def admin_login():
 
             if check_password_hash(user.password, password):
                 login_user(user, remember=True)
-                flash("Admin login successful.", category="success")
+                session["admin_login_notice"] = "Admin login successful."
                 return redirect(url_for('views.admin_dashboard'))
             else:
                 flash("Incorrect Password, try again.", category="error")
