@@ -17,24 +17,6 @@
   <title>{% block title %}Dashboard{% endblock %}</title>
 </head>
 
-<script>
-  // Auto-dismiss Flask flash messages after 5 seconds
-  window.addEventListener("DOMContentLoaded", () => {
-    const alerts = document.querySelectorAll(".alert");
-
-    alerts.forEach((alert) => {
-      setTimeout(() => {
-        // smooth fade out
-        alert.style.transition = "opacity 0.4s ease, transform 0.4s ease";
-        alert.style.opacity = "0";
-        alert.style.transform = "translateY(-6px)";
-
-        setTimeout(() => alert.remove(), 450);
-      }, 5000);
-    });
-  });
-</script>
-
 <body>
 
 <div class="app-shell">
@@ -133,6 +115,22 @@
   <!-- ===== Main Content ===== -->
   <main class="main-area">
     <div class="content-wrap">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-stack" aria-live="polite" aria-atomic="true">
+            {% for category, message in messages %}
+              <div class="flash-modern {% if category == 'error' %}flash-modern-error{% else %}flash-modern-success{% endif %}" role="alert">
+                <div class="flash-modern-content">
+                  <span class="flash-modern-dot"></span>
+                  <span>{{ message }}</span>
+                </div>
+                <button type="button" class="flash-modern-close" aria-label="Close">&times;</button>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
       {% block content %}{% endblock %}
     </div>
   </main>
@@ -154,6 +152,28 @@
       }
     });
   }
+</script>
+
+<script>
+  window.addEventListener("DOMContentLoaded", () => {
+    const flashes = document.querySelectorAll(".flash-modern");
+
+    flashes.forEach((flash) => {
+      flash.classList.add("is-visible");
+
+      const closeBtn = flash.querySelector(".flash-modern-close");
+      const dismiss = () => {
+        flash.classList.add("is-hiding");
+        setTimeout(() => flash.remove(), 450);
+      };
+
+      if (closeBtn) {
+        closeBtn.addEventListener("click", dismiss);
+      }
+
+      setTimeout(dismiss, 4200);
+    });
+  });
 </script>
 
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>

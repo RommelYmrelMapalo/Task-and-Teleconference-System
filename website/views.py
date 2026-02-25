@@ -9,6 +9,7 @@ import calendar
 import os
 import mimetypes
 from werkzeug.utils import secure_filename
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
 views = Blueprint('views', __name__)
@@ -201,16 +202,41 @@ def mark_notification_read(notif_id):
         return jsonify({"ok": True})
     return jsonify({"ok": False}), 404
 
-@views.route('/user_profile')
+@views.route('/user_profile', methods=['GET', 'POST'])
 @login_required
 def user_profile():
-    return render_template("user_profile.html", user=current_user)
+    if request.method == 'POST':
+        _handle_password_change()
+    return redirect(url_for('views.profile'))
 
-@views.route('/admin_profile')
+
+def _handle_password_change():
+    current_password = (request.form.get('current_password') or '').strip()
+    new_password = (request.form.get('new_password') or '').strip()
+    confirm_password = (request.form.get('confirm_password') or '').strip()
+
+    if not current_password or not new_password or not confirm_password:
+        flash('All password fields are required.', 'error')
+    elif not check_password_hash(current_user.password, current_password):
+        flash('Current password is incorrect.', 'error')
+    elif new_password != confirm_password:
+        flash('New password and confirmation do not match.', 'error')
+    elif len(new_password) < 7:
+        flash('New password must be at least 7 characters long.', 'error')
+    else:
+        current_user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
+        db.session.commit()
+        flash('Password changed successfully.', 'success')
+
+@views.route('/admin_profile', methods=['GET', 'POST'])
 @login_required
 def admin_profile():
     if not current_user.is_admin:
         abort(403)
+
+    if request.method == 'POST':
+        _handle_password_change()
+
     return render_template("admin_profile.html", user=current_user)
 
 
@@ -272,8 +298,20 @@ def update_task(task_id):
         task.file_path = _save_uploaded_file(file)
 
     db.session.commit()
-    flash("Task updated!", "success")
-    return redirect(request.referrer or url_for("views.task_dashboard"))
+
+    target = request.referrer or url_for("views.task_dashboard")
+    split_target = urlsplit(target)
+    query_params = dict(parse_qsl(split_target.query, keep_blank_values=True))
+    query_params["updated"] = "1"
+    redirect_target = urlunsplit((
+        split_target.scheme,
+        split_target.netloc,
+        split_target.path,
+        urlencode(query_params),
+        split_target.fragment,
+    ))
+
+    return redirect(redirect_target)
 
 @views.route("/task/<int:task_id>/file/view", methods=["GET"])
 @login_required
@@ -489,10 +527,12 @@ def inbox():
         notification_count=unread_count
     )
 
-@views.route('/profile')
+@views.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
-    return render_template("user_profile.html")
+    if request.method == 'POST':
+        _handle_password_change()
+    return render_template("user_profile.html", user=current_user)
 
 def admin_only(func):
     @wraps(func)

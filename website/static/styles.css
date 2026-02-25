@@ -2211,3 +2211,74 @@ body.drawer-open{
     padding-bottom: 132px;
   }
 }
+
+/* ===== Modern Flash Alerts ===== */
+.flash-stack{
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3000;
+  display: grid;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.flash-modern{
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(148,163,184,.25);
+  background: rgba(15,23,42,.92);
+  color: #f8fafc;
+  box-shadow: 0 16px 36px rgba(2,6,23,.26);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transform: translateY(-14px) scale(.98);
+  transition: opacity .45s ease, transform .45s cubic-bezier(.22,.61,.36,1);
+}
+
+.flash-modern.is-visible{
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.flash-modern.is-hiding{
+  opacity: 0;
+  transform: translateY(-10px) scale(.98);
+}
+
+.flash-modern-success{ border-left: 4px solid #22c55e; }
+.flash-modern-error{ border-left: 4px solid #ef4444; }
+
+.flash-modern-content{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+
+.flash-modern-dot{
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #22c55e;
+}
+
+.flash-modern-error .flash-modern-dot{ background: #ef4444; }
+
+.flash-modern-close{
+  border: 0;
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 20px;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+}
+
+.flash-modern-close:hover{ color: #fff; }

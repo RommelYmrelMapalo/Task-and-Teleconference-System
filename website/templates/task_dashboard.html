@@ -86,27 +86,47 @@
   <div class="td-sub">Manage and track your assigned tasks</div>
 
   {% if request.endpoint == "views.task_dashboard" %}
+    {% if request.args.get("updated") in ["1", "true"] %}
+      <div class="modal-overlay show autoModal">
+        <div class="modal-popup success modern-popup" role="status" aria-live="polite">
+          <div class="modal-icon-wrap">
+            <div class="modal-icon" aria-hidden="true">✓</div>
+          </div>
+          <div class="modal-text">Task updated!</div>
+          <div class="modal-subtext">Your latest task changes were saved successfully.</div>
+          <div class="modal-progress" aria-hidden="true"></div>
+        </div>
+      </div>
+    {% endif %}
+
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
+        {% set rendered = namespace(items=[]) %}
         {% for category, message in messages %}
-          <div class="modal-overlay show autoModal">
-            <div class="modal-popup {{ category }} modern-popup" role="status" aria-live="polite">
-              <div class="modal-icon-wrap">
-                <div class="modal-icon" aria-hidden="true">
-                  {% if category == "error" %}✕{% else %}✓{% endif %}
+          {% if message != "Task updated!" %}
+            {% set key = category ~ "::" ~ message %}
+            {% if key not in rendered.items %}
+              {% set rendered.items = rendered.items + [key] %}
+              <div class="modal-overlay show autoModal">
+                <div class="modal-popup {{ category }} modern-popup" role="status" aria-live="polite">
+                  <div class="modal-icon-wrap">
+                    <div class="modal-icon" aria-hidden="true">
+                      {% if category == "error" %}✕{% else %}✓{% endif %}
+                    </div>
+                  </div>
+                  <div class="modal-text">{{ message }}</div>
+                  <div class="modal-subtext">
+                    {% if category == "error" %}
+                      Please review your changes and try again.
+                    {% else %}
+                      Your latest task changes were saved successfully.
+                    {% endif %}
+                  </div>
+                  <div class="modal-progress" aria-hidden="true"></div>
                 </div>
               </div>
-              <div class="modal-text">{{ message }}</div>
-              <div class="modal-subtext">
-                {% if category == "error" %}
-                  Please review your changes and try again.
-                {% else %}
-                  Your latest task changes were saved successfully.
-                {% endif %}
-              </div>
-              <div class="modal-progress" aria-hidden="true"></div>
-            </div>
-          </div>
+            {% endif %}
+          {% endif %}
         {% endfor %}
       {% endif %}
     {% endwith %}
@@ -262,6 +282,15 @@
               <div class="task-right">
                 <div class="task-actions">
                   <button type="button" class="btn-mini" data-open-task="{{ task.id }}">Open</button>
+
+                  <button type="button"
+                          class="btn-icon ghost"
+                          title="Details"
+                          aria-label="Details"
+                          data-focus-task="{{ task.id }}">
+                    ⓘ
+                  </button>
+
                   <button type="button" class="btn-mini ghost" data-edit-task="{{ task.id }}">Edit</button>
                 </div>
               </div>
