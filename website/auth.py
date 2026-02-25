@@ -3,17 +3,21 @@ from .models import User
 from . import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, login_required, logout_user, current_user
+from sqlalchemy import func
 
 auth = Blueprint('auth', __name__)
+
+def normalize_email(email):
+    return (email or "").strip().lower()
 
 # ✅ USER LOGIN
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        email = request.form.get('email')
+        email = normalize_email(request.form.get('email'))
         password = request.form.get('password')
 
-        user = User.query.filter_by(email=email).first()
+        user = User.query.filter(func.lower(User.email) == email).first()
 
         if user:
             # Block admin from logging in via user login
@@ -37,10 +41,10 @@ def login():
 @auth.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
-        email = request.form.get('email')
+        email = normalize_email(request.form.get('email'))
         password = request.form.get('password')
 
-        user = User.query.filter_by(email=email).first()
+        user = User.query.filter(func.lower(User.email) == email).first()
 
         if user:
             # Only admins allowed here
@@ -71,12 +75,12 @@ def logout():
 @auth.route('/signup', methods=['GET', 'POST'])
 def sign_up():
     if request.method == 'POST':
-        email = request.form.get('email')
+        email = normalize_email(request.form.get('email'))
         firstname = request.form.get('firstname')
         password1 = request.form.get('password1')
         password2 = request.form.get('password2')
 
-        user = User.query.filter_by(email=email).first()
+        user = User.query.filter(func.lower(User.email) == email).first()
         if user:
             flash('Email already exists.', category='error')
         elif len(email) < 4:
