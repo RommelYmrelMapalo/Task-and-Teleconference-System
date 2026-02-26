@@ -30,7 +30,14 @@
     -webkit-box-orient:vertical;
     overflow:hidden;
   }
-  .task-actions{ display:flex; align-items:center; gap:8px; margin-right:8px; }
+  .task-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-right:8px;
+    padding-left:10px;
+    border-left:1px solid #cbd5e1;
+  }
   .tag{ display:inline-block; padding:4px 10px; border-radius:999px; font-size:11px; font-weight:800; margin-left:6px; }
   .tag.status-pending{ background:#fef3c7; border:1px solid #f7c900; color:#92400e; }
   .tag.status-delayed{ background:#fef2f2; border:1px solid #fa0000; color:#b91c1c; }
@@ -82,6 +89,8 @@
       margin-right:0;
       flex-shrink:0;
       gap:6px;
+      padding-left:0;
+      border-left:0;
     }
     .task-actions .btn-mini{
       padding:6px 10px;
@@ -119,6 +128,8 @@
       margin-right:0;
       flex-shrink:0;
       gap:6px;
+      padding-left:0;
+      border-left:0;
     }
     .task-actions .btn-mini{
       padding:6px 10px;

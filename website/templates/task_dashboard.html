@@ -4,32 +4,6 @@
 {% block content %}
 
 <style>
-  /* ===============================
-     LAYOUT: keep top controls fixed
-     =============================== */
-
-  /* main-inner becomes a full-height column; only .scroll will scroll */
-  .main-inner{
-    display:flex;
-    flex-direction:column;
-    height:100vh;
-    overflow:hidden; /* prevents whole page scroll */
-  }
-
-  /* sticky top area */
-  .td-title,
-  .td-sub,
-  .td-pills,
-  .td-toolbar{
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    background: #f4f6f9; /* match your page bg */
-  }
-
-  .td-title{ padding-top: 12px; }
-  .td-toolbar{ padding-bottom: 10px; }
-
   /* only the task list scrolls */
   .scroll{
     flex:1;
@@ -78,6 +52,11 @@
     line-height:1;
   }
   .btn-icon.ghost{ background:transparent; }
+  .task-check-btn{ cursor:pointer; }
+  .task-check-btn.is-done{ background:#10b981; border-color:#10b981; }
+  .st-pending{ background:#fef3c7; border-color:#f7c900; color:#92400e; }
+  .st-delayed{ background:#fef2f2; border-color:#fa0000; color:#b91c1c; }
+  .st-completed{ background:#ecfdf5; border-color:#00ff59; color:#065f46; }
 </style>
 
 <div class="main-inner">
@@ -192,15 +171,21 @@
       <div class="sec-body">
         {% if active_tasks and active_tasks|length > 0 %}
           {% for task in active_tasks %}
+            {% set is_delayed = task.status != 'completed' and task.deadline and task.deadline < now_dt %}
             <div class="task-row task-item"
                  id="task-{{ task.id }}"
                  data-task-id="{{ task.id }}"
                  data-status="{{ task.status }}"
+                 data-original-status="{{ task.status }}"
                  data-title="{{ (task.title ~ ' ' ~ (task.description or ''))|lower }}"
-                 data-priority="{{ (task.priority or 'normal')|lower if task.priority is defined else 'normal' }}">
+                 data-priority="{{ (task.priority or 'normal')|lower if task.priority is defined else 'normal' }}"
+                 data-deadline="{{ task.deadline.strftime('%Y-%m-%dT%H:%M:%S') if task.deadline else '' }}">
 
               <div class="task-left">
-                <div class="task-check"></div>
+                <button type="button"
+                        class="task-check task-check-btn"
+                        aria-label="Toggle complete"
+                        data-complete-task="{{ task.id }}"></button>
 
                 <div class="task-info">
                   <a class="task-title-link"
@@ -215,7 +200,7 @@
                 </div>
 
                 <div class="task-tags">
-                  <span class="status st-active">{{ task.status|replace("_"," ")|upper }}</span>
+                  <span class="status {{ 'st-delayed' if is_delayed else 'st-pending' }}" data-status-pill>{{ 'DELAYED' if is_delayed else task.status|replace("_"," ")|upper }}</span>
                   {% set pr = (task.priority or 'normal')|lower %}
                   <span class="prio prio-{{ pr }}">{{ pr|upper }}</span>
                 </div>
@@ -251,15 +236,21 @@
       <div class="sec-body">
         {% if revision_tasks and revision_tasks|length > 0 %}
           {% for task in revision_tasks %}
+            {% set is_delayed = task.status != 'completed' and task.deadline and task.deadline < now_dt %}
             <div class="task-row task-item"
                  id="task-{{ task.id }}"
                  data-task-id="{{ task.id }}"
                  data-status="{{ task.status }}"
+                 data-original-status="{{ task.status }}"
                  data-title="{{ (task.title ~ ' ' ~ (task.description or ''))|lower }}"
-                 data-priority="{{ (task.priority or 'normal')|lower }}">
+                 data-priority="{{ (task.priority or 'normal')|lower }}"
+                 data-deadline="{{ task.deadline.strftime('%Y-%m-%dT%H:%M:%S') if task.deadline else '' }}">
 
               <div class="task-left">
-                <div class="task-check"></div>
+                <button type="button"
+                        class="task-check task-check-btn"
+                        aria-label="Toggle complete"
+                        data-complete-task="{{ task.id }}"></button>
 
                 <div class="task-info">
                   <a class="task-title-link"
@@ -271,9 +262,7 @@
                 </div>
 
                 <div class="task-tags">
-                  <span class="status" style="background:#eef2ff;border-color:#c7d2fe;">
-                    {{ task.status|replace("_"," ")|upper }}
-                  </span>
+                  <span class="status {{ 'st-delayed' if is_delayed else 'st-pending' }}" data-status-pill>{{ 'DELAYED' if is_delayed else task.status|replace("_"," ")|upper }}</span>
                   {% set pr = (task.priority or 'normal')|lower %}
                   <span class="prio prio-{{ pr }}">{{ pr|upper }}</span>
                 </div>
@@ -282,15 +271,6 @@
               <div class="task-right">
                 <div class="task-actions">
                   <button type="button" class="btn-mini" data-open-task="{{ task.id }}">Open</button>
-
-                  <button type="button"
-                          class="btn-icon ghost"
-                          title="Details"
-                          aria-label="Details"
-                          data-focus-task="{{ task.id }}">
-                    ⓘ
-                  </button>
-
                   <button type="button" class="btn-mini ghost" data-edit-task="{{ task.id }}">Edit</button>
                 </div>
               </div>
@@ -322,11 +302,16 @@
                  id="task-{{ task.id }}"
                  data-task-id="{{ task.id }}"
                  data-status="{{ task.status }}"
+                 data-original-status="{{ task.status }}"
                  data-title="{{ (task.title ~ ' ' ~ (task.description or ''))|lower }}"
-                 data-priority="{{ (task.priority or 'normal')|lower }}">
+                 data-priority="{{ (task.priority or 'normal')|lower }}"
+                 data-deadline="{{ task.deadline.strftime('%Y-%m-%dT%H:%M:%S') if task.deadline else '' }}">
 
               <div class="task-left">
-                <div class="task-check" style="background:#10b981; border-color:#10b981;"></div>
+                <button type="button"
+                        class="task-check task-check-btn is-done"
+                        aria-label="Toggle complete"
+                        data-complete-task="{{ task.id }}"></button>
 
                 <div class="task-info">
                   <a class="task-title-link"
@@ -338,7 +323,7 @@
                 </div>
 
                 <div class="task-tags">
-                  <span class="status st-done">{{ task.status|replace("_"," ")|upper }}</span>
+                  <span class="status st-completed" data-status-pill>{{ task.status|replace("_"," ")|upper }}</span>
                   {% set pr = (task.priority or 'normal')|lower %}
                   <span class="prio prio-{{ pr }}">{{ pr|upper }}</span>
                 </div>
@@ -422,6 +407,70 @@
 
   search.addEventListener("input", window.applyFilter);
   priority.addEventListener("change", window.applyFilter);
+
+  function parseDeadline(raw){
+    if(!raw) return null;
+    const d = new Date(raw);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  function setStatusPill(taskId, status, fallback){
+    const deadline = parseDeadline(document.querySelector(`[data-task-id="${taskId}"]`)?.dataset.deadline || "");
+    const isDelayed = status !== "completed" && deadline && deadline.getTime() < Date.now();
+    const text = status === "completed" ? "COMPLETED" : (isDelayed ? "DELAYED" : status.replaceAll("_", " ").toUpperCase());
+    const css = status === "completed" ? "st-completed" : (isDelayed ? "st-delayed" : "st-pending");
+
+    document.querySelectorAll(`#task-${taskId} [data-status-pill]`).forEach((pill)=>{
+      pill.textContent = text;
+      pill.classList.remove("st-pending","st-delayed","st-completed");
+      pill.classList.add(css);
+    });
+
+    document.querySelectorAll(`#task-${taskId}`).forEach((row)=>{
+      row.dataset.status = status;
+      if(fallback && row.dataset.originalStatus === "completed"){
+        row.dataset.originalStatus = fallback;
+      }
+    });
+  }
+
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-complete-task]");
+    if(!btn) return;
+
+    const id = btn.getAttribute("data-complete-task");
+    const row = document.querySelector(`#task-${id}`);
+    if(!id || !row) return;
+
+    const currentStatus = row.dataset.status || "in_progress";
+    const originalStatus = row.dataset.originalStatus || (currentStatus === "completed" ? "in_progress" : currentStatus);
+    const targetStatus = currentStatus === "completed" ? originalStatus : "completed";
+
+    try{
+      const body = new URLSearchParams({
+        target_status: targetStatus,
+        fallback_status: originalStatus,
+      });
+      const res = await fetch(`/task/${id}/complete`, {
+        method: "POST",
+        headers: { "X-Requested-With": "fetch", "Content-Type": "application/x-www-form-urlencoded" },
+        body,
+      });
+
+      const data = await res.json();
+      if(!res.ok || !data.ok) return;
+
+      const done = data.status === "completed";
+      document.querySelectorAll(`[data-complete-task="${id}"]`).forEach((check)=>{
+        check.classList.toggle("is-done", done);
+      });
+
+      setStatusPill(id, data.status, originalStatus);
+      window.applyFilter();
+    }catch(err){
+      console.error(err);
+    }
+  });
 </script>
 
 <!-- =========================================

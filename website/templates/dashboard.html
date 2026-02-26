@@ -36,6 +36,20 @@
     overflow-y:auto;
     padding-right:8px;
   }
+
+  .task-status-pill{
+    display:inline-block;
+    padding:4px 10px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+    border:1px solid transparent;
+  }
+  .task-status-pill.status-pending{ background:#fef3c7; border-color:#f7c900; color:#92400e; }
+  .task-status-pill.status-delayed{ background:#fef2f2; border-color:#fa0000; color:#b91c1c; }
+  .task-status-pill.status-completed{ background:#ecfdf5; border-color:#00ff59; color:#065f46; }
 </style>
 
 <div class="main-inner">
@@ -105,11 +119,17 @@
             <div class="list-view">
               {% if has_tasks %}
                 {% for t in day.tasks %}
-                  <div class="plan-row" data-item-type="task" data-task-id="{{ t.id }}">
+                  <div class="plan-row"
+                       data-item-type="task"
+                       data-task-id="{{ t.id }}"
+                       data-status="{{ t.status }}"
+                       data-original-status="{{ t.status if t.status != 'completed' else 'in_progress' }}"
+                       data-is-delayed="{{ '1' if t.is_delayed else '0' }}">
                     <button type="button"
                             class="plan-check {% if t.status == 'completed' %}is-done{% endif %}"
                             aria-label="Mark complete"
-                            data-complete-task="{{ t.id }}">✓</button>
+                            data-complete-task="{{ t.id }}"
+                            data-original-status="{{ t.status if t.status != 'completed' else 'in_progress' }}">✓</button>
 
                     <div class="plan-mid">
                       <div class="plan-title">
@@ -128,6 +148,9 @@
                     </div>
 
                     <div class="plan-right">
+                      {% set status_label = 'COMPLETED' if t.status == 'completed' else ('DELAYED' if t.is_delayed else (t.status|replace("_"," ")|upper)) %}
+                      {% set status_class = 'status-completed' if t.status == 'completed' else ('status-delayed' if t.is_delayed else 'status-pending') %}
+                      <span class="task-status-pill {{ status_class }}" data-status-pill>{{ status_label }}</span>
                       <span class="pill task">Task</span>
                     </div>
                   </div>
@@ -165,14 +188,19 @@
                     {% if t.status == "completed" %}{% set cover = "cover-green" %}{% endif %}
                     {% if t.status == "for_revision" %}{% set cover = "cover-purple" %}{% endif %}
 
-                    <div class="gcard" data-item-type="task" data-task-id="{{ t.id }}">
+                    <div class="gcard"
+                         data-item-type="task"
+                         data-task-id="{{ t.id }}"
+                         data-status="{{ t.status }}"
+                         data-original-status="{{ t.status if t.status != 'completed' else 'in_progress' }}"
+                         data-is-delayed="{{ '1' if t.is_delayed else '0' }}">
                       <div class="gcard-cover {{ cover }}">
                         <div class="gcard-menu">⋮</div>
                       </div>
 
                       <div class="gcard-body">
                         <div class="gcard-topline">{{ t.title }}</div>
-                        <div class="gcard-subline">{{ (t.status|replace("_"," ")|title) }}</div>
+                        <div class="gcard-subline" data-status-text>{{ (t.status|replace("_"," ")|title) }}</div>
                         <div class="gcard-small">
                           {% if t.due_time %}Due {{ t.due_time }}{% else %}No due time{% endif %}
                         </div>
@@ -193,8 +221,12 @@
                           <button type="button"
                                   class="gcheck {% if t.status == 'completed' %}is-done{% endif %}"
                                   aria-label="Mark complete"
-                                  data-complete-task="{{ t.id }}">✓</button>
+                                  data-complete-task="{{ t.id }}"
+                            data-original-status="{{ t.status if t.status != 'completed' else 'in_progress' }}">✓</button>
 
+                          {% set status_label = 'COMPLETED' if t.status == 'completed' else ('DELAYED' if t.is_delayed else (t.status|replace("_"," ")|upper)) %}
+                          {% set status_class = 'status-completed' if t.status == 'completed' else ('status-delayed' if t.is_delayed else 'status-pending') %}
+                          <span class="task-status-pill {{ status_class }}" data-status-pill>{{ status_label }}</span>
                           <span class="gcard-pill">Task</span>
                         </div>
                       </div>
@@ -317,6 +349,20 @@ window.addEventListener("DOMContentLoaded", () => {
 })();
 
 /* ===== checkmark click to complete task (both views) ===== */
+function toTitle(value){
+  return (value || "").replaceAll("_", " ").replace(/\b\w/g, (m) => m.toUpperCase());
+}
+
+function statusClass(status, isDelayed){
+  if(status === "completed") return "status-completed";
+  return isDelayed ? "status-delayed" : "status-pending";
+}
+
+function statusLabel(status, isDelayed){
+  if(status === "completed") return "COMPLETED";
+  return isDelayed ? "DELAYED" : (status || "in_progress").replaceAll("_", " ").toUpperCase();
+}
+
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest("[data-complete-task]");
   if(!btn) return;
@@ -324,10 +370,24 @@ document.addEventListener("click", async (e) => {
   const id = btn.getAttribute("data-complete-task");
   if(!id) return;
 
+  const stateNode = document.querySelector(`[data-task-id="${id}"][data-item-type="task"]`);
+  const currentStatus = stateNode?.dataset.status || "in_progress";
+  const originalStatus = stateNode?.dataset.originalStatus || btn.dataset.originalStatus || (currentStatus === "completed" ? "in_progress" : currentStatus);
+  const targetStatus = currentStatus === "completed" ? originalStatus : "completed";
+
   try{
+    const body = new URLSearchParams({
+      target_status: targetStatus,
+      fallback_status: originalStatus,
+    });
+
     const res = await fetch(`/task/${id}/complete`, {
       method: "POST",
-      headers: { "X-Requested-With": "fetch" }
+      headers: {
+        "X-Requested-With": "fetch",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
     });
 
     const data = await res.json();
@@ -335,19 +395,26 @@ document.addEventListener("click", async (e) => {
 
     const done = (data.status === "completed");
 
-    document.querySelectorAll(`[data-complete-task="${id}"]`).forEach(b => {
+    document.querySelectorAll(`[data-complete-task="${id}"]`).forEach((b) => {
       b.classList.toggle("is-done", done);
     });
 
-    document.querySelectorAll(`[data-task-id="${id}"] .plan-sub`).forEach(sub => {
-      const raw = sub.textContent || "";
-      const parts = raw.split("•");
-      const right = parts.length > 1 ? " • " + parts.slice(1).join("•").trim() : "";
-      sub.textContent = (done ? "Completed" : "In Progress") + right;
-    });
+    document.querySelectorAll(`[data-task-id="${id}"][data-item-type="task"]`).forEach((taskEl) => {
+      const dueFlag = taskEl.dataset.isDelayed === "1";
+      taskEl.dataset.status = data.status;
 
-    document.querySelectorAll(`[data-task-id="${id}"] .gcard-subline`).forEach(el => {
-      el.textContent = (done ? "Completed" : "In Progress");
+      taskEl.querySelectorAll("[data-status-pill]").forEach((pill) => {
+        pill.textContent = statusLabel(data.status, dueFlag && data.status !== "completed");
+        pill.classList.remove("status-pending", "status-delayed", "status-completed");
+        pill.classList.add(statusClass(data.status, dueFlag && data.status !== "completed"));
+      });
+
+      taskEl.querySelectorAll(".plan-sub, [data-status-text]").forEach((sub) => {
+        const raw = sub.textContent || "";
+        const parts = raw.split("•");
+        const right = parts.length > 1 ? " • " + parts.slice(1).join("•").trim() : "";
+        sub.textContent = toTitle(data.status) + (sub.classList.contains("plan-sub") ? right : "");
+      });
     });
 
   }catch(err){

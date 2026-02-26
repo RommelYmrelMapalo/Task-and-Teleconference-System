@@ -106,6 +106,7 @@ def user_dashboard():
     # get tasks assigned to logged-in user (or adjust if admin)
     user_tasks = tasks = Task.query.all()
 
+    now = datetime.now()
     tasks_data = []
     for t in user_tasks:
         if not t.deadline:
@@ -117,6 +118,7 @@ def user_dashboard():
             "status": t.status,
             "due_date": t.deadline.date(),                 # IMPORTANT: must be date()
             "due_time": t.deadline.strftime("%I:%M %p"),   # optional, for dashboard.html
+            "is_delayed": bool(t.status != "completed" and t.deadline < now),
         })
 
     meetings_data = []
@@ -377,8 +379,19 @@ def task_json(task_id):
 def complete_task(task_id):
     task = Task.query.get_or_404(task_id)
 
-    # toggle behavior (optional)
-    new_status = "completed" if task.status != "completed" else "in_progress"
+    requested_status = (request.form.get("target_status") or "").strip().lower()
+    fallback_status = (request.form.get("fallback_status") or "").strip().lower()
+    allowed_status = {"assigned", "in_progress", "for_revision", "completed"}
+
+    if requested_status in allowed_status:
+        new_status = requested_status
+    elif task.status != "completed":
+        new_status = "completed"
+    elif fallback_status in allowed_status and fallback_status != "completed":
+        new_status = fallback_status
+    else:
+        new_status = "in_progress"
+
     task.status = new_status
 
     db.session.commit()
@@ -494,7 +507,8 @@ def task_dashboard():
         "task_dashboard.html",
         user=current_user,
         tasks=tasks,
-        unread_count=unread_count
+        unread_count=unread_count,
+        now_dt=datetime.now(),
     )
 
 

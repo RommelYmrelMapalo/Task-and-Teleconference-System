@@ -1313,29 +1313,27 @@ body.drawer-open{
   border-radius: 999px;
   border: 1px solid #e5e7eb;
   white-space: nowrap;
-  text-transform: lowercase;
+  text-transform: uppercase;
 }
 
 /* low = blue */
 .prio-low {
-  background: #eef6ff;
-  border-color: #bfdbfe;
-  color: #1d4ed8;
+  background: #eff6ff;
+  color: #1e40af;
 }
 
-/* normal = orange */
+/* normal = violet */
 .prio-normal {
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
+/* high = orange */
+.prio-high {
   background: #fff7ed;
-  border-color: #fed7aa;
   color: #c2410c;
 }
 
-/* high = red */
-.prio-high {
-  background: #fef2f2;
-  border-color: #fecaca;
-  color: #b91c1c;
-}
 
 /* Overlay */
 .modal-overlay{
