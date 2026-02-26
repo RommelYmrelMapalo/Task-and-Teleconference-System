@@ -120,6 +120,12 @@
   {% set completed_tasks = tasks|selectattr("status","equalto","completed")|list if tasks else [] %}
   {% set completed_count = completed_tasks|length %}
 
+  {% set delayed_tasks = tasks|rejectattr("status","equalto","completed")
+                              |selectattr("deadline")
+                              |selectattr("deadline","lt",now_dt)
+                              |list if tasks else [] %}
+  {% set delayed_count = delayed_tasks|length %}
+
   {% set active_tasks = tasks|rejectattr("status","equalto","completed")
                             |rejectattr("status","equalto","for_revision")
                             |list if tasks else [] %}
@@ -140,6 +146,10 @@
 
     <button class="pill-tab" type="button" data-filter="completed">
       Completed <span class="pill-count">{{ completed_count }}</span>
+    </button>
+
+    <button class="pill-tab" type="button" data-filter="delayed">
+      Delayed <span class="pill-count">{{ delayed_count }}</span>
     </button>
   </div>
 
@@ -215,7 +225,7 @@
             </div>
           {% endfor %}
         {% else %}
-          <div style="padding:12px 14px; color:#6b7280;">No active tasks.</div>
+          <div style="padding:12px 14px; color:#6b7280;" data-empty-state="active">No active tasks.</div>
         {% endif %}
       </div>
     </div>
@@ -277,7 +287,7 @@
             </div>
           {% endfor %}
         {% else %}
-          <div style="padding:12px 14px; color:#6b7280;">No tasks for revision.</div>
+          <div style="padding:12px 14px; color:#6b7280;" data-empty-state="revision">No tasks for revision.</div>
         {% endif %}
       </div>
     </div>
@@ -302,7 +312,7 @@
                  id="task-{{ task.id }}"
                  data-task-id="{{ task.id }}"
                  data-status="{{ task.status }}"
-                 data-original-status="{{ task.status }}"
+                 data-original-status="{{ task.status if task.status != 'completed' else 'in_progress' }}"
                  data-title="{{ (task.title ~ ' ' ~ (task.description or ''))|lower }}"
                  data-priority="{{ (task.priority or 'normal')|lower }}"
                  data-deadline="{{ task.deadline.strftime('%Y-%m-%dT%H:%M:%S') if task.deadline else '' }}">
@@ -338,7 +348,7 @@
             </div>
           {% endfor %}
         {% else %}
-          <div style="padding:12px 14px; color:#6b7280;">No completed tasks yet.</div>
+          <div style="padding:12px 14px; color:#6b7280;" data-empty-state="completed">No completed tasks yet.</div>
         {% endif %}
       </div>
     </div>
@@ -391,6 +401,10 @@
       if(window.activeFilter === "completed"){
         okTab = (status === "completed");
       }
+      if(window.activeFilter === "delayed"){
+        const deadline = parseDeadline(el.dataset.deadline || "");
+        okTab = (status !== "completed" && !!deadline && deadline.getTime() < Date.now());
+      }
 
       el.style.display = (okSearch && okPriority && okTab) ? "" : "none";
     });
@@ -431,7 +445,58 @@
       if(fallback && row.dataset.originalStatus === "completed"){
         row.dataset.originalStatus = fallback;
       }
+     });
+  }
+
+  function sectionKeyForStatus(status){
+    if(status === "completed") return "completed";
+    if(status === "for_revision") return "revision";
+    return "active";
+  }
+
+  function recalcCounts(){
+    const active = document.querySelectorAll('[data-section="active"] .task-item').length;
+    const revision = document.querySelectorAll('[data-section="revision"] .task-item').length;
+    const completed = document.querySelectorAll('[data-section="completed"] .task-item').length;
+    const all = active + revision + completed;
+
+    const sectionCounts = { active, revision, completed };
+    document.querySelectorAll('.sec').forEach((sec) => {
+      const key = sec.dataset.section;
+      const countNode = sec.querySelector('.sec-count');
+      if(countNode && key in sectionCounts){
+        countNode.textContent = sectionCounts[key];
+      }
     });
+
+    const pillCounts = { all, active, revision, completed };
+    pills.forEach((pill) => {
+      const key = pill.dataset.filter;
+      const countNode = pill.querySelector('.pill-count');
+      if(countNode && key in pillCounts){
+        countNode.textContent = pillCounts[key];
+      }
+    });
+
+    ["active", "revision", "completed"].forEach((section) => {
+      const body = document.querySelector(`[data-section="${section}"] .sec-body`);
+      const empty = document.querySelector(`[data-empty-state="${section}"]`);
+      if(!body || !empty) return;
+      const hasRows = body.querySelectorAll('.task-item').length > 0;
+      empty.style.display = hasRows ? "none" : "";
+    });
+  }
+
+  function moveTaskToSection(taskId, status){
+    const row = document.querySelector(`#task-${taskId}`);
+    if(!row) return;
+
+    const section = sectionKeyForStatus(status);
+    const targetBody = document.querySelector(`[data-section="${section}"] .sec-body`);
+    if(!targetBody) return;
+
+    targetBody.appendChild(row);
+    recalcCounts();
   }
 
   document.addEventListener("click", async (e) => {
@@ -466,11 +531,14 @@
       });
 
       setStatusPill(id, data.status, originalStatus);
+      moveTaskToSection(id, data.status);
       window.applyFilter();
     }catch(err){
       console.error(err);
     }
   });
+
+  recalcCounts();
 </script>
 
 <!-- =========================================

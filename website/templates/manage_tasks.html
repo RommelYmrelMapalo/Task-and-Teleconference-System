@@ -35,8 +35,19 @@
     align-items:center;
     gap:8px;
     margin-right:8px;
-    padding-left:10px;
-    border-left:1px solid #cbd5e1;
+    margin-left:4px;
+    padding-left:12px;
+    position:relative;
+  }
+  .task-actions::before{
+    content:"";
+    position:absolute;
+    left:0;
+    top:50%;
+    width:1px;
+    height:28px;
+    transform:translateY(-50%);
+    background:linear-gradient(to bottom, transparent, #292a2b, transparent);
   }
   .tag{ display:inline-block; padding:4px 10px; border-radius:999px; font-size:11px; font-weight:800; margin-left:6px; }
   .tag.status-pending{ background:#fef3c7; border:1px solid #f7c900; color:#92400e; }
@@ -90,8 +101,9 @@
       flex-shrink:0;
       gap:6px;
       padding-left:0;
-      border-left:0;
+      margin-left:0;
     }
+    .task-actions::before{ content:none; }
     .task-actions .btn-mini{
       padding:6px 10px;
       font-size:12px;
@@ -129,8 +141,9 @@
       flex-shrink:0;
       gap:6px;
       padding-left:0;
-      border-left:0;
+      margin-left:0;
     }
+    .task-actions::before{ content:none; }
     .task-actions .btn-mini{
       padding:6px 10px;
       font-size:12px;
@@ -193,8 +206,8 @@
 
   <div class="td-pills mb-2">
     <button class="pill-tab active" type="button" data-filter="all" id="pill-all">All <span class="pill-count">{{ tasks|length }}</span></button>
-    <button class="pill-tab" type="button" data-filter="delayed" id="pill-delayed">Delayed</button>
-    <button class="pill-tab" type="button" data-filter="pending" id="pill-pending">Pending</button>
+    <button class="pill-tab" type="button" data-filter="delayed" id="pill-delayed">Delayed <span class="pill-count" id="pill-delayed-count">0</span></button>
+    <button class="pill-tab" type="button" data-filter="pending" id="pill-pending">Pending <span class="pill-count" id="pill-pending-count">0</span></button>
     <button class="pill-tab" type="button" data-filter="completed" id="pill-completed">Completed <span class="pill-count">{{ completed_tasks|length }}</span></button>
   </div>
 
@@ -391,6 +404,22 @@
     rows.forEach((row)=> row.parentNode.appendChild(row));
   }
 
+  function updatePillCounts(){
+    let delayedCount = 0;
+    let pendingCount = 0;
+
+    items.forEach((row)=>{
+      normalizeState(row);
+      if(row.dataset.state === 'delayed') delayedCount += 1;
+      if(row.dataset.state === 'pending') pendingCount += 1;
+    });
+
+    const delayedCountEl = document.getElementById('pill-delayed-count');
+    const pendingCountEl = document.getElementById('pill-pending-count');
+    if(delayedCountEl) delayedCountEl.textContent = delayedCount;
+    if(pendingCountEl) pendingCountEl.textContent = pendingCount;
+  }
+
   function applyFilter(){
     const q = (search.value || '').trim().toLowerCase();
     const p = priorityFilter.value;
@@ -419,6 +448,7 @@
 
   search.addEventListener('input', applyFilter);
   priorityFilter.addEventListener('change', applyFilter);
+  updatePillCounts();
   setActivePill(activeFilter);
   applyFilter();
 
