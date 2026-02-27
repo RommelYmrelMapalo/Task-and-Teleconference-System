@@ -73,11 +73,11 @@
     align-items:center;
     gap:8px;
   }
-  .task-side::before{
-    content:"";
+  .task-divider{
     width:1px;
     height:28px;
     background:linear-gradient(to bottom, transparent, #292a2b, transparent);
+    flex:0 0 1px;
   }
   .task-title{ font-size:16px; font-weight:800; color:#0f172a; margin-bottom:2px; }
   .task-meta{ font-size:12px; color:#64748b; margin-bottom:4px; }
@@ -191,7 +191,7 @@
       flex-shrink:0;
       gap:6px;
     }
-    .task-side::before{ content:none; }
+    .task-divider{ display:none; }
     .task-actions .btn-mini{
       padding:6px 10px;
       font-size:12px;
@@ -228,7 +228,7 @@
       flex-shrink:0;
       gap:6px;
     }
-    .task-side::before{ content:none; }
+    .task-divider{ display:none; }
     .task-actions .btn-mini{
       padding:6px 10px;
       font-size:12px;
@@ -359,10 +359,11 @@
                 </div>
               </div>
               <div class="task-side">
-                <div>
+                <div class="task-tags">
                   <span class="tag state-tag status-delayed">DELAYED</span>
                   <span class="tag prio-{{ pr }}">{{ pr|upper }}</span>
                 </div>
+                <span class="task-divider" aria-hidden="true"></span>
                 <div class="task-actions">
                   <button type="button" class="btn-mini" data-open-task="{{ t.id }}">Open</button>
                   <button type="button" class="btn-mini ghost" data-edit-task="{{ t.id }}">Edit</button>
@@ -416,10 +417,11 @@
                 </div>
               </div>
               <div class="task-side">
-                <div>
+                <div class="task-tags">
                   <span class="tag state-tag status-pending">PENDING</span>
                   <span class="tag prio-{{ pr }}">{{ pr|upper }}</span>
                 </div>
+                <span class="task-divider" aria-hidden="true"></span>
                 <div class="task-actions">
                   <button type="button" class="btn-mini" data-open-task="{{ t.id }}">Open</button>
                   <button type="button" class="btn-mini ghost" data-edit-task="{{ t.id }}">Edit</button>
@@ -473,10 +475,11 @@
                 </div>
               </div>
               <div class="task-side">
-                <div>
+                <div class="task-tags">
                   <span class="tag state-tag status-completed">COMPLETED</span>
                   <span class="tag prio-{{ pr }}">{{ pr|upper }}</span>
                 </div>
+                <span class="task-divider" aria-hidden="true"></span>
                 <div class="task-actions">
                   <button type="button" class="btn-mini" data-open-task="{{ t.id }}">Open</button>
                   <button type="button" class="btn-mini ghost" data-edit-task="{{ t.id }}">Edit</button>
