@@ -10,6 +10,9 @@ import calendar
 import os
 import mimetypes
 import json
+import html
+import zipfile
+import xml.etree.ElementTree as ET
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -80,6 +83,59 @@ def _guess_inline_mime(filename):
 
     guessed, _ = mimetypes.guess_type(filename)
     return guessed or "application/octet-stream"
+
+
+def _build_docx_preview_html(file_path, filename):
+    ns_uri = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    ns = {"w": ns_uri}
+    tag_text = f"{{{ns_uri}}}t"
+    tag_break = f"{{{ns_uri}}}br"
+    tag_tab = f"{{{ns_uri}}}tab"
+
+    with zipfile.ZipFile(file_path) as archive:
+        xml_bytes = archive.read("word/document.xml")
+
+    root = ET.fromstring(xml_bytes)
+    paragraphs = []
+    for paragraph in root.findall(".//w:p", ns):
+        parts = []
+        for node in paragraph.iter():
+            if node.tag == tag_text and node.text:
+                parts.append(node.text)
+            elif node.tag == tag_tab:
+                parts.append("\t")
+            elif node.tag == tag_break:
+                parts.append("\n")
+        joined = "".join(parts).strip()
+        if joined:
+            paragraphs.append(joined)
+
+    text_body = "\n\n".join(paragraphs).strip()
+    if not text_body:
+        text_body = "(No readable text content found in this DOCX file.)"
+
+    safe_title = html.escape(filename)
+    safe_body = html.escape(text_body)
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{safe_title}</title>
+  <style>
+    body {{ font-family: "Segoe UI", Arial, sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }}
+    .wrap {{ max-width: 920px; margin: 20px auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }}
+    .head {{ padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-weight: 700; }}
+    pre {{ margin: 0; padding: 16px; white-space: pre-wrap; word-break: break-word; line-height: 1.45; font: 14px/1.45 "Segoe UI", Arial, sans-serif; }}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="head">{safe_title}</div>
+    <pre>{safe_body}</pre>
+  </div>
+</body>
+</html>"""
 
 def _save_uploaded_file(uploaded_file):
     filename = secure_filename(uploaded_file.filename)
@@ -447,6 +503,20 @@ def task_file_view(task_id):
     if not file_dir:
         abort(404)
     file_path = os.path.join(file_dir, filename)
+    extension = os.path.splitext(filename)[1].lower()
+
+    if extension == ".docx":
+        try:
+            preview_html = _build_docx_preview_html(file_path, filename)
+            return Response(preview_html, mimetype="text/html; charset=utf-8")
+        except Exception:
+            safe_name = html.escape(filename)
+            return Response(
+                f'<p>DOCX preview is unavailable for <strong>{safe_name}</strong>.</p>'
+                f'<p><a href="{url_for("views.task_file_download", task_id=task_id, index=file_index)}">Download file</a></p>',
+                mimetype="text/html; charset=utf-8",
+            )
+
     mime_type = _guess_inline_mime(filename)
 
     with open(file_path, "rb") as file_handle:
