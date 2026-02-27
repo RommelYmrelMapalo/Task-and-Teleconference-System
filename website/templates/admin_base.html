@@ -123,21 +123,23 @@
   <!-- ===== MAIN CONTENT ===== -->
   <main class="main-area">
     <div class="content-wrap">
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <div class="flash-stack" aria-live="polite" aria-atomic="true">
-            {% for category, message in messages %}
-              <div class="flash-modern {% if category == 'error' %}flash-modern-error{% else %}flash-modern-success{% endif %}" role="alert">
-                <div class="flash-modern-content">
-                  <span class="flash-modern-dot"></span>
-                  <span>{{ message }}</span>
+      {% block global_flash %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-stack" aria-live="polite" aria-atomic="true">
+              {% for category, message in messages %}
+                <div class="flash-modern {% if category == 'error' %}flash-modern-error{% else %}flash-modern-success{% endif %}" role="alert">
+                  <div class="flash-modern-content">
+                    <span class="flash-modern-dot"></span>
+                    <span>{{ message }}</span>
+                  </div>
+                  <button type="button" class="flash-modern-close" aria-label="Close">&times;</button>
                 </div>
-                <button type="button" class="flash-modern-close" aria-label="Close">&times;</button>
-              </div>
-            {% endfor %}
-          </div>
-        {% endif %}
-      {% endwith %}
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+      {% endblock %}
 
       {% block content %}{% endblock %}
 

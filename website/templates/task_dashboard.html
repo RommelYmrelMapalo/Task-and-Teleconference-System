@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Task Dashboard{% endblock %}
+{% block global_flash %}{% endblock %}
 
 {% block content %}
 
@@ -57,6 +58,60 @@
   .st-pending{ background:#fef3c7; border-color:#f7c900; color:#92400e; }
   .st-delayed{ background:#fef2f2; border-color:#fa0000; color:#b91c1c; }
   .st-completed{ background:#ecfdf5; border-color:#00ff59; color:#065f46; }
+
+  /* align toolbar controls like manage_tasks (priority first, left side) */
+  .td-toolbar{
+    justify-content:flex-start;
+  }
+  .td-search{
+    flex:0 1 300px;
+    max-width:300px;
+  }
+  .td-filter{
+    width:170px !important;
+    flex:0 0 170px;
+  }
+  .file-actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .file-btn{
+    appearance:none;
+    border:1px solid #d5dde8;
+    background:#ffffff;
+    color:#0f172a;
+    border-radius:8px;
+    padding:5px 12px;
+    font-size:12px;
+    font-weight:700;
+    text-decoration:none;
+    line-height:1.2;
+    transition:all .16s ease;
+  }
+  .file-btn:hover{
+    background:#f8fafc;
+    border-color:#c7d3e3;
+    text-decoration:none;
+  }
+  .file-btn.download{
+    background:#1677ff;
+    border-color:#1677ff;
+    color:#fff;
+  }
+  .file-btn.download:hover{
+    background:#0f66dd;
+    border-color:#0f66dd;
+  }
+  .file-btn.remove{
+    color:#b42318;
+    border-color:#f3c2c2;
+    background:#fff8f8;
+  }
+  .file-btn.remove:hover{
+    background:#feecec;
+    border-color:#e89e9e;
+  }
 </style>
 
 <div class="main-inner">
@@ -154,13 +209,13 @@
   </div>
 
   <div class="td-toolbar">
-    <input id="taskSearch" class="form-control td-search" placeholder="Search tasks..." />
-    <select id="priorityFilter" class="form-control td-filter" style="width:160px;">
+    <select id="priorityFilter" class="form-control td-filter">
       <option value="all">All Priority</option>
       <option value="high">High</option>
       <option value="normal">Normal</option>
       <option value="low">Low</option>
     </select>
+    <input id="taskSearch" class="form-control td-search" placeholder="Search tasks..." />
   </div>
 
   <div class="scroll">
@@ -605,11 +660,6 @@
         <div class="drawer-label">DUE TIME</div>
         <input type="time" name="due_time" class="drawer-input">
       </div>
-
-      <div class="drawer-field">
-        <div class="drawer-label">EST. TIME</div>
-        <input name="est_time" class="drawer-input" placeholder="30 min">
-      </div>
     </div>
 
     <div class="drawer-field">
@@ -618,16 +668,17 @@
         <span class="assignee-dot"></span>
         <span>Assigned to you</span>
       </div>
-      <small class="drawer-hint">For now, tasks are assigned to the logged-in user.</small>
+      <small class="drawer-hint">Tasks are assigned to the logged-in user. Only admin can assign to others</small>
       <small class="drawer-hint">Everyone can see and edit tasks.</small>
     </div>
 
     <div class="drawer-card">
       <div style="font-weight:900; margin-bottom:6px;">Attach Documents</div>
       <div class="drawer-muted" style="font-size:12px; margin-bottom:10px;">
-        Upload a file to include with this task (PDF, DOCX, PNG, JPG).
+        Upload one or more files to include with this task (PDF, DOCX, PNG, JPG).
       </div>
-      <input type="file" name="file" class="drawer-file" />
+      <input type="file" name="files" id="createFilesInput" class="drawer-file" multiple />
+      <div id="createFilesSelected" class="drawer-muted" style="display:none; margin-top:8px;"></div>
     </div>
 
     <div class="drawer-field">
@@ -687,28 +738,35 @@
   <div class="drawer-head">
     <div>
       <div class="drawer-title" id="viewTitle">Task</div>
-      <div class="drawer-sub" id="viewSub">Details</div>
+      <div class="drawer-sub">Task details</div>
     </div>
     <button type="button" class="drawer-x" id="closeView" aria-label="Close">×</button>
   </div>
 
   <div class="drawer-body">
-    <div class="drawer-kv"><div class="k">Status</div><div class="v" id="viewStatus">-</div></div>
-    <div class="drawer-kv"><div class="k">Priority</div><div class="v" id="viewPriority">-</div></div>
-    <div class="drawer-kv"><div class="k">Deadline</div><div class="v" id="viewDeadline">-</div></div>
+    <div class="drawer-grid3" style="margin-bottom:12px;">
+      <div class="drawer-field">
+        <div class="drawer-label">STATUS</div>
+        <div id="viewStatus" class="drawer-input" style="display:flex; align-items:center;">-</div>
+      </div>
+      <div class="drawer-field">
+        <div class="drawer-label">PRIORITY</div>
+        <div id="viewPriority" class="drawer-input" style="display:flex; align-items:center;">-</div>
+      </div>
+      <div class="drawer-field">
+        <div class="drawer-label">DEADLINE</div>
+        <div id="viewDeadline" class="drawer-input" style="display:flex; align-items:center;">-</div>
+      </div>
+    </div>
 
-    <div class="drawer-card">
-      <div style="font-weight:900; margin-bottom:6px;">Description</div>
-      <div class="drawer-muted" id="viewDesc">—</div>
+    <div class="drawer-field">
+      <div class="drawer-label">DESCRIPTION</div>
+      <div id="viewDesc" class="drawer-textarea" style="min-height:110px;">—</div>
     </div>
 
     <div class="drawer-card" id="viewFileCard" style="display:none;">
-      <div style="font-weight:900; margin-bottom:10px;">Attachment</div>
-      <div class="drawer-muted" id="viewFileName"></div>
-      <div style="display:flex; gap:10px; margin-top:10px;">
-        <a class="btn-mini" id="btnViewFile" target="_blank">View</a>
-        <a class="btn-mini ghost" id="btnDownloadFile">Download</a>
-      </div>
+      <div style="font-weight:900; margin-bottom:10px;">Attachments</div>
+      <div id="viewFilesList" style="display:grid; gap:10px;"></div>
     </div>
   </div>
 </aside>
@@ -769,8 +827,14 @@
     </div>
 
     <div class="drawer-card">
-      <div style="font-weight:900; margin-bottom:6px;">Replace Attachment (optional)</div>
-      <input type="file" name="file" class="drawer-file">
+      <div id="editCurrentFileCard" style="display:none; margin-bottom:10px;">
+        <div style="font-weight:900; margin-bottom:6px;">Current Attachments</div>
+        <div id="editCurrentFilesList" style="display:grid; gap:10px;"></div>
+      </div>
+      <div id="editRemoveFilesInputs"></div>
+      <div style="font-weight:900; margin-bottom:6px;">Replace Attachments (optional)</div>
+      <input type="file" name="files" id="editFilesInput" class="drawer-file" multiple>
+      <div id="editFilesSelected" class="drawer-muted" style="display:none; margin-top:8px;"></div>
     </div>
 
     <div class="drawer-footer">
@@ -799,6 +863,7 @@
 
   const editForm = document.getElementById("editForm");
   const scrollContainer = document.querySelector(".scroll");
+  const removedExistingAttachments = new Set();
 
   const LAST_EDIT_KEY = "lastEditedTaskId";
 
@@ -845,6 +910,143 @@
     return await res.json();
   }
 
+  function syncRemovedExistingFiles(){
+    const holder = document.getElementById("editRemoveFilesInputs");
+    if(!holder) return;
+    holder.replaceChildren();
+    removedExistingAttachments.forEach((filename) => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "remove_existing_files";
+      input.value = filename;
+      holder.appendChild(input);
+    });
+  }
+
+  function removeSelectedFile(fileInput, index){
+    if(!fileInput) return;
+    const transfer = new DataTransfer();
+    Array.from(fileInput.files || []).forEach((file, i) => {
+      if(i !== index) transfer.items.add(file);
+    });
+    fileInput.files = transfer.files;
+  }
+
+  function renderFileList(containerId, taskId, filePaths, options = {}){
+    const allowRemove = !!options.allowRemove;
+    const onRemove = typeof options.onRemove === "function" ? options.onRemove : null;
+    const container = document.getElementById(containerId);
+    if(!container) return;
+    container.replaceChildren();
+
+    filePaths.forEach((item, index) => {
+      const filename = typeof item === "string" ? item : item.filename;
+      const fileIndex = typeof item === "string" ? index : (Number.isInteger(item.index) ? item.index : index);
+      const row = document.createElement("div");
+      row.style.display = "grid";
+      row.style.gap = "6px";
+
+      const name = document.createElement("div");
+      name.className = "drawer-muted";
+      name.textContent = filename;
+
+      const actions = document.createElement("div");
+      actions.className = "file-actions";
+
+      const viewLink = document.createElement("a");
+      viewLink.className = "file-btn view";
+      viewLink.target = "_blank";
+      viewLink.href = `/task/${taskId}/file/view?index=${fileIndex}`;
+      viewLink.textContent = "View";
+
+      const downloadLink = document.createElement("a");
+      downloadLink.className = "file-btn download";
+      downloadLink.href = `/task/${taskId}/file/download?index=${fileIndex}`;
+      downloadLink.textContent = "Download";
+
+      actions.appendChild(viewLink);
+      actions.appendChild(downloadLink);
+
+      if(allowRemove){
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "file-btn remove";
+        removeBtn.textContent = "Remove";
+        removeBtn.addEventListener("click", () => {
+          if(onRemove) onRemove(filename);
+        });
+        actions.appendChild(removeBtn);
+      }
+
+      row.appendChild(name);
+      row.appendChild(actions);
+      container.appendChild(row);
+    });
+  }
+
+  function renderSelectedFileNames(containerId, fileInput){
+    const container = document.getElementById(containerId);
+    if(!container) return;
+    container.replaceChildren();
+
+    const files = Array.from((fileInput && fileInput.files) || []);
+    const names = files.map((file) => file.name).filter(Boolean);
+    if(!names.length){
+      container.style.display = "none";
+      return;
+    }
+
+    container.style.display = "block";
+    names.forEach((name, index) => {
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.justifyContent = "space-between";
+      row.style.gap = "8px";
+
+      const label = document.createElement("span");
+      label.textContent = `- ${name}`;
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "file-btn remove";
+      removeBtn.textContent = "Remove";
+      removeBtn.addEventListener("click", () => {
+        removeSelectedFile(fileInput, index);
+        renderSelectedFileNames(containerId, fileInput);
+      });
+
+      row.appendChild(label);
+      row.appendChild(removeBtn);
+      container.appendChild(row);
+    });
+  }
+
+  function renderEditableExistingAttachments(taskId, allAttachments){
+    const currentFileCard = document.getElementById("editCurrentFileCard");
+    const visible = (allAttachments || [])
+      .map((filename, index) => ({ filename, index }))
+      .filter((entry) => !removedExistingAttachments.has(entry.filename));
+    if(!currentFileCard) return;
+
+    if(!visible.length){
+      currentFileCard.style.display = "none";
+      const list = document.getElementById("editCurrentFilesList");
+      if(list) list.replaceChildren();
+      return;
+    }
+
+    currentFileCard.style.display = "block";
+    renderFileList("editCurrentFilesList", taskId, visible, {
+      allowRemove: true,
+      onRemove: (filename) => {
+        removedExistingAttachments.add(filename);
+        syncRemovedExistingFiles();
+        renderEditableExistingAttachments(taskId, allAttachments);
+      }
+    });
+  }
+
   function highlightRow(taskId){
     const row = document.querySelector(`.task-item[data-task-id="${taskId}"]`);
     if(!row) return;
@@ -882,14 +1084,17 @@
     document.getElementById("viewDeadline").textContent = data.deadline || "-";
     document.getElementById("viewDesc").textContent = data.description || "—";
 
+    const attachments = Array.isArray(data.file_paths) && data.file_paths.length
+      ? data.file_paths
+      : (data.file_path ? [data.file_path] : []);
     const fileCard = document.getElementById("viewFileCard");
-    if(data.file_path){
+    if(attachments.length){
       fileCard.style.display = "block";
-      document.getElementById("viewFileName").textContent = data.file_path;
-      document.getElementById("btnViewFile").href = `/task/${taskId}/file/view`;
-      document.getElementById("btnDownloadFile").href = `/task/${taskId}/file/download`;
+      renderFileList("viewFilesList", taskId, attachments);
     } else {
       fileCard.style.display = "none";
+      const filesList = document.getElementById("viewFilesList");
+      if(filesList) filesList.replaceChildren();
     }
 
     openDrawer(viewDrawer, viewBackdrop);
@@ -907,13 +1112,25 @@
     document.getElementById("editPriority").value = data.priority || "normal";
     document.getElementById("editDesc").value = data.description || "";
 
-    if(data.deadline){
-      const parts = data.deadline.split(" ");
-      if(parts[0]) document.getElementById("editDate").value = parts[0];
-      if(parts[1]) document.getElementById("editTime").value = parts[1];
+    if(data.deadline_date || data.deadline_time){
+      document.getElementById("editDate").value = data.deadline_date || "";
+      document.getElementById("editTime").value = data.deadline_time || "";
     } else {
       document.getElementById("editDate").value = "";
       document.getElementById("editTime").value = "";
+    }
+
+    const attachments = Array.isArray(data.file_paths) && data.file_paths.length
+      ? data.file_paths
+      : (data.file_path ? [data.file_path] : []);
+    removedExistingAttachments.clear();
+    syncRemovedExistingFiles();
+    renderEditableExistingAttachments(taskId, attachments);
+
+    const editFilesInput = document.getElementById("editFilesInput");
+    if(editFilesInput){
+      editFilesInput.value = "";
+      renderSelectedFileNames("editFilesSelected", editFilesInput);
     }
 
     openDrawer(editDrawer, editBackdrop);
@@ -924,6 +1141,20 @@
       const action = editForm.getAttribute("action") || "";
       const m = action.match(/\/task\/(\d+)\/update/);
       if(m && m[1]) setLastEdited(m[1]);
+    });
+  }
+
+  const createFilesInput = document.getElementById("createFilesInput");
+  if(createFilesInput){
+    createFilesInput.addEventListener("change", () => {
+      renderSelectedFileNames("createFilesSelected", createFilesInput);
+    });
+  }
+
+  const editFilesInput = document.getElementById("editFilesInput");
+  if(editFilesInput){
+    editFilesInput.addEventListener("change", () => {
+      renderSelectedFileNames("editFilesSelected", editFilesInput);
     });
   }
 

@@ -1,5 +1,6 @@
 {% extends "admin_base.html" %}
 {% block title %}Manage Tasks{% endblock %}
+{% block global_flash %}{% endblock %}
 
 {% block content %}
 <style>
@@ -11,13 +12,73 @@
   .mt-priority{ width:170px; }
 
   .mt-list{ overflow:auto; padding-right:6px; }
-  .task-row{
-    background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px;
-    display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:10px;
-    box-shadow:0 4px 14px rgba(15,23,42,.04);
+  .sec{
+    background:#fff;
+    border:1px solid #e9edf3;
+    border-radius:14px;
+    box-shadow:0 8px 22px rgba(31,36,48,.06);
+    overflow:hidden;
+    margin-bottom:12px;
   }
+  .sec-h{
+    width:100%;
+    border:0;
+    background:#f8fafc;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:12px 14px;
+    cursor:pointer;
+  }
+  .sec-h-left{ display:flex; align-items:center; gap:10px; }
+  .sec-title{ font-weight:900; color:#111827; margin:0; font-size:13px; }
+  .sec-badge{
+    width:10px;
+    height:10px;
+    border-radius:999px;
+    display:inline-block;
+  }
+  .sec-count{
+    font-size:12px;
+    font-weight:900;
+    color:#111827;
+    background:#eef2f7;
+    border-radius:999px;
+    padding:4px 10px;
+  }
+  .sec-caret{ opacity:.75; transition:transform .18s ease; }
+  .sec.open .sec-caret{ transform:rotate(180deg); }
+  .sec-body{
+    padding:0;
+    display:none;
+    background:#fff;
+  }
+  .sec.open .sec-body{ display:block; }
+  .task-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:12px 14px;
+    border-top:1px solid #eef2f7;
+  }
+  .task-left{ display:flex; align-items:center; gap:14px; flex:1; min-width:0; }
+  .task-check-btn{ cursor:pointer; }
+  .task-check-btn.is-done{ background:#10b981; border-color:#10b981; }
   .task-main{ flex:1; min-width:0; }
-  .task-side{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .task-side{
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .task-side::before{
+    content:"";
+    width:1px;
+    height:28px;
+    background:linear-gradient(to bottom, transparent, #292a2b, transparent);
+  }
   .task-title{ font-size:16px; font-weight:800; color:#0f172a; margin-bottom:2px; }
   .task-meta{ font-size:12px; color:#64748b; margin-bottom:4px; }
   .task-desc{
@@ -34,29 +95,60 @@
     display:flex;
     align-items:center;
     gap:8px;
-    margin-right:8px;
-    margin-left:4px;
-    padding-left:12px;
-    position:relative;
-  }
-  .task-actions::before{
-    content:"";
-    position:absolute;
-    left:0;
-    top:50%;
-    width:1px;
-    height:28px;
-    transform:translateY(-50%);
-    background:linear-gradient(to bottom, transparent, #292a2b, transparent);
   }
   .tag{ display:inline-block; padding:4px 10px; border-radius:999px; font-size:11px; font-weight:800; margin-left:6px; }
   .tag.status-pending{ background:#fef3c7; border:1px solid #f7c900; color:#92400e; }
   .tag.status-delayed{ background:#fef2f2; border:1px solid #fa0000; color:#b91c1c; }
   .tag.status-completed{ background:#ecfdf5; border:1px solid #00ff59; color:#065f46; }
-  .tag.prio-low{ background:#eff6ff; color:#1e40af; }
-  .tag.prio-normal{ background:#f5f3ff; color:#6d28d9; }
-  .tag.prio-high{ background:#fff7ed; color:#c2410c; }
+  .tag.prio-low{ background:#eff6ff; border:1px solid; color:#1e40af; }
+  .tag.prio-normal{ background:#f5f3ff; border:1px solid; color:#6d28d9; }
+  .tag.prio-high{ background:#fff7ed; border:1px solid; color:#c2410c; }
   .empty{ color:#64748b; font-size:13px; padding:10px; }
+  .task-item.task-focus{
+    outline: 3px solid rgba(59,130,246,.45);
+    box-shadow: 0 0 0 6px rgba(59,130,246,.16);
+  }
+  .file-actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .file-btn{
+    appearance:none;
+    border:1px solid #d5dde8;
+    background:#ffffff;
+    color:#0f172a;
+    border-radius:8px;
+    padding:5px 12px;
+    font-size:12px;
+    font-weight:700;
+    text-decoration:none;
+    line-height:1.2;
+    transition:all .16s ease;
+  }
+  .file-btn:hover{
+    background:#f8fafc;
+    border-color:#c7d3e3;
+    text-decoration:none;
+  }
+  .file-btn.download{
+    background:#1677ff;
+    border-color:#1677ff;
+    color:#fff;
+  }
+  .file-btn.download:hover{
+    background:#0f66dd;
+    border-color:#0f66dd;
+  }
+  .file-btn.remove{
+    color:#b42318;
+    border-color:#f3c2c2;
+    background:#fff8f8;
+  }
+  .file-btn.remove:hover{
+    background:#feecec;
+    border-color:#e89e9e;
+  }
 
   .drawer-grid2{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
   .drawer-grid3{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
@@ -68,7 +160,6 @@
     .drawer-grid2,.drawer-grid3{ grid-template-columns:1fr; }
     .mt-toolbar{ flex-direction:column; }
     .mt-priority,.mt-search{ width:100%; max-width:100%; }
-    .task-actions{ margin-right:0; }
   }
 
   @media (max-width: 560px){
@@ -97,13 +188,10 @@
       gap:6px;
     }
     .task-actions{
-      margin-right:0;
       flex-shrink:0;
       gap:6px;
-      padding-left:0;
-      margin-left:0;
     }
-    .task-actions::before{ content:none; }
+    .task-side::before{ content:none; }
     .task-actions .btn-mini{
       padding:6px 10px;
       font-size:12px;
@@ -137,13 +225,10 @@
       gap:6px;
     }
     .task-actions{
-      margin-right:0;
       flex-shrink:0;
       gap:6px;
-      padding-left:0;
-      margin-left:0;
     }
-    .task-actions::before{ content:none; }
+    .task-side::before{ content:none; }
     .task-actions .btn-mini{
       padding:6px 10px;
       font-size:12px;
@@ -155,7 +240,7 @@
 
 <div class="mt-wrap">
   <div class="mt-head">
-    <h1 class="td-title" style="margin:0;">Admin › Manage Tasks</h1>
+    <h1 class="td-title" style="margin:0;">Admin Dashboard &nbsp;›&nbsp; Manage Tasks</h1>
     <div class="mt-sub">Create tasks with notifications and filter by delayed, pending, completed, and priority.</div>
 
     {% if request.args.get("updated") in ["1", "true"] %}
@@ -202,12 +287,24 @@
     {% endwith %}
   </div>
 
+  {% set delayed_tasks = tasks|rejectattr("status","equalto","completed")
+                              |selectattr("deadline")
+                              |selectattr("deadline","lt",now_dt)
+                              |list if tasks else [] %}
+  {% set pending_tasks = tasks|rejectattr("status","equalto","completed")
+                              |rejectattr("deadline")
+                              |list if tasks else [] %}
+  {% set timed_pending_tasks = tasks|rejectattr("status","equalto","completed")
+                                   |selectattr("deadline")
+                                   |rejectattr("deadline","lt",now_dt)
+                                   |list if tasks else [] %}
+  {% set pending_tasks = pending_tasks + timed_pending_tasks %}
   {% set completed_tasks = tasks|selectattr("status","equalto","completed")|list if tasks else [] %}
 
   <div class="td-pills mb-2">
     <button class="pill-tab active" type="button" data-filter="all" id="pill-all">All <span class="pill-count">{{ tasks|length }}</span></button>
-    <button class="pill-tab" type="button" data-filter="delayed" id="pill-delayed">Delayed <span class="pill-count" id="pill-delayed-count">0</span></button>
-    <button class="pill-tab" type="button" data-filter="pending" id="pill-pending">Pending <span class="pill-count" id="pill-pending-count">0</span></button>
+    <button class="pill-tab" type="button" data-filter="delayed" id="pill-delayed">Delayed <span class="pill-count" id="pill-delayed-count">{{ delayed_tasks|length }}</span></button>
+    <button class="pill-tab" type="button" data-filter="pending" id="pill-pending">Pending <span class="pill-count" id="pill-pending-count">{{ pending_tasks|length }}</span></button>
     <button class="pill-tab" type="button" data-filter="completed" id="pill-completed">Completed <span class="pill-count">{{ completed_tasks|length }}</span></button>
   </div>
 
@@ -222,39 +319,180 @@
   </div>
 
   <div class="mt-list" id="taskList">
-    {% for t in tasks %}
-      {% set pr = (t.priority or 'normal')|lower %}
-      <div class="task-row task-item"
-           data-task-id="{{ t.id }}"
-           data-status="{{ t.status or '' }}"
-           data-priority="{{ pr }}"
-           data-title="{{ (t.title ~ ' ' ~ (t.description or '') ~ ' ' ~ ((t.assigned_user.firstname if t.assigned_user else 'unassigned')))|lower }}"
-           data-deadline="{{ t.deadline.strftime('%Y-%m-%dT%H:%M:%S') if t.deadline else '' }}">
-        <div class="task-main">
-          <div class="task-title">{{ t.title }}</div>
-          <div class="task-meta">
-            Assigned: {{ t.assigned_user.firstname if t.assigned_user else 'Unassigned' }}
-          </div>
-          <div class="task-meta">
-            Deadline: {{ t.deadline.strftime('%Y-%m-%d %I:%M %p') if t.deadline else '-' }}
-          </div>
-          <div class="task-desc">{{ t.description or 'No description provided.' }}</div>
+    <div class="sec open" data-section="delayed">
+      <button class="sec-h" type="button">
+        <div class="sec-h-left">
+          <span class="sec-title">Delayed Tasks</span>
+          <span class="sec-badge" style="background:#ef4444;"></span>
         </div>
-
-        <div class="task-side">
-          <div>
-            <span class="tag state-tag">PENDING</span>
-            <span class="tag prio-{{ pr }}">{{ pr|upper }}</span>
-          </div>
-          <div class="task-actions">
-            <button type="button" class="btn-mini" data-open-task="{{ t.id }}">Open</button>
-            <button type="button" class="btn-mini ghost" data-edit-task="{{ t.id }}">Edit</button>
-          </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="sec-count">{{ delayed_tasks|length }}</span>
+          <span class="sec-caret">▾</span>
         </div>
+      </button>
+      <div class="sec-body">
+        {% if delayed_tasks and delayed_tasks|length > 0 %}
+          {% for t in delayed_tasks %}
+            {% set pr = (t.priority or 'normal')|lower %}
+            <div class="task-row task-item"
+                 id="task-{{ t.id }}"
+                 data-task-id="{{ t.id }}"
+                 data-status="{{ t.status or '' }}"
+                 data-original-status="{{ t.status or 'in_progress' }}"
+                 data-priority="{{ pr }}"
+                 data-title="{{ (t.title ~ ' ' ~ (t.description or '') ~ ' ' ~ ((t.assigned_user.firstname if t.assigned_user else 'unassigned')))|lower }}"
+                 data-deadline="{{ t.deadline.strftime('%Y-%m-%dT%H:%M:%S') if t.deadline else '' }}">
+              <div class="task-left">
+                <button type="button"
+                        class="task-check task-check-btn"
+                        aria-label="Toggle complete"
+                        data-complete-task="{{ t.id }}"></button>
+                <div class="task-main">
+                  <div class="task-title">{{ t.title }}</div>
+                  <div class="task-meta">
+                    Assigned: {{ t.assigned_user.firstname if t.assigned_user else 'Unassigned' }}
+                  </div>
+                  <div class="task-meta">
+                    Deadline: {{ t.deadline.strftime('%Y-%m-%d %I:%M %p') if t.deadline else '-' }}
+                  </div>
+                  <div class="task-desc">{{ t.description or 'No description provided.' }}</div>
+                </div>
+              </div>
+              <div class="task-side">
+                <div>
+                  <span class="tag state-tag status-delayed">DELAYED</span>
+                  <span class="tag prio-{{ pr }}">{{ pr|upper }}</span>
+                </div>
+                <div class="task-actions">
+                  <button type="button" class="btn-mini" data-open-task="{{ t.id }}">Open</button>
+                  <button type="button" class="btn-mini ghost" data-edit-task="{{ t.id }}">Edit</button>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty" data-empty-state="delayed">No delayed tasks.</div>
+        {% endif %}
       </div>
-    {% else %}
+    </div>
+
+    <div class="sec open" data-section="pending">
+      <button class="sec-h" type="button">
+        <div class="sec-h-left">
+          <span class="sec-title">Pending Tasks</span>
+          <span class="sec-badge" style="background:#f59e0b;"></span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="sec-count">{{ pending_tasks|length }}</span>
+          <span class="sec-caret">▾</span>
+        </div>
+      </button>
+      <div class="sec-body">
+        {% if pending_tasks and pending_tasks|length > 0 %}
+          {% for t in pending_tasks %}
+            {% set pr = (t.priority or 'normal')|lower %}
+            <div class="task-row task-item"
+                 id="task-{{ t.id }}"
+                 data-task-id="{{ t.id }}"
+                 data-status="{{ t.status or '' }}"
+                 data-original-status="{{ t.status or 'in_progress' }}"
+                 data-priority="{{ pr }}"
+                 data-title="{{ (t.title ~ ' ' ~ (t.description or '') ~ ' ' ~ ((t.assigned_user.firstname if t.assigned_user else 'unassigned')))|lower }}"
+                 data-deadline="{{ t.deadline.strftime('%Y-%m-%dT%H:%M:%S') if t.deadline else '' }}">
+              <div class="task-left">
+                <button type="button"
+                        class="task-check task-check-btn"
+                        aria-label="Toggle complete"
+                        data-complete-task="{{ t.id }}"></button>
+                <div class="task-main">
+                  <div class="task-title">{{ t.title }}</div>
+                  <div class="task-meta">
+                    Assigned: {{ t.assigned_user.firstname if t.assigned_user else 'Unassigned' }}
+                  </div>
+                  <div class="task-meta">
+                    Deadline: {{ t.deadline.strftime('%Y-%m-%d %I:%M %p') if t.deadline else '-' }}
+                  </div>
+                  <div class="task-desc">{{ t.description or 'No description provided.' }}</div>
+                </div>
+              </div>
+              <div class="task-side">
+                <div>
+                  <span class="tag state-tag status-pending">PENDING</span>
+                  <span class="tag prio-{{ pr }}">{{ pr|upper }}</span>
+                </div>
+                <div class="task-actions">
+                  <button type="button" class="btn-mini" data-open-task="{{ t.id }}">Open</button>
+                  <button type="button" class="btn-mini ghost" data-edit-task="{{ t.id }}">Edit</button>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty" data-empty-state="pending">No pending tasks.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="sec open" data-section="completed">
+      <button class="sec-h" type="button">
+        <div class="sec-h-left">
+          <span class="sec-title">Completed Tasks</span>
+          <span class="sec-badge" style="background:#10b981;"></span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="sec-count">{{ completed_tasks|length }}</span>
+          <span class="sec-caret">▾</span>
+        </div>
+      </button>
+      <div class="sec-body">
+        {% if completed_tasks and completed_tasks|length > 0 %}
+          {% for t in completed_tasks %}
+            {% set pr = (t.priority or 'normal')|lower %}
+            <div class="task-row task-item"
+                 id="task-{{ t.id }}"
+                 data-task-id="{{ t.id }}"
+                 data-status="{{ t.status or '' }}"
+                 data-original-status="in_progress"
+                 data-priority="{{ pr }}"
+                 data-title="{{ (t.title ~ ' ' ~ (t.description or '') ~ ' ' ~ ((t.assigned_user.firstname if t.assigned_user else 'unassigned')))|lower }}"
+                 data-deadline="{{ t.deadline.strftime('%Y-%m-%dT%H:%M:%S') if t.deadline else '' }}">
+              <div class="task-left">
+                <button type="button"
+                        class="task-check task-check-btn is-done"
+                        aria-label="Toggle complete"
+                        data-complete-task="{{ t.id }}"></button>
+                <div class="task-main">
+                  <div class="task-title">{{ t.title }}</div>
+                  <div class="task-meta">
+                    Assigned: {{ t.assigned_user.firstname if t.assigned_user else 'Unassigned' }}
+                  </div>
+                  <div class="task-meta">
+                    Deadline: {{ t.deadline.strftime('%Y-%m-%d %I:%M %p') if t.deadline else '-' }}
+                  </div>
+                  <div class="task-desc">{{ t.description or 'No description provided.' }}</div>
+                </div>
+              </div>
+              <div class="task-side">
+                <div>
+                  <span class="tag state-tag status-completed">COMPLETED</span>
+                  <span class="tag prio-{{ pr }}">{{ pr|upper }}</span>
+                </div>
+                <div class="task-actions">
+                  <button type="button" class="btn-mini" data-open-task="{{ t.id }}">Open</button>
+                  <button type="button" class="btn-mini ghost" data-edit-task="{{ t.id }}">Edit</button>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty" data-empty-state="completed">No completed tasks yet.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if not tasks or tasks|length == 0 %}
       <div class="empty">No tasks yet. Click the + button to create one.</div>
-    {% endfor %}
+    {% endif %}
   </div>
 </div>
 
@@ -270,7 +508,7 @@
   <form method="POST" action="{{ url_for('views.manage_tasks_create') }}" class="drawer-body" enctype="multipart/form-data">
     <div class="drawer-field"><div class="drawer-label">TITLE</div><input name="title" class="drawer-input" required></div>
 
-    <div class="drawer-grid3">
+    <div class="drawer-grid2">
       <div class="drawer-field"><div class="drawer-label">STATUS</div>
         <select name="status" class="drawer-input">
           <option value="in_progress">In Progress</option><option value="for_revision">For Revision</option><option value="completed">Completed</option>
@@ -279,12 +517,17 @@
       <div class="drawer-field"><div class="drawer-label">PRIORITY</div>
         <select name="priority" class="drawer-input"><option value="low">Low</option><option value="normal" selected>Normal</option><option value="high">High</option></select>
       </div>
-      <div class="drawer-field"><div class="drawer-label">ATTACHMENT</div><input type="file" name="file" class="drawer-file"></div>
     </div>
 
     <div class="drawer-grid2">
       <div class="drawer-field"><div class="drawer-label">DUE DATE</div><input type="date" name="due_date" class="drawer-input" required></div>
       <div class="drawer-field"><div class="drawer-label">DUE TIME</div><input type="time" name="due_time" class="drawer-input"></div>
+    </div>
+
+    <div class="drawer-field">
+      <div class="drawer-label">ATTACHMENTS</div>
+      <input type="file" name="files" id="createFilesInput" class="drawer-file" multiple>
+      <div id="createFilesSelected" class="drawer-muted" style="display:none; margin-top:8px;"></div>
     </div>
 
     <div class="drawer-field">
@@ -315,9 +558,8 @@
     <div class="drawer-field"><div class="drawer-label">DESCRIPTION</div><div id="viewDesc" class="drawer-textarea" style="min-height:110px;">—</div></div>
 
     <div class="drawer-card" id="viewFileCard" style="display:none;">
-      <div style="font-weight:900; margin-bottom:6px;">Attachment</div>
-      <div id="viewFileName" class="drawer-muted" style="margin-bottom:8px;"></div>
-      <div style="display:flex; gap:8px;"><a id="btnViewFile" class="btn btn-light btn-sm" target="_blank">View</a><a id="btnDownloadFile" class="btn btn-primary btn-sm">Download</a></div>
+      <div style="font-weight:900; margin-bottom:6px;">Attachments</div>
+      <div id="viewFilesList" style="display:grid; gap:10px;"></div>
     </div>
   </div>
 </aside>
@@ -339,99 +581,138 @@
     <div class="drawer-field"><div class="drawer-label">DUE TIME</div><input type="time" class="drawer-input" name="due_time" id="editTime"></div>
     <div class="drawer-field"><div class="drawer-label">DESCRIPTION</div><textarea class="drawer-textarea" name="description" id="editDesc" rows="6"></textarea></div>
     <div class="drawer-card" id="editCurrentFileCard" style="display:none; margin-bottom:10px;">
-      <div style="font-weight:900; margin-bottom:6px;">Current Attachment</div>
-      <div id="editCurrentFileName" class="drawer-muted" style="margin-bottom:8px;"></div>
-      <div style="display:flex; gap:8px;">
-        <a id="editBtnViewFile" class="btn btn-light btn-sm" target="_blank">View</a>
-        <a id="editBtnDownloadFile" class="btn btn-primary btn-sm">Download</a>
-      </div>
+      <div style="font-weight:900; margin-bottom:6px;">Current Attachments</div>
+      <div id="editCurrentFilesList" style="display:grid; gap:10px;"></div>
     </div>
-    <div class="drawer-card"><div style="font-weight:900; margin-bottom:6px;">Replace Attachment (optional)</div><input type="file" name="file" class="drawer-file"></div>
+    <div id="editRemoveFilesInputs"></div>
+    <div class="drawer-card">
+      <div style="font-weight:900; margin-bottom:6px;">Replace Attachments (optional)</div>
+      <input type="file" name="files" id="editFilesInput" class="drawer-file" multiple>
+      <div id="editFilesSelected" class="drawer-muted" style="display:none; margin-top:8px;"></div>
+    </div>
     <div class="drawer-footer"><button type="button" class="btn btn-light" id="cancelEdit">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
   </form>
 </aside>
 
 <script>
 (function(){
-  const items = document.querySelectorAll('.task-item');
   const pills = document.querySelectorAll('.pill-tab');
+  const sections = document.querySelectorAll('.sec');
   const search = document.getElementById('taskSearch');
   const priorityFilter = document.getElementById('priorityFilter');
+  const taskList = document.getElementById('taskList');
+  const urlParams = new URLSearchParams(window.location.search);
+  const openTaskFromUrl = (urlParams.get('open') || '').trim();
+  const highlightTaskFromUrl = ['1', 'true'].includes((urlParams.get('highlight') || '').toLowerCase());
   const allowedFilters = new Set(['all', 'delayed', 'pending', 'completed']);
   const selectedFilterFromUrl = {{ selected_filter|tojson }};
   let activeFilter = allowedFilters.has(selectedFilterFromUrl) ? selectedFilterFromUrl : 'all';
 
-  function normalizeState(row){
+  function getItems(){
+    return document.querySelectorAll('.task-item');
+  }
+
+  function parseDeadline(raw){
+    if(!raw) return null;
+    const d = new Date(raw);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  function stateForRow(row){
     const status = (row.dataset.status || '').toLowerCase();
-    const deadlineRaw = row.dataset.deadline;
-    const isCompleted = status === 'completed';
-    let delayed = false;
-    if(deadlineRaw && !isCompleted){
-      const d = new Date(deadlineRaw);
-      delayed = !isNaN(d.getTime()) && d.getTime() < Date.now();
+    const deadline = parseDeadline(row.dataset.deadline || '');
+    if(status === 'completed'){
+      return 'completed';
     }
-    const state = isCompleted ? 'completed' : (delayed ? 'delayed' : 'pending');
+    if(deadline && deadline.getTime() < Date.now()){
+      return 'delayed';
+    }
+    return 'pending';
+  }
+
+  function normalizeState(row){
+    const state = stateForRow(row);
     const badge = row.querySelector('.state-tag');
     if(badge){
       badge.textContent = state.toUpperCase();
       badge.classList.remove('status-pending','status-delayed','status-completed');
       badge.classList.add(`status-${state}`);
     }
+    const check = row.querySelector('.task-check-btn');
+    if(check){
+      check.classList.toggle('is-done', state === 'completed');
+    }
     row.dataset.state = state;
   }
 
-  function deadlineValue(row){
-    const raw = row.dataset.deadline;
-    if(!raw) return Number.POSITIVE_INFINITY;
-    const d = new Date(raw);
-    return isNaN(d.getTime()) ? Number.POSITIVE_INFINITY : d.getTime();
+  function sectionForState(state){
+    if(state === 'completed') return 'completed';
+    if(state === 'delayed') return 'delayed';
+    return 'pending';
   }
 
-  function stateRank(row){
-    const s = row.dataset.state;
-    if(s === 'delayed') return 0;
-    if(s === 'pending') return 1;
-    return 2;
-  }
+  function recalcCounts(){
+    const delayed = document.querySelectorAll('[data-section="delayed"] .task-item').length;
+    const pending = document.querySelectorAll('[data-section="pending"] .task-item').length;
+    const completed = document.querySelectorAll('[data-section="completed"] .task-item').length;
+    const all = delayed + pending + completed;
 
-  function sortRows(){
-    const rows = Array.from(items);
-    rows.sort((a,b)=>{
-      const rankDiff = stateRank(a) - stateRank(b);
-      if(rankDiff !== 0) return rankDiff;
-      return deadlineValue(a) - deadlineValue(b);
-    });
-    rows.forEach((row)=> row.parentNode.appendChild(row));
-  }
-
-  function updatePillCounts(){
-    let delayedCount = 0;
-    let pendingCount = 0;
-
-    items.forEach((row)=>{
-      normalizeState(row);
-      if(row.dataset.state === 'delayed') delayedCount += 1;
-      if(row.dataset.state === 'pending') pendingCount += 1;
+    const secCounts = { delayed, pending, completed };
+    sections.forEach((sec) => {
+      const key = sec.dataset.section;
+      const countNode = sec.querySelector('.sec-count');
+      if(countNode && key in secCounts){
+        countNode.textContent = secCounts[key];
+      }
     });
 
     const delayedCountEl = document.getElementById('pill-delayed-count');
     const pendingCountEl = document.getElementById('pill-pending-count');
-    if(delayedCountEl) delayedCountEl.textContent = delayedCount;
-    if(pendingCountEl) pendingCountEl.textContent = pendingCount;
+    const allCountEl = document.querySelector('#pill-all .pill-count');
+    const completedCountEl = document.querySelector('#pill-completed .pill-count');
+    if(delayedCountEl) delayedCountEl.textContent = delayed;
+    if(pendingCountEl) pendingCountEl.textContent = pending;
+    if(completedCountEl) completedCountEl.textContent = completed;
+    if(allCountEl) allCountEl.textContent = all;
+
+    ['delayed', 'pending', 'completed'].forEach((section) => {
+      const body = document.querySelector(`[data-section="${section}"] .sec-body`);
+      const empty = document.querySelector(`[data-empty-state="${section}"]`);
+      if(!body || !empty) return;
+      const hasRows = body.querySelectorAll('.task-item').length > 0;
+      empty.style.display = hasRows ? 'none' : '';
+    });
+  }
+
+  function moveTaskToSection(taskId, state){
+    const row = document.querySelector(`#task-${taskId}`);
+    if(!row) return;
+    const section = sectionForState(state);
+    const body = document.querySelector(`[data-section="${section}"] .sec-body`);
+    if(!body) return;
+    body.appendChild(row);
+    recalcCounts();
   }
 
   function applyFilter(){
     const q = (search.value || '').trim().toLowerCase();
     const p = priorityFilter.value;
 
-    items.forEach((row)=>{
+    getItems().forEach((row)=>{
       normalizeState(row);
       const okQuery = !q || (row.dataset.title || '').includes(q);
       const okState = activeFilter === 'all' || row.dataset.state === activeFilter;
       const okPriority = p === 'all' || (row.dataset.priority || 'normal') === p;
       row.style.display = (okQuery && okState && okPriority) ? '' : 'none';
     });
-    sortRows();
+
+    sections.forEach((sec) => {
+      if(activeFilter === 'all'){
+        sec.style.display = '';
+        return;
+      }
+      sec.style.display = sec.dataset.section === activeFilter ? '' : 'none';
+    });
   }
 
   function setActivePill(filterValue){
@@ -440,17 +721,87 @@
     });
   }
 
+  function focusTaskRow(taskId){
+    if(!taskId) return false;
+    const row = document.querySelector(`.task-item[data-task-id="${taskId}"]`);
+    if(!row) return false;
+
+    document.querySelectorAll('.task-item.task-focus').forEach((node)=>{
+      node.classList.remove('task-focus');
+    });
+    row.classList.add('task-focus');
+    const parentSection = row.closest('.sec');
+    if(parentSection){
+      parentSection.classList.add('open');
+    }
+
+    if(taskList){
+      const listRect = taskList.getBoundingClientRect();
+      const rowRect = row.getBoundingClientRect();
+      const offset = (rowRect.top - listRect.top) - (taskList.clientHeight / 3);
+      taskList.scrollBy({ top: offset, behavior: 'smooth' });
+    } else {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    setTimeout(()=> row.classList.remove('task-focus'), 2800);
+    return true;
+  }
+
   pills.forEach((pill)=> pill.addEventListener('click', ()=>{
     activeFilter = pill.dataset.filter;
     setActivePill(activeFilter);
     applyFilter();
   }));
 
+  sections.forEach((sec) => {
+    const header = sec.querySelector('.sec-h');
+    if(header){
+      header.addEventListener('click', () => sec.classList.toggle('open'));
+    }
+  });
+
   search.addEventListener('input', applyFilter);
   priorityFilter.addEventListener('change', applyFilter);
-  updatePillCounts();
+  getItems().forEach(normalizeState);
+  recalcCounts();
   setActivePill(activeFilter);
   applyFilter();
+
+  document.addEventListener('click', async (e) => {
+    const checkBtn = e.target.closest('[data-complete-task]');
+    if(!checkBtn) return;
+
+    const taskId = checkBtn.getAttribute('data-complete-task');
+    const row = document.querySelector(`#task-${taskId}`);
+    if(!row) return;
+
+    const currentStatus = (row.dataset.status || 'in_progress').toLowerCase();
+    const originalStatus = row.dataset.originalStatus || (currentStatus === 'completed' ? 'in_progress' : currentStatus);
+    const targetStatus = currentStatus === 'completed' ? originalStatus : 'completed';
+
+    try{
+      const body = new URLSearchParams({
+        target_status: targetStatus,
+        fallback_status: originalStatus,
+      });
+
+      const res = await fetch(`/task/${taskId}/complete`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'fetch', 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+      });
+      const data = await res.json();
+      if(!res.ok || !data.ok) return;
+
+      row.dataset.status = data.status;
+      normalizeState(row);
+      moveTaskToSection(taskId, row.dataset.state);
+      applyFilter();
+    }catch(err){
+      console.error(err);
+    }
+  });
 
   const createDrawer = document.getElementById('taskDrawer');
   const createBackdrop = document.getElementById('drawerBackdrop');
@@ -467,6 +818,7 @@
   const closeEdit = document.getElementById('closeEdit');
   const cancelEdit = document.getElementById('cancelEdit');
   const editForm = document.getElementById('editForm');
+  const removedExistingAttachments = new Set();
 
   function hideFab(){ openCreateBtn.classList.add('fab-hidden'); }
   function showFab(){ openCreateBtn.classList.remove('fab-hidden'); }
@@ -511,6 +863,143 @@
     return await res.json();
   }
 
+  function syncRemovedExistingFiles(){
+    const holder = document.getElementById('editRemoveFilesInputs');
+    if(!holder) return;
+    holder.replaceChildren();
+    removedExistingAttachments.forEach((filename) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'remove_existing_files';
+      input.value = filename;
+      holder.appendChild(input);
+    });
+  }
+
+  function removeSelectedFile(fileInput, index){
+    if(!fileInput) return;
+    const transfer = new DataTransfer();
+    Array.from(fileInput.files || []).forEach((file, i) => {
+      if(i !== index) transfer.items.add(file);
+    });
+    fileInput.files = transfer.files;
+  }
+
+  function renderFileList(containerId, taskId, filePaths, options = {}){
+    const allowRemove = !!options.allowRemove;
+    const onRemove = typeof options.onRemove === 'function' ? options.onRemove : null;
+    const container = document.getElementById(containerId);
+    if(!container) return;
+    container.replaceChildren();
+
+    filePaths.forEach((item, index) => {
+      const filename = typeof item === 'string' ? item : item.filename;
+      const fileIndex = typeof item === 'string' ? index : (Number.isInteger(item.index) ? item.index : index);
+      const row = document.createElement("div");
+      row.style.display = "grid";
+      row.style.gap = "6px";
+
+      const name = document.createElement("div");
+      name.className = "drawer-muted";
+      name.textContent = filename;
+
+      const actions = document.createElement("div");
+      actions.className = "file-actions";
+
+      const viewLink = document.createElement("a");
+      viewLink.className = "file-btn view";
+      viewLink.target = "_blank";
+      viewLink.href = `/task/${taskId}/file/view?index=${fileIndex}`;
+      viewLink.textContent = "View";
+
+      const downloadLink = document.createElement("a");
+      downloadLink.className = "file-btn download";
+      downloadLink.href = `/task/${taskId}/file/download?index=${fileIndex}`;
+      downloadLink.textContent = "Download";
+
+      actions.appendChild(viewLink);
+      actions.appendChild(downloadLink);
+
+      if(allowRemove){
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'file-btn remove';
+        removeBtn.textContent = 'Remove';
+        removeBtn.addEventListener('click', () => {
+          if(onRemove) onRemove(filename);
+        });
+        actions.appendChild(removeBtn);
+      }
+
+      row.appendChild(name);
+      row.appendChild(actions);
+      container.appendChild(row);
+    });
+  }
+
+  function renderSelectedFileNames(containerId, fileInput){
+    const container = document.getElementById(containerId);
+    if(!container) return;
+    container.replaceChildren();
+
+    const files = Array.from((fileInput && fileInput.files) || []);
+    const names = files.map((file) => file.name).filter(Boolean);
+    if(!names.length){
+      container.style.display = 'none';
+      return;
+    }
+
+    container.style.display = 'block';
+    names.forEach((name, index) => {
+      const row = document.createElement('div');
+      row.style.display = 'flex';
+      row.style.alignItems = 'center';
+      row.style.justifyContent = 'space-between';
+      row.style.gap = '8px';
+
+      const label = document.createElement('span');
+      label.textContent = `- ${name}`;
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'file-btn remove';
+      removeBtn.textContent = 'Remove';
+      removeBtn.addEventListener('click', () => {
+        removeSelectedFile(fileInput, index);
+        renderSelectedFileNames(containerId, fileInput);
+      });
+
+      row.appendChild(label);
+      row.appendChild(removeBtn);
+      container.appendChild(row);
+    });
+  }
+
+  function renderEditableExistingAttachments(taskId, allAttachments){
+    const currentFileCard = document.getElementById('editCurrentFileCard');
+    const visible = (allAttachments || [])
+      .map((filename, index) => ({ filename, index }))
+      .filter((entry) => !removedExistingAttachments.has(entry.filename));
+    if(!currentFileCard) return;
+
+    if(!visible.length){
+      currentFileCard.style.display = 'none';
+      const list = document.getElementById('editCurrentFilesList');
+      if(list) list.replaceChildren();
+      return;
+    }
+
+    currentFileCard.style.display = 'block';
+    renderFileList('editCurrentFilesList', taskId, visible, {
+      allowRemove: true,
+      onRemove: (filename) => {
+        removedExistingAttachments.add(filename);
+        syncRemovedExistingFiles();
+        renderEditableExistingAttachments(taskId, allAttachments);
+      }
+    });
+  }
+
   async function openViewTask(taskId){
     const data = await loadTask(taskId);
     if(!data) return;
@@ -520,14 +1009,17 @@
     document.getElementById('viewDeadline').textContent = data.deadline || '-';
     document.getElementById('viewDesc').textContent = data.description || '—';
 
+    const attachments = Array.isArray(data.file_paths) && data.file_paths.length
+      ? data.file_paths
+      : (data.file_path ? [data.file_path] : []);
     const fileCard = document.getElementById('viewFileCard');
-    if(data.file_path){
+    if(attachments.length){
       fileCard.style.display = 'block';
-      document.getElementById('viewFileName').textContent = data.file_path;
-      document.getElementById('btnViewFile').href = `/task/${taskId}/file/view`;
-      document.getElementById('btnDownloadFile').href = `/task/${taskId}/file/download`;
+      renderFileList('viewFilesList', taskId, attachments);
     } else {
       fileCard.style.display = 'none';
+      const filesList = document.getElementById('viewFilesList');
+      if(filesList) filesList.replaceChildren();
     }
 
     openDrawer(viewDrawer, viewBackdrop);
@@ -543,26 +1035,25 @@
     document.getElementById('editPriority').value = data.priority || 'normal';
     document.getElementById('editDesc').value = data.description || '';
 
-    if(data.deadline && data.deadline.includes(' ')){
-      const [d, t] = data.deadline.split(' ');
-      document.getElementById('editDate').value = d || '';
-      document.getElementById('editTime').value = t || '';
+    if(data.deadline_date || data.deadline_time){
+      document.getElementById('editDate').value = data.deadline_date || '';
+      document.getElementById('editTime').value = data.deadline_time || '';
     } else {
       document.getElementById('editDate').value = '';
       document.getElementById('editTime').value = '';
     }
 
-    const currentFileCard = document.getElementById('editCurrentFileCard');
-    if(data.file_path){
-      currentFileCard.style.display = 'block';
-      document.getElementById('editCurrentFileName').textContent = data.file_path;
-      document.getElementById('editBtnViewFile').href = `/task/${taskId}/file/view`;
-      document.getElementById('editBtnDownloadFile').href = `/task/${taskId}/file/download`;
-    } else {
-      currentFileCard.style.display = 'none';
-      document.getElementById('editCurrentFileName').textContent = '';
-      document.getElementById('editBtnViewFile').removeAttribute('href');
-      document.getElementById('editBtnDownloadFile').removeAttribute('href');
+    const attachments = Array.isArray(data.file_paths) && data.file_paths.length
+      ? data.file_paths
+      : (data.file_path ? [data.file_path] : []);
+    removedExistingAttachments.clear();
+    syncRemovedExistingFiles();
+    renderEditableExistingAttachments(taskId, attachments);
+
+    const editFilesInput = document.getElementById('editFilesInput');
+    if(editFilesInput){
+      editFilesInput.value = '';
+      renderSelectedFileNames('editFilesSelected', editFilesInput);
     }
 
     openDrawer(editDrawer, editBackdrop);
@@ -575,12 +1066,37 @@
     btn.addEventListener('click', ()=> openEditTask(btn.getAttribute('data-edit-task')));
   });
 
+  (async function initFromUrl(){
+    if(!openTaskFromUrl) return;
+    activeFilter = 'all';
+    setActivePill(activeFilter);
+    applyFilter();
+    if(highlightTaskFromUrl){
+      focusTaskRow(openTaskFromUrl);
+    }
+    await openViewTask(openTaskFromUrl);
+  })();
+
   const createForm = document.querySelector('#taskDrawer form');
   if(createForm){
     createForm.addEventListener('submit', hideFab);
   }
   if(editForm){
     editForm.addEventListener('submit', hideFab);
+  }
+
+  const createFilesInput = document.getElementById('createFilesInput');
+  if(createFilesInput){
+    createFilesInput.addEventListener('change', () => {
+      renderSelectedFileNames('createFilesSelected', createFilesInput);
+    });
+  }
+
+  const editFilesInput = document.getElementById('editFilesInput');
+  if(editFilesInput){
+    editFilesInput.addEventListener('change', () => {
+      renderSelectedFileNames('editFilesSelected', editFilesInput);
+    });
   }
 })();
 </script>
@@ -597,3 +1113,4 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 {% endblock %}
+

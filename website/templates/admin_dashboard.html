@@ -46,20 +46,34 @@
               {% if day_events %}
                 <div class="calendar-events">
                   {% for event in day_events[:3] %}
-                    <div class="calendar-event {{ event.kind }}" title="{{ event.time }} {{ event.title }}">
-                      {% if event.time %}<span class="event-time">{{ event.time }}</span>{% endif %}
-                      {{ event.title }}
-                    </div>
+                    {% if event.type == 'task' and event.task_id %}
+                      <a class="calendar-event {{ event.kind }}" href="{{ url_for('views.manage_tasks', open=event.task_id, highlight=1) }}" title="{{ event.time }} {{ event.title }}">
+                        {% if event.time %}<span class="event-time">{{ event.time }}</span>{% endif %}
+                        {{ event.title }}
+                      </a>
+                    {% else %}
+                      <div class="calendar-event {{ event.kind }}" title="{{ event.time }} {{ event.title }}">
+                        {% if event.time %}<span class="event-time">{{ event.time }}</span>{% endif %}
+                        {{ event.title }}
+                      </div>
+                    {% endif %}
                   {% endfor %}
 
                   {% if day_events|length > 3 %}
                     <button type="button" class="calendar-more" data-target="extra-{{ day.strftime('%Y%m%d') }}">+{{ day_events|length - 3 }} more</button>
                     <div class="calendar-extra" id="extra-{{ day.strftime('%Y%m%d') }}">
                       {% for event in day_events[3:] %}
-                        <div class="calendar-event {{ event.kind }}" title="{{ event.time }} {{ event.title }}">
-                          {% if event.time %}<span class="event-time">{{ event.time }}</span>{% endif %}
-                          {{ event.title }}
-                        </div>
+                        {% if event.type == 'task' and event.task_id %}
+                          <a class="calendar-event {{ event.kind }}" href="{{ url_for('views.manage_tasks', open=event.task_id, highlight=1) }}" title="{{ event.time }} {{ event.title }}">
+                            {% if event.time %}<span class="event-time">{{ event.time }}</span>{% endif %}
+                            {{ event.title }}
+                          </a>
+                        {% else %}
+                          <div class="calendar-event {{ event.kind }}" title="{{ event.time }} {{ event.title }}">
+                            {% if event.time %}<span class="event-time">{{ event.time }}</span>{% endif %}
+                            {{ event.title }}
+                          </div>
+                        {% endif %}
                       {% endfor %}
                     </div>
                   {% endif %}
@@ -107,7 +121,9 @@
           <ul class="timeline-list side-scroll-list">
             {% for task in delayed_tasks[:3] %}
               <li>
-                <strong>{{ task.title }}</strong>
+                <strong>
+                  <a class="dashboard-task-link" href="{{ url_for('views.manage_tasks', open=task.id, highlight=1) }}">{{ task.title }}</a>
+                </strong>
                 <div class="text-muted small">
                   {{ task.deadline.strftime('%b %d, %Y %I:%M %p') if task.deadline else 'No deadline' }}
                   • {{ task.status|replace('_', ' ')|title }}
@@ -133,7 +149,9 @@
           <ul class="timeline-list side-scroll-list">
             {% for task in pending_task_list[:3] %}
               <li>
-                <strong>{{ task.title }}</strong>
+                <strong>
+                  <a class="dashboard-task-link" href="{{ url_for('views.manage_tasks', open=task.id, highlight=1) }}">{{ task.title }}</a>
+                </strong>
                 <div class="text-muted small">
                   {{ task.deadline.strftime('%b %d, %Y %I:%M %p') if task.deadline else 'No deadline' }}
                   • {{ task.status|replace('_', ' ')|title }}
@@ -159,7 +177,9 @@
           <ul class="timeline-list side-scroll-list">
             {% for task in completed_task_list[:3] %}
               <li>
-                <strong>{{ task.title }}</strong>
+                <strong>
+                  <a class="dashboard-task-link" href="{{ url_for('views.manage_tasks', open=task.id, highlight=1) }}">{{ task.title }}</a>
+                </strong>
                 <div class="text-muted small">
                   {{ task.deadline.strftime('%b %d, %Y %I:%M %p') if task.deadline else 'No deadline' }}
                   • Completed

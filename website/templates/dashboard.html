@@ -14,13 +14,23 @@
     overflow:hidden; /* prevents whole page scroll */
   }
 
-  /* Keep header elements fixed */
-  .td-title,
-  .td-sub{
+  /* Keep dashboard header aligned and fixed */
+  .dashboard-head{
     position: sticky;
     top: 0;
-    z-index: 30;
-    background: #f4f6f9; /* match your page background */
+    z-index: 35;
+    background: #f4f6f9;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+    padding-bottom:8px;
+  }
+  .dashboard-head-left{ min-width:0; }
+  .dashboard-head .td-title,
+  .dashboard-head .td-sub{
+    position: static;
+    background: transparent;
   }
 
   /* Toast should stay on top too */
@@ -50,12 +60,215 @@
   .task-status-pill.status-pending{ background:#fef3c7; border-color:#f7c900; color:#92400e; }
   .task-status-pill.status-delayed{ background:#fef2f2; border-color:#fa0000; color:#b91c1c; }
   .task-status-pill.status-completed{ background:#ecfdf5; border-color:#00ff59; color:#065f46; }
+
+  /* Planner redesign */
+  .planner-wrap{
+    padding: 0 0 20px;
+    background:
+      radial-gradient(1200px 300px at 50% -120px, rgba(37,99,235,.14), transparent 60%),
+      linear-gradient(180deg, #f8fbff 0%, #f4f7fc 100%);
+    border-radius: 16px;
+  }
+  .planner-wrap > .day-block:first-child{
+    margin-top: 0;
+  }
+
+  .day-block{
+    border:1px solid #dbe7ff;
+    border-radius:18px;
+    background:#ffffff;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, .07);
+    margin: 0 0 14px;
+    overflow:hidden;
+  }
+
+  .day-head{
+    padding: 14px 18px;
+    background: linear-gradient(90deg, #0f172a 0%, #111f3d 100%);
+    min-height: 58px;
+    display:flex;
+    align-items:center;
+    margin: -1px -1px 0;
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+  }
+
+  .day-title{
+    font-size: 15px;
+    letter-spacing:.2px;
+    color:#f8fafc;
+    font-weight:900;
+  }
+  .day-title.today-title{
+    color: #007fff;
+  }
+  .day-sub{
+    color:#93c5fd;
+    font-weight:800;
+  }
+
+  .day-line{
+    height:1px;
+    background: #1e3a8a;
+    opacity: 1;
+  }
+
+  /* Remove inner top gap directly under the date header */
+  .day-block .list-view .plan-row:first-child{
+    margin-top: 0;
+  }
+  .day-block .card-view-wrap .card-grid{
+    padding-top: 0;
+  }
+
+  .plan-row{
+    margin: 10px 12px;
+    border:1px solid #e5ecfb;
+    border-radius: 14px;
+    border-top:1px solid #e5ecfb;
+    background:#ffffff;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  }
+
+  .plan-row:hover{
+    transform: translateY(-1px);
+    border-color:#c7dafd;
+    box-shadow: 0 8px 18px rgba(37, 99, 235, .08);
+  }
+
+  .plan-row[data-item-type="task"]{ border-left:4px solid #2563eb; }
+  .plan-row[data-item-type="meeting"]{ border-left:4px solid #059669; }
+
+  .plan-title{
+    font-size: 14px;
+    font-weight: 900;
+  }
+
+  .plan-sub{
+    color:#5f7496;
+    font-weight:700;
+  }
+
+  .nothing{
+    margin: 10px 12px 14px;
+    padding: 18px;
+    border:1px dashed #c7d8f7;
+    border-radius: 12px;
+    background:#f8fbff;
+    color:#57719b;
+  }
+
+  @media (max-width: 700px){
+    .plan-row{
+      gap:10px;
+      padding:12px;
+      flex-wrap: wrap;
+      align-items:flex-start;
+    }
+    .plan-right{
+      width: 100%;
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+    }
+  }
+
+  .planner-actions-top{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin:2px 0 0;
+    flex-wrap:wrap;
+  }
+  .planner-actions-top .view-mini{
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .planner-actions-top .view-kebab-wrap{
+    position:relative;
+  }
+  .planner-actions-top .view-kebab{
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    border:#c7dafd;
+    background: transparent;
+    color:#0f172a;
+    font-size:22px;
+    font-weight:900;
+    line-height:1;
+    cursor:pointer;
+  }
+  .planner-actions-top .view-kebab:hover{
+    border-color:#94b8f8;
+    background:#e2e8f0;
+  }
+  .planner-actions-top .view-menu{
+    position:absolute;
+    right:0;
+    top:44px;
+    min-width:140px;
+    background:#fff;
+    border:1px solid #d6e3fb;
+    border-radius:12px;
+    box-shadow:0 10px 24px rgba(15,23,42,.12);
+    padding:6px;
+    display:none;
+    z-index:50;
+  }
+  .planner-actions-top .view-menu.open{
+    display:block;
+  }
+  .planner-actions-top .view-menu-item{
+    width:100%;
+    border:0;
+    background:transparent;
+    color:#0f172a;
+    font-weight:800;
+    font-size:13px;
+    border-radius:8px;
+    text-align:left;
+    padding:8px 10px;
+    cursor:pointer;
+  }
+  .planner-actions-top .view-menu-item:hover{
+    background:#eff6ff;
+  }
+  .planner-actions-top .view-menu-item.active{
+    background:#0f172a;
+    color:#fff;
+  }
+  @media (max-width: 900px){
+    .dashboard-head{
+      flex-direction:column;
+      align-items:stretch;
+    }
+    .planner-actions-top{
+      justify-content:flex-start;
+    }
+  }
 </style>
 
 <div class="main-inner">
 
-  <div class="td-title">Dashboard</div>
-  <div class="td-sub">Overview of meetings and tasks</div>
+  <div class="dashboard-head">
+    <div class="dashboard-head-left">
+      <div class="td-title">Dashboard</div>
+      <div class="td-sub">Overview of meetings and tasks</div>
+    </div>
+    <div class="planner-actions-top">
+      <a href="{{ url_for('views.user_dashboard', planner_date='today') }}" class="view-mini" id="btnToday">Today</a>
+      <div class="view-kebab-wrap">
+        <button type="button" class="view-kebab" id="btnViewMenu" aria-label="Choose view mode" aria-expanded="false">⋮</button>
+        <div class="view-menu" id="viewModeMenu" role="menu" aria-label="View mode options">
+          <button type="button" class="view-menu-item" data-view-mode="list" role="menuitem">List View</button>
+          <button type="button" class="view-menu-item" data-view-mode="cards" role="menuitem">Card View</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   {# Flash popup ONLY here #}
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -95,13 +308,17 @@
 
     {% if planned_days and planned_days|length > 0 %}
       {% for day in planned_days %}
-        <div class="day-block">
+        <div class="day-block" {% if day.date_label == "Today" %}id="todayPlanner"{% endif %}>
 
           <div class="day-head">
             <div>
-              <span class="day-title">{{ day.date_label }}</span>
-              {% if day.date_sub %}
-                <span class="day-sub">{{ day.date_sub }}</span>
+              {% if day.date_label == "Today" and day.date_sub %}
+                <span class="day-title today-title">Today, {{ day.date_sub }}</span>
+              {% else %}
+                <span class="day-title">{{ day.date_label }}</span>
+                {% if day.date_sub %}
+                  <span class="day-sub">{{ day.date_sub }}</span>
+                {% endif %}
               {% endif %}
             </div>
           </div>
@@ -142,8 +359,7 @@
                       </div>
 
                       <div class="plan-sub">
-                        {{ (t.status|replace("_"," ")|title) }}
-                        {% if t.due_time %} • Due {{ t.due_time }}{% endif %}
+                        {% if t.due_time %}Due {{ t.due_time }}{% endif %}
                       </div>
                     </div>
 
@@ -200,7 +416,6 @@
 
                       <div class="gcard-body">
                         <div class="gcard-topline">{{ t.title }}</div>
-                        <div class="gcard-subline" data-status-text>{{ (t.status|replace("_"," ")|title) }}</div>
                         <div class="gcard-small">
                           {% if t.due_time %}Due {{ t.due_time }}{% else %}No due time{% endif %}
                         </div>
@@ -272,7 +487,7 @@
       {% endfor %}
 
     {% else %}
-      <div class="day-block">
+      <div class="day-block" id="todayPlanner">
         <div class="day-head">
           <div><span class="day-title">Today</span></div>
         </div>
@@ -285,73 +500,112 @@
 
 </div>
 
-{# ✅ Floating button group (toggle) #}
-<div class="fab-group">
-  <div class="view-toggle">
-    <button type="button" class="view-mini" id="btnList">List View</button>
-    <button type="button" class="view-mini" id="btnCards">Card View</button>
-  </div>
-</div>
-
 <script>
 /* ===== toast auto-hide ===== */
 window.addEventListener("DOMContentLoaded", () => {
-  const wrap = document.getElementById("toastWrap");
-  if(wrap){
-    const toasts = wrap.querySelectorAll(".toast-msg");
+  const toastWrap = document.getElementById("toastWrap");
+  if(toastWrap){
+    const toasts = toastWrap.querySelectorAll(".toast-msg");
     if(toasts.length){
       requestAnimationFrame(() => toasts.forEach(t => t.classList.add("show")));
       setTimeout(() => {
         toasts.forEach(t => t.classList.remove("show"));
-        setTimeout(() => wrap.remove(), 220);
+        setTimeout(() => toastWrap.remove(), 220);
       }, 1500);
     }
   }
 
   const modals = document.querySelectorAll(".autoModal");
-  if(!modals.length) return;
+  if(modals.length){
+    modals.forEach((m) => {
+      m.style.transition = "opacity 300ms ease";
+    });
 
-
-  const toasts = wrap.querySelectorAll(".toast-msg");
-  modals.forEach((m) => {
-    m.style.transition = "opacity 300ms ease";
-  });
-
-  setTimeout(() => {
-    modals.forEach((m) => m.style.opacity = "0");
     setTimeout(() => {
-      modals.forEach((m) => m.remove());
-    }, 320);
-  }, 1500);
+      modals.forEach((m) => m.style.opacity = "0");
+      setTimeout(() => {
+        modals.forEach((m) => m.remove());
+      }, 320);
+    }, 1500);
+  }
+
+  const plannerWrap = document.getElementById("plannerWrap");
+  const todayBlock = document.getElementById("todayPlanner");
+  const plannerDate = new URLSearchParams(window.location.search).get("planner_date");
+
+  if(plannerDate === "today" && todayBlock && plannerWrap){
+    setTimeout(() => {
+      const wrapRect = plannerWrap.getBoundingClientRect();
+      const todayRect = todayBlock.getBoundingClientRect();
+      const targetTop = Math.max(
+        0,
+        plannerWrap.scrollTop + (todayRect.top - wrapRect.top) - 14
+      );
+      plannerWrap.scrollTo({ top: targetTop, behavior: "smooth" });
+    }, 20);
+  }
 });
 
 /* ===== list/card toggle remember ===== */
 (function(){
   const wrap = document.getElementById("plannerWrap");
-  const btnList = document.getElementById("btnList");
-  const btnCards = document.getElementById("btnCards");
+  const menuBtn = document.getElementById("btnViewMenu");
+  const menu = document.getElementById("viewModeMenu");
+  const options = menu ? Array.from(menu.querySelectorAll("[data-view-mode]")) : [];
 
-  if(!wrap || !btnList || !btnCards) return;
+  if(!wrap || !menuBtn || !menu || !options.length) return;
+
+  function setOptionActive(mode){
+    options.forEach((opt) => {
+      opt.classList.toggle("active", opt.dataset.viewMode === mode);
+    });
+  }
+
+  function closeMenu(){
+    menu.classList.remove("open");
+    menuBtn.setAttribute("aria-expanded", "false");
+  }
+
+  function openMenu(){
+    menu.classList.add("open");
+    menuBtn.setAttribute("aria-expanded", "true");
+  }
 
   function setView(mode){
     const isCards = (mode === "cards");
     wrap.classList.toggle("card-view", isCards);
-    btnList.classList.toggle("active", !isCards);
-    btnCards.classList.toggle("active", isCards);
+    setOptionActive(isCards ? "cards" : "list");
     localStorage.setItem("dashboard_view_mode", mode);
   }
 
   const saved = localStorage.getItem("dashboard_view_mode") || "list";
   setView(saved);
 
-  btnList.addEventListener("click", () => setView("list"));
-  btnCards.addEventListener("click", () => setView("cards"));
+  menuBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if(menu.classList.contains("open")) closeMenu();
+    else openMenu();
+  });
+
+  options.forEach((opt) => {
+    opt.addEventListener("click", () => {
+      setView(opt.dataset.viewMode === "cards" ? "cards" : "list");
+      closeMenu();
+    });
+  });
+
+  document.addEventListener("click", (e) => {
+    if(!menu.contains(e.target) && !menuBtn.contains(e.target)){
+      closeMenu();
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if(e.key === "Escape") closeMenu();
+  });
 })();
 
 /* ===== checkmark click to complete task (both views) ===== */
-function toTitle(value){
-  return (value || "").replaceAll("_", " ").replace(/\b\w/g, (m) => m.toUpperCase());
-}
 
 function statusClass(status, isDelayed){
   if(status === "completed") return "status-completed";
@@ -409,12 +663,6 @@ document.addEventListener("click", async (e) => {
         pill.classList.add(statusClass(data.status, dueFlag && data.status !== "completed"));
       });
 
-      taskEl.querySelectorAll(".plan-sub, [data-status-text]").forEach((sub) => {
-        const raw = sub.textContent || "";
-        const parts = raw.split("•");
-        const right = parts.length > 1 ? " • " + parts.slice(1).join("•").trim() : "";
-        sub.textContent = toTitle(data.status) + (sub.classList.contains("plan-sub") ? right : "");
-      });
     });
 
   }catch(err){
@@ -424,3 +672,5 @@ document.addEventListener("click", async (e) => {
 </script>
 
 {% endblock %}
+
+

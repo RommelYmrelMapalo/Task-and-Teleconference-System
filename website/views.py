@@ -4,16 +4,37 @@ from functools import wraps
 from flask import abort
 from .models import Notification, Task, User
 from . import db
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
+from zoneinfo import ZoneInfo
 import calendar
 import os
 import mimetypes
+import json
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
 views = Blueprint('views', __name__)
+
+PH_TIMEZONE = ZoneInfo("Asia/Manila")
+
+
+def ph_now():
+    """Return current Philippine time as naive datetime for app-wide comparisons."""
+    return datetime.now(timezone.utc).astimezone(PH_TIMEZONE).replace(tzinfo=None)
+
+
+def ph_today():
+    return ph_now().date()
+
+
+def as_ph_naive(dt):
+    if not dt:
+        return None
+    if dt.tzinfo is None:
+        return dt
+    return dt.astimezone(PH_TIMEZONE).replace(tzinfo=None)
 
 
 def _legacy_upload_dir():
@@ -67,11 +88,79 @@ def _save_uploaded_file(uploaded_file):
 
     if os.path.exists(saved_path):
         base, ext = os.path.splitext(filename)
-        filename = f"{base}_{int(datetime.now().timestamp())}{ext}"
+        filename = f"{base}_{int(ph_now().timestamp())}{ext}"
         saved_path = os.path.join(save_dir, filename)
 
     uploaded_file.save(saved_path)
     return filename
+
+
+def _deserialize_task_attachments(raw_value):
+    if not raw_value:
+        return []
+
+    raw_text = str(raw_value).strip()
+    if not raw_text:
+        return []
+
+    # Backward-compatible: legacy records store a single filename as plain text.
+    if not raw_text.startswith("["):
+        return [raw_text]
+
+    try:
+        parsed = json.loads(raw_text)
+    except json.JSONDecodeError:
+        return [raw_text]
+
+    if not isinstance(parsed, list):
+        return []
+
+    return [str(item).strip() for item in parsed if str(item).strip()]
+
+
+def _task_attachments(task):
+    return _deserialize_task_attachments(getattr(task, "file_path", None))
+
+
+def _set_task_attachments(task, attachments):
+    cleaned = [str(item).strip() for item in (attachments or []) if str(item).strip()]
+    task.file_path = json.dumps(cleaned) if cleaned else None
+
+
+def _collect_uploaded_files(*field_names):
+    files = []
+    for field_name in field_names:
+        for uploaded in request.files.getlist(field_name):
+            if uploaded and uploaded.filename:
+                files.append(uploaded)
+    return files
+
+
+def _save_uploaded_files(uploaded_files):
+    saved = []
+    for uploaded in uploaded_files or []:
+        filename = _save_uploaded_file(uploaded)
+        if filename:
+            saved.append(filename)
+    return saved
+
+
+def _attachment_index_from_request():
+    raw_value = (request.args.get("index") or request.args.get("file_idx") or "0").strip()
+    try:
+        index = int(raw_value)
+    except (TypeError, ValueError):
+        abort(400)
+    if index < 0:
+        abort(400)
+    return index
+
+
+def _task_attachment_by_index(task, index):
+    attachments = _task_attachments(task)
+    if index >= len(attachments):
+        return None
+    return attachments[index]
 
 
 def admin_required(func):
@@ -106,7 +195,7 @@ def user_dashboard():
     # get tasks assigned to logged-in user (or adjust if admin)
     user_tasks = tasks = Task.query.all()
 
-    now = datetime.now()
+    now = ph_now()
     tasks_data = []
     for t in user_tasks:
         if not t.deadline:
@@ -116,12 +205,26 @@ def user_dashboard():
             "id": t.id,
             "title": t.title,
             "status": t.status,
-            "due_date": t.deadline.date(),                 # IMPORTANT: must be date()
-            "due_time": t.deadline.strftime("%I:%M %p"),   # optional, for dashboard.html
-            "is_delayed": bool(t.status != "completed" and t.deadline < now),
+            "due_date": as_ph_naive(t.deadline).date(),                 # IMPORTANT: must be date()
+            "due_time": as_ph_naive(t.deadline).strftime("%I:%M %p"),   # optional, for dashboard.html
+            "is_delayed": bool(t.status != "completed" and as_ph_naive(t.deadline) < now),
         })
 
     meetings_data = []
+    for notif in notifications:
+        title = (notif.title or "").strip()
+        message = (notif.message or "").strip()
+        label = f"{title} {message}".lower()
+        if "meeting" not in label:
+            continue
+
+        meetings_data.append({
+            "id": notif.id,
+            "title": title or "Meeting",
+            "meeting_date": as_ph_naive(notif.created_at).date() if notif.created_at else None,
+            "time_range": as_ph_naive(notif.created_at).strftime("%I:%M %p") if notif.created_at else "",
+            "room": "",
+        })
 
     planned_days = build_planned_days(
         tasks=tasks_data,
@@ -129,9 +232,6 @@ def user_dashboard():
         days_back=1,
         days_forward=7
     )
-    meetings_data = []
-
-    planned_days = build_planned_days(tasks=tasks_data, meetings=meetings_data, days_back=1, days_forward=7)
 
     return render_template(
         "dashboard.html",
@@ -166,11 +266,21 @@ def build_planned_days(tasks=None, meetings=None, days_back=1, days_forward=7):
             ensure_day(d)
             by_day[d]["meetings"].append(m)
 
-    today = date.today()
+    today = ph_today()
+    window_start = today - timedelta(days=days_back)
+    window_end = today + timedelta(days=days_forward)
+
+    all_event_days = set(by_day.keys())
+    if all_event_days:
+        window_start = min(window_start, min(all_event_days))
+        window_end = max(window_end, max(all_event_days))
+
+    total_days = (window_end - window_start).days
 
     planned_days = []
-    for offset in range(-days_back, days_forward + 1):
-        d = today + timedelta(days=offset)
+    for day_index in range(total_days + 1):
+        d = window_start + timedelta(days=day_index)
+        offset = (d - today).days
 
         if offset == -1:
             label = f"Yesterday, {d.strftime('%B %d')}"
@@ -296,9 +406,17 @@ def update_task(task_id):
         except Exception:
             flash("Invalid due date/time.", "error")
 
-    file = request.files.get("file")
-    if file and file.filename:
-        task.file_path = _save_uploaded_file(file)
+    existing_attachments = _task_attachments(task)
+    removed_attachments = [name.strip() for name in request.form.getlist("remove_existing_files") if name and name.strip()]
+    if removed_attachments:
+        removed_set = set(removed_attachments)
+        existing_attachments = [name for name in existing_attachments if name not in removed_set]
+
+    uploaded_files = _collect_uploaded_files("files", "file")
+    saved_uploads = _save_uploaded_files(uploaded_files) if uploaded_files else []
+
+    if removed_attachments or saved_uploads:
+        _set_task_attachments(task, existing_attachments + saved_uploads)
 
     db.session.commit()
 
@@ -320,38 +438,42 @@ def update_task(task_id):
 @login_required
 def task_file_view(task_id):
     task = Task.query.get_or_404(task_id)
-    if not task.file_path:
+    file_index = _attachment_index_from_request()
+    filename = _task_attachment_by_index(task, file_index)
+    if not filename:
         abort(404)
 
-    file_dir = _task_file_directory(task.file_path)
+    file_dir = _task_file_directory(filename)
     if not file_dir:
         abort(404)
-    file_path = os.path.join(file_dir, task.file_path)
-    mime_type = _guess_inline_mime(task.file_path)
+    file_path = os.path.join(file_dir, filename)
+    mime_type = _guess_inline_mime(filename)
 
     with open(file_path, "rb") as file_handle:
         file_data = file_handle.read()
 
     response = Response(file_data, mimetype=mime_type)
-    response.headers["Content-Disposition"] = f'inline; filename="{task.file_path}"'
+    response.headers["Content-Disposition"] = f'inline; filename="{filename}"'
     return response
 
 @views.route("/task/<int:task_id>/file/download", methods=["GET"])
 @login_required
 def task_file_download(task_id):
     task = Task.query.get_or_404(task_id)
-    if not task.file_path:
+    file_index = _attachment_index_from_request()
+    filename = _task_attachment_by_index(task, file_index)
+    if not filename:
         abort(404)
 
-    file_dir = _task_file_directory(task.file_path)
+    file_dir = _task_file_directory(filename)
     if not file_dir:
         abort(404)
 
     return send_from_directory(
         file_dir,
-        task.file_path,
+        filename,
         as_attachment=True,
-        download_name=task.file_path
+        download_name=filename
     )
 
 @views.route("/task/<int:task_id>/json", methods=["GET"])
@@ -359,10 +481,16 @@ def task_file_download(task_id):
 def task_json(task_id):
     task = Task.query.get_or_404(task_id)
 
-    # deadline -> "YYYY-MM-DD HH:MM" (easy for your drawer JS)
-    deadline_str = ""
+    deadline_display = ""
+    deadline_date = ""
+    deadline_time = ""
     if task.deadline:
-        deadline_str = task.deadline.strftime("%Y-%m-%d %H:%M")
+        deadline_ph = as_ph_naive(task.deadline)
+        deadline_display = deadline_ph.strftime("%Y-%m-%d %I:%M %p")
+        deadline_date = deadline_ph.strftime("%Y-%m-%d")
+        deadline_time = deadline_ph.strftime("%H:%M")
+
+    attachments = _task_attachments(task)
 
     return jsonify({
         "id": task.id,
@@ -370,8 +498,11 @@ def task_json(task_id):
         "description": task.description or "",
         "status": task.status or "",
         "priority": getattr(task, "priority", None) or "normal",
-        "deadline": deadline_str,
-        "file_path": task.file_path or ""
+        "deadline": deadline_display,
+        "deadline_date": deadline_date,
+        "deadline_time": deadline_time,
+        "file_path": attachments[0] if attachments else "",
+        "file_paths": attachments,
     })
     
 @views.route("/task/<int:task_id>/complete", methods=["POST"])
@@ -420,10 +551,9 @@ def finish_task(task_id):
 
     if task and task.assigned_to == current_user.id:
 
-        file = request.files.get("file")
-
-        if file and file.filename:
-            task.file_path = _save_uploaded_file(file)
+        uploaded_files = _collect_uploaded_files("files", "file")
+        if uploaded_files:
+            _set_task_attachments(task, _save_uploaded_files(uploaded_files))
 
         task.status = "completed"
         db.session.commit()
@@ -469,11 +599,8 @@ def create_task():
 
     deadline_dt = datetime.combine(d, t)
 
-    uploaded = request.files.get("file")
-    saved_filename = None
-
-    if uploaded and uploaded.filename:
-        saved_filename = _save_uploaded_file(uploaded)
+    uploaded_files = _collect_uploaded_files("files", "file")
+    saved_filenames = _save_uploaded_files(uploaded_files)
     
     new_task = Task(
         title=title,
@@ -484,8 +611,8 @@ def create_task():
         deadline=deadline_dt
     )
 
-    if saved_filename:
-        new_task.file_path = saved_filename
+    if saved_filenames:
+        _set_task_attachments(new_task, saved_filenames)
 
     db.session.add(new_task)
     db.session.commit()
@@ -508,7 +635,7 @@ def task_dashboard():
         user=current_user,
         tasks=tasks,
         unread_count=unread_count,
-        now_dt=datetime.now(),
+        now_dt=ph_now(),
     )
 
 
@@ -567,7 +694,7 @@ def build_admin_calendar(tasks=None, meetings=None):
     tasks = tasks or []
     meetings = meetings or []
 
-    today = date.today()
+    today = ph_today()
     month_matrix = calendar.Calendar(firstweekday=0).monthdatescalendar(today.year, today.month)
 
     event_by_day = {}
@@ -642,7 +769,7 @@ def admin_dashboard():
     pending_tasks = total_tasks - completed_tasks
     total_meetings = len(meetings_data)
 
-    today = date.today()
+    today = ph_today()
     selected_month = request.args.get("month", type=int) or today.month
     selected_year = request.args.get("year", type=int) or today.year
 
@@ -667,7 +794,7 @@ def admin_dashboard():
         next_month, next_year = selected_month + 1, selected_year
 
     events_by_day = {}
-    now = datetime.now()
+    now = ph_now()
 
     for task in tasks_data:
         event_day = task["deadline"].date()
@@ -686,8 +813,9 @@ def admin_dashboard():
         events_by_day.setdefault(event_day, []).append({
             "type": "task",
             "kind": event_kind,
+            "task_id": task["id"],
             "title": task["title"],
-            "time": task["deadline"].strftime("%I:%M %p"),
+            "time": as_ph_naive(task["deadline"]).strftime("%I:%M %p"),
         })
 
     for meeting in meetings_data:
@@ -695,8 +823,8 @@ def admin_dashboard():
             continue
 
         if hasattr(meeting["deadline"], "date"):
-            event_day = meeting["deadline"].date()
-            event_time = meeting["deadline"].strftime("%I:%M %p")
+            event_day = as_ph_naive(meeting["deadline"]).date()
+            event_time = as_ph_naive(meeting["deadline"]).strftime("%I:%M %p")
         else:
             event_day = meeting["deadline"]
             event_time = ""
@@ -777,6 +905,7 @@ def manage_tasks():
         users=users,
         tasks=tasks,
         selected_filter=selected_filter,
+        now_dt=ph_now(),
     )
 
 
@@ -831,10 +960,8 @@ def manage_tasks_create():
     if selected_ids:
         assigned_users = User.query.filter(User.id.in_(selected_ids), User.is_admin.is_(False)).all()
 
-    uploaded = request.files.get("file")
-    saved_filename = None
-    if uploaded and uploaded.filename:
-        saved_filename = _save_uploaded_file(uploaded)
+    uploaded_files = _collect_uploaded_files("files", "file")
+    saved_filenames = _save_uploaded_files(uploaded_files)
 
     task = Task(
         title=title,
@@ -843,8 +970,10 @@ def manage_tasks_create():
         status=status,
         priority=priority,
         deadline=deadline_dt,
-        file_path=saved_filename
+        file_path=None
     )
+    if saved_filenames:
+        _set_task_attachments(task, saved_filenames)
     db.session.add(task)
 
     for assigned_user in assigned_users:
