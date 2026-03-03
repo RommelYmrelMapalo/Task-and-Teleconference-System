@@ -93,18 +93,18 @@ def create_app():
     # Init Migrations (this enables: flask db ...)
     Migrate(app, db)
 
-    with app.app_context():
-        _ensure_task_schema_columns()
+    # IMPORTANT: import models so Flask-Migrate can detect them
+    from .models import User, Task, Notification, Note, TaskAttachment
 
+    with app.app_context():
+        db.create_all()
+        _ensure_task_schema_columns()
 
     # Blueprints
     from .views import views
     from .auth import auth
     app.register_blueprint(views, url_prefix="/")
     app.register_blueprint(auth, url_prefix="/")
-
-    # IMPORTANT: import models so Flask-Migrate can detect them
-    from .models import User, Task, Notification, Note  # add/remove based on your models.py
 
     # Login manager
     login_manager = LoginManager()

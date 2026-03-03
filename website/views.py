@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, abort, jsonify, request, redirect,
 from flask_login import login_required, current_user
 from functools import wraps
 from flask import abort
-from .models import Notification, Task, User
+from .models import Notification, Task, TaskAttachment, User
 from . import db
 from datetime import datetime, date, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -63,6 +63,11 @@ def _task_file_directory(filename):
         return legacy_dir
 
     return None
+
+
+def _attachments_in_database():
+    return os.getenv("VERCEL") == "1"
+
 
 def _guess_inline_mime(filename):
     ext = os.path.splitext(filename)[1].lower()
@@ -181,7 +186,8 @@ def _deserialize_task_attachments(raw_value):
     try:
         parsed = json.loads(raw_text)
     except json.JSONDecodeError:
-        return [raw_text]
+        single = _normalize_attachment_name(raw_text)
+        return [single] if single else []
 
     if not isinstance(parsed, list):
         return []
@@ -227,6 +233,71 @@ def _save_uploaded_files(uploaded_files):
         if filename:
             saved.append(filename)
     return saved
+
+
+def _next_attachment_filename(task, requested_name):
+    filename = _normalize_attachment_name(requested_name)
+    if not filename:
+        return ""
+
+    existing = set(_task_attachments(task))
+    base, ext = os.path.splitext(filename)
+    candidate = filename
+    counter = 1
+    while candidate in existing:
+        candidate = f"{base}_{counter}{ext}"
+        counter += 1
+    return candidate
+
+
+def _save_task_uploads(task, uploaded_files):
+    saved = []
+    for uploaded in uploaded_files or []:
+        if _attachments_in_database():
+            filename = _next_attachment_filename(task, uploaded.filename)
+            if not filename:
+                continue
+            data = uploaded.read()
+            if data is None:
+                continue
+            attachment = TaskAttachment(
+                task_id=task.id,
+                filename=filename,
+                mimetype=(uploaded.mimetype or _guess_inline_mime(filename)),
+                content=data,
+            )
+            db.session.add(attachment)
+            saved.append(filename)
+        else:
+            filename = _save_uploaded_file(uploaded)
+            if filename:
+                saved.append(filename)
+    return saved
+
+
+def _remove_task_uploads(task, removed_names):
+    if not removed_names or not _attachments_in_database():
+        return
+
+    cleaned = {_normalize_attachment_name(name) for name in removed_names if _normalize_attachment_name(name)}
+    if not cleaned:
+        return
+
+    TaskAttachment.query.filter(
+        TaskAttachment.task_id == task.id,
+        TaskAttachment.filename.in_(cleaned),
+    ).delete(synchronize_session=False)
+
+
+def _task_db_attachment(task_id, filename):
+    if not filename:
+        return None
+    return (
+        TaskAttachment.query
+        .filter_by(task_id=task_id, filename=filename)
+        .order_by(TaskAttachment.id.desc())
+        .first()
+    )
 
 
 def _attachment_index_from_request():
@@ -495,9 +566,10 @@ def update_task(task_id):
     if removed_attachments:
         removed_set = set(removed_attachments)
         existing_attachments = [name for name in existing_attachments if name not in removed_set]
+        _remove_task_uploads(task, removed_attachments)
 
     uploaded_files = _collect_uploaded_files("files", "file")
-    saved_uploads = _save_uploaded_files(uploaded_files) if uploaded_files else []
+    saved_uploads = _save_task_uploads(task, uploaded_files) if uploaded_files else []
 
     if removed_attachments or saved_uploads:
         _set_task_attachments(task, existing_attachments + saved_uploads)
@@ -527,11 +599,41 @@ def task_file_view(task_id):
     if not filename:
         abort(404)
 
+    extension = os.path.splitext(filename)[1].lower()
+
+    db_attachment = _task_db_attachment(task.id, filename)
+    if db_attachment is not None:
+        if extension == ".docx":
+            temp_path = os.path.join(_upload_dir(create=True), f"preview_{task.id}_{file_index}.docx")
+            try:
+                with open(temp_path, "wb") as temp_docx:
+                    temp_docx.write(db_attachment.content or b"")
+                preview_html = _build_docx_preview_html(temp_path, filename)
+                return Response(preview_html, mimetype="text/html; charset=utf-8")
+            except Exception:
+                safe_name = html.escape(filename)
+                return Response(
+                    f'<p>DOCX preview is unavailable for <strong>{safe_name}</strong>.</p>'
+                    f'<p><a href="{url_for("views.task_file_download", task_id=task_id, index=file_index)}">Download file</a></p>',
+                    mimetype="text/html; charset=utf-8",
+                )
+            finally:
+                try:
+                    os.remove(temp_path)
+                except OSError:
+                    pass
+
+        response = Response(
+            db_attachment.content or b"",
+            mimetype=(db_attachment.mimetype or _guess_inline_mime(filename)),
+        )
+        response.headers["Content-Disposition"] = f'inline; filename="{filename}"'
+        return response
+
     file_dir = _task_file_directory(filename)
     if not file_dir:
         abort(404)
     file_path = os.path.join(file_dir, filename)
-    extension = os.path.splitext(filename)[1].lower()
 
     if extension == ".docx":
         try:
@@ -562,6 +664,15 @@ def task_file_download(task_id):
     filename = _task_attachment_by_index(task, file_index)
     if not filename:
         abort(404)
+
+    db_attachment = _task_db_attachment(task.id, filename)
+    if db_attachment is not None:
+        response = Response(
+            db_attachment.content or b"",
+            mimetype=(db_attachment.mimetype or _guess_inline_mime(filename)),
+        )
+        response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
 
     file_dir = _task_file_directory(filename)
     if not file_dir:
@@ -651,7 +762,7 @@ def finish_task(task_id):
 
         uploaded_files = _collect_uploaded_files("files", "file")
         if uploaded_files:
-            _set_task_attachments(task, _save_uploaded_files(uploaded_files))
+            _set_task_attachments(task, _save_task_uploads(task, uploaded_files))
 
         task.status = "completed"
         db.session.commit()
@@ -697,9 +808,6 @@ def create_task():
 
     deadline_dt = datetime.combine(d, t)
 
-    uploaded_files = _collect_uploaded_files("files", "file")
-    saved_filenames = _save_uploaded_files(uploaded_files)
-    
     new_task = Task(
         title=title,
         description=description if description else None,
@@ -709,11 +817,14 @@ def create_task():
         deadline=deadline_dt
     )
 
-    if saved_filenames:
-        _set_task_attachments(new_task, saved_filenames)
-
     db.session.add(new_task)
     db.session.commit()
+
+    uploaded_files = _collect_uploaded_files("files", "file")
+    saved_filenames = _save_task_uploads(new_task, uploaded_files)
+    if saved_filenames:
+        _set_task_attachments(new_task, saved_filenames)
+        db.session.commit()
 
     flash("Task created!", "success")
     return redirect(url_for("views.task_dashboard"))   # ✅ go back to planner overview
@@ -1058,9 +1169,6 @@ def manage_tasks_create():
     if selected_ids:
         assigned_users = User.query.filter(User.id.in_(selected_ids), User.is_admin.is_(False)).all()
 
-    uploaded_files = _collect_uploaded_files("files", "file")
-    saved_filenames = _save_uploaded_files(uploaded_files)
-
     task = Task(
         title=title,
         description=description if description else None,
@@ -1070,8 +1178,6 @@ def manage_tasks_create():
         deadline=deadline_dt,
         file_path=None
     )
-    if saved_filenames:
-        _set_task_attachments(task, saved_filenames)
     db.session.add(task)
 
     for assigned_user in assigned_users:
@@ -1082,6 +1188,12 @@ def manage_tasks_create():
         ))
 
     db.session.commit()
+
+    uploaded_files = _collect_uploaded_files("files", "file")
+    saved_filenames = _save_task_uploads(task, uploaded_files)
+    if saved_filenames:
+        _set_task_attachments(task, saved_filenames)
+        db.session.commit()
 
     if assigned_users:
         flash(f"Task created and {len(assigned_users)} assigned user(s) notified.", "success")

@@ -55,3 +55,12 @@ class Task(db.Model):
     last_edited_by = db.Column(db.Integer, nullable=True)
     last_edited_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
+
+
+class TaskAttachment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    task_id = db.Column(db.Integer, db.ForeignKey('task.id', ondelete="CASCADE"), nullable=False, index=True)
+    filename = db.Column(db.String(255), nullable=False)
+    mimetype = db.Column(db.String(255), nullable=True)
+    content = db.Column(db.LargeBinary, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
