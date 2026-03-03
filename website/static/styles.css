@@ -15,15 +15,32 @@ body {
    AUTH (LOGIN / SIGNUP)
    ========================================================= */
 .auth-container {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
   padding: 20px;
   background: linear-gradient(135deg, #e0e5ec, #f8f9fa);
+  overflow: hidden;
+}
+
+.auth-container::before {
+  content: "";
+  position: absolute;
+  left: clamp(20px, 6vw, 90px);
+  top: clamp(20px, 5vh, 80px);
+  width: clamp(150px, 22vw, 200px);
+  aspect-ratio: 250 / 180;
+  background: url("/static/assets/PTV_LOGO.png") no-repeat center / contain;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .auth-box {
+  position: relative;
+  z-index: 1;
   background: linear-gradient(145deg, #ffffff, #e6e6e6);
   padding: 45px;
   border-radius: 20px;
@@ -67,6 +84,37 @@ body {
   box-shadow:
     inset 4px 4px 8px rgba(0,0,0,0.1),
     inset -4px -4px 8px rgba(255,255,255,0.8);
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field .form-control {
+  padding-right: 44px;
+}
+
+.password-eye {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: #6c757d;
+  padding: 0;
+  line-height: 1;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.password-eye:focus {
+  outline: none;
+  color: #1f2937;
 }
 
 .auth-box .btn-primary {
@@ -143,13 +191,11 @@ body {
   border-bottom: 1px solid rgba(255,255,255,.06);
 }
 
-.sidebar-brand .dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: #3b82f6;
-  display: inline-block;
-  flex: 0 0 10px;
+.sidebar-brand-logo {
+  width: 65px;
+  height: 65px;
+  object-fit: contain;
+  flex: 0 0 80px;
 }
 
 /* Sidebar scroll area */
@@ -1829,16 +1875,6 @@ body.drawer-open{
   opacity:.9;
 }
 .gicon:hover{ opacity:1; transform: translateY(-1px); }
-
-.gcard-pill{
-  border:1px solid #cbd5e1;
-  background:#f8fafc;
-  color:#0f172a;
-  font-weight:900;
-  font-size:12px;
-  padding:4px 10px;
-  border-radius:999px;
-}
 
 /* Small check in card footer */
 .gcheck{

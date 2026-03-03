@@ -151,6 +151,20 @@ def _save_uploaded_file(uploaded_file):
     return filename
 
 
+def _normalize_attachment_name(raw_value):
+    if raw_value is None:
+        return ""
+
+    normalized = str(raw_value).strip()
+    if not normalized:
+        return ""
+
+    # Strip URL/query fragments and handle Windows/Unix path separators.
+    normalized = normalized.split("?", 1)[0].split("#", 1)[0].replace("\\", "/")
+    normalized = normalized.rsplit("/", 1)[-1]
+    return secure_filename(normalized)
+
+
 def _deserialize_task_attachments(raw_value):
     if not raw_value:
         return []
@@ -161,7 +175,8 @@ def _deserialize_task_attachments(raw_value):
 
     # Backward-compatible: legacy records store a single filename as plain text.
     if not raw_text.startswith("["):
-        return [raw_text]
+        single = _normalize_attachment_name(raw_text)
+        return [single] if single else []
 
     try:
         parsed = json.loads(raw_text)
@@ -171,7 +186,14 @@ def _deserialize_task_attachments(raw_value):
     if not isinstance(parsed, list):
         return []
 
-    return [str(item).strip() for item in parsed if str(item).strip()]
+    cleaned = []
+    seen = set()
+    for item in parsed:
+        normalized = _normalize_attachment_name(item)
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            cleaned.append(normalized)
+    return cleaned
 
 
 def _task_attachments(task):
@@ -179,7 +201,13 @@ def _task_attachments(task):
 
 
 def _set_task_attachments(task, attachments):
-    cleaned = [str(item).strip() for item in (attachments or []) if str(item).strip()]
+    cleaned = []
+    seen = set()
+    for item in attachments or []:
+        normalized = _normalize_attachment_name(item)
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            cleaned.append(normalized)
     task.file_path = json.dumps(cleaned) if cleaned else None
 
 
@@ -216,7 +244,7 @@ def _task_attachment_by_index(task, index):
     attachments = _task_attachments(task)
     if index >= len(attachments):
         return None
-    return attachments[index]
+    return _normalize_attachment_name(attachments[index])
 
 
 def admin_required(func):

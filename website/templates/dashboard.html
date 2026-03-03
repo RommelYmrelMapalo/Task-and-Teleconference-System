@@ -442,8 +442,8 @@
                           {% set status_label = 'COMPLETED' if t.status == 'completed' else ('DELAYED' if t.is_delayed else (t.status|replace("_"," ")|upper)) %}
                           {% set status_class = 'status-completed' if t.status == 'completed' else ('status-delayed' if t.is_delayed else 'status-pending') %}
                           <span class="task-status-pill {{ status_class }}" data-status-pill>{{ status_label }}</span>
-                          <span class="gcard-pill">Task</span>
-                        </div>
+                          <span class="pill task">Task</span>
+                        </div> 404
                       </div>
                     </div>
                   {% endfor %}
@@ -531,18 +531,59 @@ window.addEventListener("DOMContentLoaded", () => {
 
   const plannerWrap = document.getElementById("plannerWrap");
   const todayBlock = document.getElementById("todayPlanner");
+  const btnToday = document.getElementById("btnToday");
   const plannerDate = new URLSearchParams(window.location.search).get("planner_date");
 
+  function animatePlannerScroll(targetTop, duration){
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if(prefersReducedMotion){
+      plannerWrap.scrollTop = targetTop;
+      return;
+    }
+
+    const startTop = plannerWrap.scrollTop;
+    const distance = targetTop - startTop;
+    if(Math.abs(distance) < 1){
+      plannerWrap.scrollTop = targetTop;
+      return;
+    }
+
+    const startTime = performance.now();
+    const runDuration = Math.max(220, duration || 460);
+    const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+    function step(now){
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / runDuration);
+      plannerWrap.scrollTop = startTop + (distance * easeInOutCubic(progress));
+      if(progress < 1) requestAnimationFrame(step);
+    }
+
+    requestAnimationFrame(step);
+  }
+
+  function scrollPlannerToToday(){
+    if(!todayBlock || !plannerWrap) return;
+    const wrapRect = plannerWrap.getBoundingClientRect();
+    const todayRect = todayBlock.getBoundingClientRect();
+    const targetTop = Math.max(
+      0,
+      plannerWrap.scrollTop + (todayRect.top - wrapRect.top) - 14
+    );
+    animatePlannerScroll(targetTop, 520);
+  }
+
+  if(btnToday){
+    btnToday.addEventListener("click", (e) => {
+      if(todayBlock && plannerWrap){
+        e.preventDefault();
+        scrollPlannerToToday();
+      }
+    });
+  }
+
   if(plannerDate === "today" && todayBlock && plannerWrap){
-    setTimeout(() => {
-      const wrapRect = plannerWrap.getBoundingClientRect();
-      const todayRect = todayBlock.getBoundingClientRect();
-      const targetTop = Math.max(
-        0,
-        plannerWrap.scrollTop + (todayRect.top - wrapRect.top) - 14
-      );
-      plannerWrap.scrollTo({ top: targetTop, behavior: "smooth" });
-    }, 20);
+    setTimeout(scrollPlannerToToday, 20);
   }
 });
 
