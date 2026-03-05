@@ -2,7 +2,70 @@
 {% block title %}Admin Dashboard{% endblock %}
 
 {% block content %}
-<main class="main-inner admin-dashboard-main">
+<style>
+  .ad-wrap{
+    color:#e2e8f0;
+  }
+  .ad-wrap .page-card{
+    background:linear-gradient(130deg, rgba(16,22,35,.94), rgba(20,28,44,.92));
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 12px 26px rgba(2,6,23,.35);
+    color:#e2e8f0;
+  }
+  .ad-wrap .overview-label,
+  .ad-wrap .text-muted,
+  .ad-wrap .calendar-more{
+    color:#94a3b8 !important;
+  }
+  .ad-wrap h3,
+  .ad-wrap h4,
+  .ad-wrap h5,
+  .ad-wrap strong,
+  .ad-wrap .calendar-date{
+    color:#f8fafc;
+  }
+  .ad-wrap .calendar-cell{
+    border-color:rgba(148,163,184,.28);
+    background:rgba(15,23,42,.64);
+  }
+  .ad-wrap .calendar-cell.is-muted{
+    background:rgba(2,6,23,.5);
+    opacity:.75;
+  }
+  .ad-wrap .calendar-cell.is-today{
+    border-color:#3b82f6;
+    box-shadow:0 0 0 2px rgba(59,130,246,.2);
+  }
+  .ad-wrap .calendar-nav-btn{
+    border-color:rgba(148,163,184,.4);
+    color:#cbd5e1;
+    background:rgba(15,23,42,.7);
+  }
+  .ad-wrap .calendar-nav-btn:hover{
+    background:rgba(30,41,59,.95);
+    color:#fff;
+  }
+  .ad-wrap .timeline-list li{
+    border-bottom-color:rgba(148,163,184,.2);
+  }
+  .ad-wrap .dashboard-task-link{
+    color:#dbeafe;
+  }
+  .ad-wrap .dashboard-task-link:hover{
+    color:#93c5fd;
+  }
+  .ad-wrap .btn-outline-primary{
+    border-color:rgba(59,130,246,.7);
+    color:#bfdbfe;
+    background:rgba(37,99,235,.14);
+  }
+  .ad-wrap .btn-outline-primary:hover{
+    color:#fff;
+    background:rgba(59,130,246,.3);
+    border-color:#60a5fa;
+  }
+</style>
+<main class="main-inner admin-dashboard-main ad-wrap">
   <div class="admin-overview-grid mb-4">
     <div class="page-card overview-card">
       <p class="overview-label mb-1">Total Tasks</p>

@@ -55,9 +55,10 @@
   .btn-icon.ghost{ background:transparent; }
   .task-check-btn{ cursor:pointer; }
   .task-check-btn.is-done{ background:#10b981; border-color:#10b981; }
-  .st-pending{ background:#fef3c7; border-color:#f7c900; color:#92400e; }
-  .st-delayed{ background:#fef2f2; border-color:#fa0000; color:#b91c1c; }
-  .st-completed{ background:#ecfdf5; border-color:#00ff59; color:#065f46; }
+  .st-pending{ background:rgba(255,220,82,.20); border-color:#ffdc52; color:#ffe37c; }
+  .st-delayed{ background:rgba(253,82,82,.20); border-color:#fd5252; color:#ff9a9a; }
+  .st-completed{ background:rgba(74,253,137,.20); border-color:#4afd89; color:#9dffc0; }
+  .st-revision{ background:rgba(139,92,246,.20); border-color:#8b5cf6; color:#c4b5fd; }
 
   /* align toolbar controls like manage_tasks (priority first, left side) */
   .td-toolbar{
@@ -111,6 +112,220 @@
   .file-btn.remove:hover{
     background:#feecec;
     border-color:#e89e9e;
+  }
+  .recent-wrap{
+    margin:14px 0 16px;
+    border:1px solid #e2e8f0;
+    background:#ffffff;
+    border-radius:14px;
+    padding:12px;
+  }
+  .recent-title{
+    font-size:13px;
+    font-weight:900;
+    color:#0f172a;
+    margin-bottom:10px;
+    letter-spacing:.2px;
+  }
+  .recent-list{
+    display:grid;
+    gap:8px;
+  }
+  .recent-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    border:1px solid #e5e7eb;
+    border-radius:10px;
+    padding:8px 10px;
+    text-decoration:none;
+    color:inherit;
+    transition:all .15s ease;
+  }
+  .recent-item:hover{
+    border-color:#cbd5e1;
+    background:#f8fafc;
+    text-decoration:none;
+  }
+  .recent-main{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    min-width:0;
+  }
+  .recent-text{
+    min-width:0;
+    display:grid;
+    gap:2px;
+  }
+  .recent-action{
+    font-size:11px;
+    line-height:1;
+    font-weight:800;
+    padding:5px 8px;
+    border-radius:999px;
+    border:1px solid transparent;
+    white-space:nowrap;
+  }
+  .recent-action.pending{
+    background:rgba(255,220,82,.20);
+    color:#ffe37c;
+    border-color:#ffdc52;
+  }
+  .recent-action.revision{
+    background:rgba(139,92,246,.20);
+    color:#c4b5fd;
+    border-color:#8b5cf6;
+  }
+  .recent-action.completed{
+    background:rgba(74,253,137,.20);
+    color:#9dffc0;
+    border-color:#4afd89;
+  }
+  .recent-action.delayed{
+    background:rgba(253,82,82,.20);
+    color:#ff9a9a;
+    border-color:#fd5252;
+  }
+  .recent-task-name{
+    font-size:13px;
+    font-weight:700;
+    color:#0f172a;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .recent-meta{
+    font-size:11px;
+    color:#64748b;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .recent-deadline.delayed{
+    color:#b91c1c;
+    font-weight:700;
+  }
+  .recent-time{
+    font-size:12px;
+    color:#64748b;
+    white-space:nowrap;
+  }
+
+  /* Dark-mode alignment */
+  .scroll{
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:14px;
+    padding:10px;
+    background:linear-gradient(180deg, #0f172a 0%, #111827 100%);
+  }
+  .td-search,
+  .td-filter{
+    background:rgba(2,6,23,.7);
+    border-color:rgba(255,255,255,.18);
+    color:#e2e8f0;
+  }
+  .td-search::placeholder{
+    color:#94a3b8;
+  }
+  .td-search:focus,
+  .td-filter:focus{
+    background:rgba(2,6,23,.84);
+    color:#f8fafc;
+    border-color:#3b82f6;
+    box-shadow:0 0 0 .14rem rgba(59,130,246,.22);
+  }
+  .recent-wrap{
+    border:1px solid rgba(255,255,255,.12);
+    background:linear-gradient(130deg, rgba(16,22,35,.94), rgba(20,28,44,.92));
+    box-shadow:0 12px 26px rgba(2,6,23,.35);
+  }
+  .recent-title,
+  .recent-task-name{
+    color:#f8fafc;
+  }
+  .recent-item{
+    border-color:rgba(148,163,184,.28);
+    background:rgba(15,23,42,.62);
+  }
+  .recent-item:hover{
+    border-color:rgba(59,130,246,.5);
+    background:rgba(30,41,59,.85);
+  }
+  .recent-time{
+    color:#94a3b8;
+  }
+  .recent-meta{
+    color:#94a3b8;
+  }
+  .recent-deadline.delayed{
+    color:#f87171;
+  }
+  .modal-overlay{
+    background:rgba(2,6,23,.62);
+    backdrop-filter:blur(2px);
+  }
+  .modern-popup{
+    background:linear-gradient(160deg, #0f172a 0%, #111827 100%);
+    border:1px solid rgba(148,163,184,.32);
+    box-shadow:0 28px 60px rgba(2,6,23,.55);
+  }
+  .modern-popup.success{
+    border-top:4px solid #10b981;
+  }
+  .modern-popup.error{
+    border-top:4px solid #ef4444;
+  }
+  .modern-popup .modal-text{
+    color:#f8fafc;
+  }
+  .modern-popup .modal-subtext{
+    color:#94a3b8;
+  }
+  .modern-popup .modal-progress{
+    background:rgba(148,163,184,.28);
+  }
+  .modern-popup.success .modal-icon{
+    color:#10b981;
+    background:linear-gradient(140deg, rgba(16,185,129,.22) 0%, rgba(34,197,94,.3) 100%);
+    box-shadow:0 10px 24px rgba(16,185,129,.24);
+  }
+  .modern-popup.error .modal-icon{
+    color:#f87171;
+    background:linear-gradient(140deg, rgba(239,68,68,.22) 0%, rgba(248,113,113,.28) 100%);
+    box-shadow:0 10px 24px rgba(239,68,68,.22);
+  }
+  .sec{
+    background:linear-gradient(130deg, rgba(16,22,35,.94), rgba(20,28,44,.92));
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 12px 26px rgba(2,6,23,.35);
+  }
+  .sec-h{
+    background:rgba(2,6,23,.42);
+    border-bottom:1px solid rgba(148,163,184,.18);
+  }
+  .sec-title{
+    color:#f8fafc;
+  }
+  .sec-count{
+    color:#cbd5e1;
+    background:rgba(30,41,59,.8);
+  }
+  .sec-body{
+    background:transparent;
+  }
+  .task-row{
+    border-top:1px solid rgba(148,163,184,.22);
+  }
+  .task-title-link{
+    color:#f8fafc;
+  }
+  .task-meta{
+    color:#94a3b8;
+  }
+  [data-empty-state]{
+    color:#94a3b8 !important;
   }
 </style>
 
@@ -219,6 +434,33 @@
   </div>
 
   <div class="scroll">
+    <div class="recent-wrap">
+      <div class="recent-title">Recently Tasks</div>
+      {% if recent_task_activity %}
+        <div class="recent-list">
+          {% for item in recent_task_activity %}
+            <a class="recent-item"
+               href="{{ url_for('views.task_dashboard') }}?focus={{ item.id }}&highlight=1"
+               data-focus-task="{{ item.id }}">
+              <div class="recent-main">
+                <span class="recent-action {{ item.status_class }}">{{ item.status_label }}</span>
+                <div class="recent-text">
+                  <span class="recent-task-name">{{ item.title }}</span>
+                  <div class="recent-meta">
+                    <span>Created: {{ item.created_at.strftime("%b %d, %Y %I:%M %p") if item.created_at else '-' }}</span>
+                    <span>Priority: {{ (item.priority or 'normal')|upper }}</span>
+                    <span class="recent-deadline {{ 'delayed' if item.is_delayed else '' }}">Deadline: {{ item.deadline_at.strftime("%b %d, %Y %I:%M %p") if item.deadline_at else '-' }}</span>
+                  </div>
+                </div>
+              </div>
+              <span class="recent-time">{{ item.activity_at.strftime("%b %d, %Y %I:%M %p") }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="recent-time">No recent task activity yet.</div>
+      {% endif %}
+    </div>
 
     <!-- ===== Active Tasks ===== -->
     <div class="sec open" data-section="active">
@@ -265,7 +507,7 @@
                 </div>
 
                 <div class="task-tags">
-                  <span class="status {{ 'st-delayed' if is_delayed else 'st-pending' }}" data-status-pill>{{ 'DELAYED' if is_delayed else task.status|replace("_"," ")|upper }}</span>
+                  <span class="status {{ 'st-delayed' if is_delayed else ('st-revision' if (task.status or '') == 'for_revision' else 'st-pending') }}" data-status-pill>{{ 'DELAYED' if is_delayed else task.status|replace("_"," ")|upper }}</span>
                   {% set pr = (task.priority or 'normal')|lower %}
                   <span class="prio prio-{{ pr }}">{{ pr|upper }}</span>
                 </div>
@@ -290,7 +532,7 @@
       <button class="sec-h" type="button">
         <div class="sec-h-left">
           <span class="sec-title">For Revision</span>
-          <span class="sec-badge" style="background:#6366f1;"></span>
+          <span class="sec-badge" style="background:#8b5cf6;"></span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
           <span class="sec-count">{{ revision_count }}</span>
@@ -327,7 +569,7 @@
                 </div>
 
                 <div class="task-tags">
-                  <span class="status {{ 'st-delayed' if is_delayed else 'st-pending' }}" data-status-pill>{{ 'DELAYED' if is_delayed else task.status|replace("_"," ")|upper }}</span>
+                  <span class="status {{ 'st-delayed' if is_delayed else ('st-revision' if (task.status or '') == 'for_revision' else 'st-pending') }}" data-status-pill>{{ 'DELAYED' if is_delayed else task.status|replace("_"," ")|upper }}</span>
                   {% set pr = (task.priority or 'normal')|lower %}
                   <span class="prio prio-{{ pr }}">{{ pr|upper }}</span>
                 </div>
@@ -487,11 +729,13 @@
     const deadline = parseDeadline(document.querySelector(`[data-task-id="${taskId}"]`)?.dataset.deadline || "");
     const isDelayed = status !== "completed" && deadline && deadline.getTime() < Date.now();
     const text = status === "completed" ? "COMPLETED" : (isDelayed ? "DELAYED" : status.replaceAll("_", " ").toUpperCase());
-    const css = status === "completed" ? "st-completed" : (isDelayed ? "st-delayed" : "st-pending");
+    const css = status === "completed"
+      ? "st-completed"
+      : (isDelayed ? "st-delayed" : (status === "for_revision" ? "st-revision" : "st-pending"));
 
     document.querySelectorAll(`#task-${taskId} [data-status-pill]`).forEach((pill)=>{
       pill.textContent = text;
-      pill.classList.remove("st-pending","st-delayed","st-completed");
+      pill.classList.remove("st-pending","st-delayed","st-completed","st-revision");
       pill.classList.add(css);
     });
 

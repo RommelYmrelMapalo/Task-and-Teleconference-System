@@ -6,7 +6,7 @@
 <style>
   .mt-wrap{ display:flex; flex-direction:column; height:calc(100vh - 30px); }
   .mt-head{ margin-bottom:14px; }
-  .mt-sub{ color:#64748b; font-size:14px; margin-top:4px; }
+  .mt-sub{ color:#a5b4c7; font-size:14px; margin-top:4px; }
   .mt-toolbar{ display:flex; gap:10px; margin-bottom:12px; }
   .mt-search{ max-width:300px; }
   .mt-priority{ width:170px; }
@@ -97,9 +97,10 @@
     gap:8px;
   }
   .tag{ display:inline-block; padding:4px 10px; border-radius:999px; font-size:11px; font-weight:800; margin-left:6px; }
-  .tag.status-pending{ background:#fef3c7; border:1px solid #f7c900; color:#92400e; }
-  .tag.status-delayed{ background:#fef2f2; border:1px solid #fa0000; color:#b91c1c; }
-  .tag.status-completed{ background:#ecfdf5; border:1px solid #00ff59; color:#065f46; }
+  .tag.status-pending{ background:rgba(255,220,82,.20); border:1px solid #ffdc52; color:#ffe37c; }
+  .tag.status-delayed{ background:rgba(253,82,82,.20); border:1px solid #fd5252; color:#ff9a9a; }
+  .tag.status-completed{ background:rgba(74,253,137,.20); border:1px solid #4afd89; color:#9dffc0; }
+  .tag.status-revision{ background:rgba(139,92,246,.20); border:1px solid #8b5cf6; color:#c4b5fd; }
   .tag.prio-low{ background:#eff6ff; border:1px solid; color:#1e40af; }
   .tag.prio-normal{ background:#f5f3ff; border:1px solid; color:#6d28d9; }
   .tag.prio-high{ background:#fff7ed; border:1px solid; color:#c2410c; }
@@ -148,6 +149,105 @@
   .file-btn.remove:hover{
     background:#feecec;
     border-color:#e89e9e;
+  }
+  .recent-wrap{
+    margin:0 0 14px;
+    border:1px solid #e2e8f0;
+    background:#ffffff;
+    border-radius:14px;
+    padding:12px;
+  }
+  .recent-title{
+    font-size:13px;
+    font-weight:900;
+    color:#0f172a;
+    margin-bottom:10px;
+    letter-spacing:.2px;
+  }
+  .recent-list{
+    display:grid;
+    gap:8px;
+  }
+  .recent-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    border:1px solid #e5e7eb;
+    border-radius:10px;
+    padding:8px 10px;
+    text-decoration:none;
+    color:inherit;
+    transition:all .15s ease;
+  }
+  .recent-item:hover{
+    border-color:#cbd5e1;
+    background:#f8fafc;
+    text-decoration:none;
+  }
+  .recent-main{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    min-width:0;
+  }
+  .recent-text{
+    min-width:0;
+    display:grid;
+    gap:2px;
+  }
+  .recent-action{
+    font-size:11px;
+    line-height:1;
+    font-weight:800;
+    padding:5px 8px;
+    border-radius:999px;
+    border:1px solid transparent;
+    white-space:nowrap;
+  }
+  .recent-action.pending{
+    background:rgba(255,220,82,.20);
+    color:#ffe37c;
+    border-color:#ffdc52;
+  }
+  .recent-action.revision{
+    background:rgba(139,92,246,.20);
+    color:#c4b5fd;
+    border-color:#8b5cf6;
+  }
+  .recent-action.completed{
+    background:rgba(74,253,137,.20);
+    color:#9dffc0;
+    border-color:#4afd89;
+  }
+  .recent-action.delayed{
+    background:rgba(253,82,82,.20);
+    color:#ff9a9a;
+    border-color:#fd5252;
+  }
+  .recent-task-name{
+    font-size:13px;
+    font-weight:700;
+    color:#0f172a;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .recent-meta{
+    font-size:11px;
+    color:#64748b;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .recent-deadline.delayed{
+    color:#b91c1c;
+    font-weight:700;
+  }
+  .recent-time{
+    font-size:12px;
+    color:#64748b;
+    white-space:nowrap;
   }
 
   .drawer-grid2{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
@@ -199,7 +299,7 @@
     .tag{ margin-left:0; }
   }
 
-   @media (max-width: 1000px){
+  @media (max-width: 1000px){
     .task-row{
       flex-direction:column;
       align-items:stretch;
@@ -234,6 +334,127 @@
       font-size:12px;
     }
     .tag{ margin-left:0; }
+  }
+
+  /* Dark-mode alignment */
+  .mt-wrap{
+    color:#e5e7eb;
+  }
+  .mt-sub{
+    color:#a5b4c7;
+  }
+  .mt-toolbar .form-control{
+    background:rgba(2,6,23,.7);
+    border-color:rgba(255,255,255,.18);
+    color:#e2e8f0;
+  }
+  .mt-toolbar .form-control::placeholder{
+    color:#94a3b8;
+  }
+  .mt-toolbar .form-control:focus{
+    background:rgba(2,6,23,.84);
+    color:#f8fafc;
+    border-color:#3b82f6;
+    box-shadow:0 0 0 .14rem rgba(59,130,246,.22);
+  }
+  .recent-wrap{
+    border:1px solid rgba(255,255,255,.12);
+    background:linear-gradient(130deg, rgba(16,22,35,.94), rgba(20,28,44,.92));
+    box-shadow:0 12px 26px rgba(2,6,23,.35);
+  }
+  .recent-title,
+  .recent-task-name{
+    color:#f8fafc;
+  }
+  .recent-item{
+    border-color:rgba(148,163,184,.28);
+    background:rgba(15,23,42,.62);
+  }
+  .recent-item:hover{
+    border-color:rgba(59,130,246,.5);
+    background:rgba(30,41,59,.85);
+  }
+  .recent-time{
+    color:#94a3b8;
+  }
+  .recent-meta{
+    color:#94a3b8;
+  }
+  .recent-deadline.delayed{
+    color:#f87171;
+  }
+  .modal-overlay{
+    background:rgba(2,6,23,.62);
+    backdrop-filter:blur(2px);
+  }
+  .modern-popup{
+    background:linear-gradient(160deg, #0f172a 0%, #111827 100%);
+    border:1px solid rgba(148,163,184,.32);
+    box-shadow:0 28px 60px rgba(2,6,23,.55);
+  }
+  .modern-popup.success{
+    border-top:4px solid #10b981;
+  }
+  .modern-popup.error{
+    border-top:4px solid #ef4444;
+  }
+  .modern-popup .modal-text{
+    color:#f8fafc;
+  }
+  .modern-popup .modal-subtext{
+    color:#94a3b8;
+  }
+  .modern-popup .modal-progress{
+    background:rgba(148,163,184,.28);
+  }
+  .modern-popup.success .modal-icon{
+    color:#10b981;
+    background:linear-gradient(140deg, rgba(16,185,129,.22) 0%, rgba(34,197,94,.3) 100%);
+    box-shadow:0 10px 24px rgba(16,185,129,.24);
+  }
+  .modern-popup.error .modal-icon{
+    color:#f87171;
+    background:linear-gradient(140deg, rgba(239,68,68,.22) 0%, rgba(248,113,113,.28) 100%);
+    box-shadow:0 10px 24px rgba(239,68,68,.22);
+  }
+  .sec{
+    background:linear-gradient(130deg, rgba(16,22,35,.94), rgba(20,28,44,.92));
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 12px 26px rgba(2,6,23,.35);
+  }
+  .sec-h{
+    background:rgba(2,6,23,.42);
+    border-bottom:1px solid rgba(148,163,184,.18);
+  }
+  .sec-title{
+    color:#f8fafc;
+  }
+  .sec-count{
+    color:#cbd5e1;
+    background:rgba(30,41,59,.8);
+  }
+  .sec-body{
+    background:transparent;
+  }
+  .task-row{
+    border-top:1px solid rgba(148,163,184,.22);
+  }
+  .task-title{
+    color:#f8fafc;
+  }
+  .task-meta,
+  .task-desc,
+  .empty{
+    color:#94a3b8;
+  }
+  .file-btn{
+    border-color:rgba(148,163,184,.35);
+    background:rgba(15,23,42,.72);
+    color:#e2e8f0;
+  }
+  .file-btn:hover{
+    background:rgba(30,41,59,.88);
+    border-color:rgba(59,130,246,.5);
   }
 
 </style>
@@ -319,11 +540,38 @@
   </div>
 
   <div class="mt-list" id="taskList">
+    <div class="recent-wrap">
+      <div class="recent-title">Recently Tasks</div>
+      {% if recent_task_activity %}
+        <div class="recent-list">
+          {% for item in recent_task_activity %}
+            <a class="recent-item"
+               href="{{ url_for('views.manage_tasks') }}?open={{ item.id }}&highlight=1">
+              <div class="recent-main">
+                <span class="recent-action {{ item.status_class }}">{{ item.status_label }}</span>
+                <div class="recent-text">
+                  <span class="recent-task-name">{{ item.title }}</span>
+                  <div class="recent-meta">
+                    <span>Created: {{ item.created_at.strftime("%b %d, %Y %I:%M %p") if item.created_at else '-' }}</span>
+                    <span>Priority: {{ (item.priority or 'normal')|upper }}</span>
+                    <span class="recent-deadline {{ 'delayed' if item.is_delayed else '' }}">Deadline: {{ item.deadline_at.strftime("%b %d, %Y %I:%M %p") if item.deadline_at else '-' }}</span>
+                  </div>
+                </div>
+              </div>
+              <span class="recent-time">{{ item.activity_at.strftime("%b %d, %Y %I:%M %p") }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="recent-time">No recent task activity yet.</div>
+      {% endif %}
+    </div>
+
     <div class="sec open" data-section="delayed">
       <button class="sec-h" type="button">
         <div class="sec-h-left">
           <span class="sec-title">Delayed Tasks</span>
-          <span class="sec-badge" style="background:#ef4444;"></span>
+          <span class="sec-badge" style="background:#fd5252;"></span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
           <span class="sec-count">{{ delayed_tasks|length }}</span>
@@ -381,7 +629,7 @@
       <button class="sec-h" type="button">
         <div class="sec-h-left">
           <span class="sec-title">Pending Tasks</span>
-          <span class="sec-badge" style="background:#f59e0b;"></span>
+          <span class="sec-badge" style="background:#ffdc52;"></span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
           <span class="sec-count">{{ pending_tasks|length }}</span>
@@ -418,7 +666,11 @@
               </div>
               <div class="task-side">
                 <div class="task-tags">
-                  <span class="tag state-tag status-pending">PENDING</span>
+                  {% if (t.status or '')|lower == 'for_revision' %}
+                    <span class="tag state-tag status-revision">FOR REVISION</span>
+                  {% else %}
+                    <span class="tag state-tag status-pending">PENDING</span>
+                  {% endif %}
                   <span class="tag prio-{{ pr }}">{{ pr|upper }}</span>
                 </div>
                 <span class="task-divider" aria-hidden="true"></span>
@@ -439,7 +691,7 @@
       <button class="sec-h" type="button">
         <div class="sec-h-left">
           <span class="sec-title">Completed Tasks</span>
-          <span class="sec-badge" style="background:#10b981;"></span>
+          <span class="sec-badge" style="background:#4afd89;"></span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
           <span class="sec-count">{{ completed_tasks|length }}</span>
@@ -637,9 +889,16 @@
     const state = stateForRow(row);
     const badge = row.querySelector('.state-tag');
     if(badge){
-      badge.textContent = state.toUpperCase();
-      badge.classList.remove('status-pending','status-delayed','status-completed');
-      badge.classList.add(`status-${state}`);
+      const rawStatus = (row.dataset.status || '').toLowerCase();
+      let label = state.toUpperCase();
+      let cssClass = `status-${state}`;
+      if(state === 'pending' && rawStatus === 'for_revision'){
+        label = 'FOR REVISION';
+        cssClass = 'status-revision';
+      }
+      badge.textContent = label;
+      badge.classList.remove('status-pending','status-delayed','status-completed','status-revision');
+      badge.classList.add(cssClass);
     }
     const check = row.querySelector('.task-check-btn');
     if(check){

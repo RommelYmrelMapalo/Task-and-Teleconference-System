@@ -1,11 +1,613 @@
 {% extends "admin_base.html" %}
-{% block title %}Assigned Meetings{% endblock %}
+{% block title %}Manage Users{% endblock %}
 
 {% block content %}
+<style>
+  .mu-wrap{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    padding-bottom:20px;
+    color:#e5e7eb;
+  }
+  .mu-head{
+    display:flex;
+    flex-direction:column;
+    gap:0;
+  }
+
+  .mu-stats{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:12px;
+  }
+  .mu-stat-card{
+    background:linear-gradient(130deg, rgba(16,22,35,.94), rgba(20,28,44,.92));
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:14px;
+    box-shadow:0 12px 26px rgba(2, 6, 23, .35);
+    padding:14px 16px;
+  }
+  .mu-stat-label{
+    margin:0 0 8px;
+    color:#a5b4c7;
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:.3px;
+    text-transform:uppercase;
+  }
+  .mu-stat-value{
+    margin:0;
+    color:#f8fafc;
+    font-size:28px;
+    font-weight:900;
+    line-height:1;
+  }
+  .mu-toolbar{
+    background:rgba(15,23,42,.88);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:14px;
+    box-shadow:0 12px 26px rgba(2, 6, 23, .35);
+    padding:12px;
+    display:grid;
+    grid-template-columns:minmax(230px, 1fr) 180px auto auto;
+    gap:10px;
+    align-items:center;
+  }
+  .mu-actions{
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+  .mu-btn{
+    appearance:none;
+    border:1px solid rgba(255,255,255,.18);
+    background:rgba(15,23,42,.92);
+    color:#e2e8f0;
+    border-radius:10px;
+    padding:8px 12px;
+    font-size:12px;
+    font-weight:800;
+    line-height:1;
+    cursor:pointer;
+  }
+  .mu-btn:hover{
+    background:rgba(30,41,59,.95);
+  }
+  .mu-btn.primary{
+    background:#1677ff;
+    border-color:#1677ff;
+    color:#fff;
+  }
+  .mu-btn.primary:hover{
+    background:#0f66dd;
+    border-color:#0f66dd;
+  }
+  .mu-btn.success{
+    background:#0f9f6e;
+    border-color:#0f9f6e;
+    color:#fff;
+  }
+  .mu-btn.success:hover{
+    background:#0c875d;
+    border-color:#0c875d;
+  }
+  .mu-toolbar .form-control,
+  .mu-toolbar .custom-select{
+    border-radius:10px;
+    border-color:rgba(255,255,255,.18);
+    background:rgba(2,6,23,.7);
+    color:#e2e8f0;
+  }
+  .mu-toolbar .form-control::placeholder{
+    color:#94a3b8;
+  }
+  .mu-toolbar .form-control:focus,
+  .mu-toolbar .custom-select:focus{
+    background:rgba(2,6,23,.84);
+    color:#f8fafc;
+    border-color:#3b82f6;
+    box-shadow:0 0 0 .14rem rgba(59,130,246,.22);
+  }
+  .mu-visible-count{
+    justify-self:end;
+    font-size:12px;
+    font-weight:800;
+    color:#cbd5e1;
+    background:rgba(30,41,59,.8);
+    border:1px solid rgba(148,163,184,.35);
+    border-radius:999px;
+    padding:7px 11px;
+    white-space:nowrap;
+  }
+  .mu-list-card{
+    background:linear-gradient(130deg, rgba(16,22,35,.94), rgba(20,28,44,.92));
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:14px;
+    box-shadow:0 12px 26px rgba(2, 6, 23, .35);
+    overflow:hidden;
+  }
+  .mu-table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+  }
+  .mu-table thead th{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.4px;
+    font-weight:900;
+    color:#94a3b8;
+    background:rgba(2,6,23,.45);
+    padding:12px 14px;
+    border-bottom:1px solid rgba(255,255,255,.1);
+  }
+  .mu-table tbody td{
+    padding:12px 14px;
+    border-top:1px solid rgba(148,163,184,.2);
+    vertical-align:middle;
+  }
+  .mu-table tbody tr:first-child td{
+    border-top:0;
+  }
+  .mu-user-cell{
+    display:flex;
+    align-items:center;
+    min-width:0;
+  }
+  .mu-user-main{
+    min-width:0;
+  }
+  .mu-user-name{
+    margin:0;
+    font-size:14px;
+    font-weight:800;
+    color:#f8fafc;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .mu-user-id{
+    font-size:12px;
+    color:#94a3b8;
+  }
+  .mu-email{
+    font-size:13px;
+    color:#dbe3f0;
+    word-break:break-word;
+  }
+  .mu-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:999px;
+    padding:4px 10px;
+    font-size:11px;
+    font-weight:900;
+    border:1px solid transparent;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+    white-space:nowrap;
+  }
+  .mu-badge-admin{
+    color:#065f46;
+    background:#ecfdf5;
+    border-color:#a7f3d0;
+  }
+  .mu-badge-staff{
+    color:#1e3a8a;
+    background:#eff6ff;
+    border-color:#bfdbfe;
+  }
+  .mu-role{
+    font-size:12px;
+    font-weight:800;
+    color:#475569;
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    border-radius:999px;
+    padding:5px 10px;
+    text-transform:uppercase;
+    letter-spacing:.2px;
+  }
+  .mu-last-login{
+    font-size:12px;
+    font-weight:700;
+    color:#cbd5e1;
+  }
+  .mu-last-login.never{
+    color:#7f90a8;
+    font-style:italic;
+  }
+  .mu-empty{
+    padding:30px 16px;
+    text-align:center;
+    color:#94a3b8;
+    font-size:13px;
+    border-top:1px solid rgba(148,163,184,.2);
+  }
+  .mu-mobile-list{
+    display:none;
+  }
+  .mu-mobile-item{
+    border-top:1px solid rgba(148,163,184,.2);
+    padding:12px;
+  }
+  .mu-mobile-item:first-child{
+    border-top:0;
+  }
+  .mu-mobile-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .mu-mobile-email{
+    margin-top:8px;
+    font-size:13px;
+    color:#dbe3f0;
+    word-break:break-word;
+  }
+  .mu-mobile-meta{
+    margin-top:8px;
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .mu-modal{
+    position:fixed;
+    inset:0;
+    background:rgba(2, 6, 23, .66);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:2000;
+    padding:14px;
+  }
+  .mu-modal.open{
+    display:flex;
+  }
+  .mu-modal-panel{
+    width:min(560px, 100%);
+    background:linear-gradient(130deg, rgba(16,22,35,.97), rgba(20,28,44,.96));
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:14px;
+    box-shadow:0 18px 45px rgba(15, 23, 42, .25);
+    overflow:hidden;
+  }
+  .mu-modal-head{
+    padding:12px 14px;
+    border-bottom:1px solid rgba(148,163,184,.25);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .mu-modal-title{
+    margin:0;
+    font-size:15px;
+    font-weight:900;
+    color:#f8fafc;
+  }
+  .mu-close{
+    border:0;
+    background:transparent;
+    font-size:22px;
+    line-height:1;
+    color:#cbd5e1;
+    cursor:pointer;
+  }
+  .mu-modal-body{
+    padding:14px;
+    display:grid;
+    gap:10px;
+  }
+  .mu-grid2{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:10px;
+  }
+  .mu-modal-body label{
+    display:block;
+    margin-bottom:5px;
+    font-size:12px;
+    font-weight:800;
+    color:#a5b4c7;
+    text-transform:uppercase;
+    letter-spacing:.2px;
+  }
+  .mu-modal-foot{
+    padding:12px 14px;
+    border-top:1px solid rgba(148,163,184,.25);
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+  }
+  .mu-modal .form-control{
+    border-color:rgba(255,255,255,.18);
+    background:rgba(2,6,23,.68);
+    color:#e2e8f0;
+  }
+  .mu-modal .form-control:focus{
+    background:rgba(2,6,23,.84);
+    color:#f8fafc;
+    border-color:#3b82f6;
+    box-shadow:0 0 0 .14rem rgba(59,130,246,.22);
+  }
+  @media (max-width: 980px){
+    .mu-stats{
+      grid-template-columns:1fr;
+    }
+    .mu-toolbar{
+      grid-template-columns:1fr;
+    }
+    .mu-visible-count{
+      justify-self:start;
+    }
+    .mu-actions{
+      justify-content:flex-start;
+      flex-wrap:wrap;
+    }
+    .mu-grid2{
+      grid-template-columns:1fr;
+    }
+  }
+  @media (max-width: 760px){
+    .mu-table-wrap{
+      display:none;
+    }
+    .mu-mobile-list{
+      display:block;
+    }
+  }
+</style>
 
 <div class="main-inner">
+  <div class="mu-wrap">
+    <div class="mu-head">
+      <h1 class="td-title">Admin Dashboard &nbsp;&rsaquo;&nbsp; Manage Users</h1>
+      <div class="td-sub">Review user accounts, access level, and role assignment</div>
+    </div>
 
-  <h1 class="td-title">Admin Dashboard &nbsp;›&nbsp; Manage Users</h1>
-  <div class="td-sub">Manage Users</div>
+    <section class="mu-stats" aria-label="User summary">
+      <article class="mu-stat-card">
+        <p class="mu-stat-label">Total Users</p>
+        <h2 class="mu-stat-value">{{ total_users }}</h2>
+      </article>
+      <article class="mu-stat-card">
+        <p class="mu-stat-label">Administrator Accounts</p>
+        <h2 class="mu-stat-value">{{ admin_count }}</h2>
+      </article>
+      <article class="mu-stat-card">
+        <p class="mu-stat-label">User Accounts</p>
+        <h2 class="mu-stat-value">{{ staff_count }}</h2>
+      </article>
+    </section>
 
+    <section class="mu-toolbar" aria-label="User filters">
+      <input
+        id="userSearch"
+        class="form-control"
+        type="search"
+        placeholder="Search name or email"
+        autocomplete="off"
+      >
+      <select id="roleFilter" class="custom-select" aria-label="Filter access level">
+        <option value="all">All access levels</option>
+        <option value="admin">Administrators</option>
+        <option value="staff">Users</option>
+      </select>
+      <div class="mu-actions">
+        <button type="button" class="mu-btn primary" data-open-create="user">Add User</button>
+        <button type="button" class="mu-btn success" data-open-create="admin">Add Admin</button>
+      </div>
+      <div id="visibleCount" class="mu-visible-count">Showing {{ users|length }} of {{ users|length }}</div>
+    </section>
+
+    <section class="mu-list-card" aria-label="User list">
+      <div class="mu-table-wrap">
+        <table class="mu-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Email</th>
+              <th>Access</th>
+              <th>Last Login</th>
+            </tr>
+          </thead>
+          <tbody id="userTableBody">
+            {% for account in users %}
+              {% set display_name = account.firstname or "Unnamed User" %}
+              {% set access = "admin" if account.is_admin else "staff" %}
+              <tr data-user-row data-search="{{ (display_name ~ ' ' ~ (account.email or ''))|lower }}" data-access="{{ access }}">
+                <td>
+                  <div class="mu-user-cell">
+                    <div class="mu-user-main">
+                      <p class="mu-user-name">{{ display_name }}</p>
+                      <span class="mu-user-id">ID: {{ account.id }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="mu-email">{{ account.email or "No email" }}</span></td>
+                <td>
+                  {% if account.is_admin %}
+                    <span class="mu-badge mu-badge-admin">Administrator</span>
+                  {% else %}
+                    <span class="mu-badge mu-badge-staff">User</span>
+                  {% endif %}
+                </td>
+                {% set last_login = as_ph_naive_from_utc(account.last_login) if account.last_login is defined and account.last_login else none %}
+                <td>
+                  {% if last_login %}
+                    <span class="mu-last-login">{{ last_login.strftime('%b %d, %Y %I:%M %p') }} PHT</span>
+                  {% else %}
+                    <span class="mu-last-login never">Never</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% else %}
+              <tr id="emptyTableFallback">
+                <td colspan="4" class="mu-empty">No users found.</td>
+              </tr>
+            {% endfor %}
+            <tr id="emptyTableRow" class="dnone">
+              <td colspan="4" class="mu-empty">No users match your filters.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="userMobileList" class="mu-mobile-list">
+        {% for account in users %}
+          {% set display_name = account.firstname or "Unnamed User" %}
+          {% set access = "admin" if account.is_admin else "staff" %}
+          <article class="mu-mobile-item" data-user-card data-search="{{ (display_name ~ ' ' ~ (account.email or ''))|lower }}" data-access="{{ access }}">
+            <div class="mu-mobile-top">
+              <div class="mu-user-cell">
+                <div class="mu-user-main">
+                  <p class="mu-user-name">{{ display_name }}</p>
+                  <span class="mu-user-id">ID: {{ account.id }}</span>
+                </div>
+              </div>
+              {% if account.is_admin %}
+                <span class="mu-badge mu-badge-admin">Administrator</span>
+              {% else %}
+                <span class="mu-badge mu-badge-staff">User</span>
+              {% endif %}
+            </div>
+            <div class="mu-mobile-email">{{ account.email or "No email" }}</div>
+            <div class="mu-mobile-meta">
+              {% set last_login = as_ph_naive_from_utc(account.last_login) if account.last_login is defined and account.last_login else none %}
+              {% if last_login %}
+                <span class="mu-last-login">{{ last_login.strftime('%b %d, %Y %I:%M %p') }} PHT</span>
+              {% else %}
+                <span class="mu-last-login never">Last login: Never</span>
+              {% endif %}
+            </div>
+          </article>
+        {% else %}
+          <div class="mu-empty">No users found.</div>
+        {% endfor %}
+        <div id="emptyMobileRow" class="mu-empty dnone">No users match your filters.</div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="mu-modal" id="createUserModal" aria-hidden="true">
+  <div class="mu-modal-panel">
+    <div class="mu-modal-head">
+      <h3 class="mu-modal-title" id="createUserTitle">Create Account</h3>
+      <button type="button" class="mu-close" id="closeCreateUserModal" aria-label="Close">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('views.create_user_account') }}">
+      <input type="hidden" name="account_type" id="accountTypeInput" value="user">
+      <div class="mu-modal-body">
+        <div class="mu-grid2">
+          <div>
+            <label for="firstnameInput">First name</label>
+            <input id="firstnameInput" name="firstname" type="text" class="form-control" required>
+          </div>
+          <div>
+            <label for="lastnameInput">Last name</label>
+            <input id="lastnameInput" name="lastname" type="text" class="form-control">
+          </div>
+        </div>
+        <div>
+          <label for="emailInput">Email</label>
+          <input id="emailInput" name="email" type="email" class="form-control" required>
+        </div>
+        <div>
+          <label for="passwordInput">Temporary password</label>
+          <input id="passwordInput" name="password" type="password" minlength="7" class="form-control" required>
+        </div>
+      </div>
+      <div class="mu-modal-foot">
+        <button type="button" class="mu-btn" id="cancelCreateUserModal">Cancel</button>
+        <button type="submit" class="mu-btn primary" id="submitCreateUserBtn">Create Account</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  (() => {
+    const searchInput = document.getElementById("userSearch");
+    const roleFilter = document.getElementById("roleFilter");
+    const visibleCount = document.getElementById("visibleCount");
+    const tableRows = Array.from(document.querySelectorAll("[data-user-row]"));
+    const mobileRows = Array.from(document.querySelectorAll("[data-user-card]"));
+    const emptyTableRow = document.getElementById("emptyTableRow");
+    const emptyMobileRow = document.getElementById("emptyMobileRow");
+    const total = tableRows.length;
+
+    function applyFilters() {
+      const q = (searchInput.value || "").trim().toLowerCase();
+      const role = roleFilter.value;
+      let visible = 0;
+
+      tableRows.forEach((row) => {
+        const matchesSearch = row.dataset.search.includes(q);
+        const matchesRole = role === "all" || row.dataset.access === role;
+        const isVisible = matchesSearch && matchesRole;
+        row.classList.toggle("dnone", !isVisible);
+        if (isVisible) visible += 1;
+      });
+
+      mobileRows.forEach((row) => {
+        const matchesSearch = row.dataset.search.includes(q);
+        const matchesRole = role === "all" || row.dataset.access === role;
+        row.classList.toggle("dnone", !(matchesSearch && matchesRole));
+      });
+
+      if (emptyTableRow) {
+        emptyTableRow.classList.toggle("dnone", visible > 0 || total === 0);
+      }
+      if (emptyMobileRow) {
+        emptyMobileRow.classList.toggle("dnone", visible > 0 || total === 0);
+      }
+      if (visibleCount) {
+        visibleCount.textContent = `Showing ${visible} of ${total}`;
+      }
+    }
+
+    searchInput.addEventListener("input", applyFilters);
+    roleFilter.addEventListener("change", applyFilters);
+    applyFilters();
+  })();
+
+  (() => {
+    const modal = document.getElementById("createUserModal");
+    const title = document.getElementById("createUserTitle");
+    const typeInput = document.getElementById("accountTypeInput");
+    const submitBtn = document.getElementById("submitCreateUserBtn");
+    const closeBtn = document.getElementById("closeCreateUserModal");
+    const cancelBtn = document.getElementById("cancelCreateUserModal");
+    const openButtons = Array.from(document.querySelectorAll("[data-open-create]"));
+
+    function openModal(type) {
+      const isAdmin = type === "admin";
+      typeInput.value = isAdmin ? "admin" : "user";
+      title.textContent = isAdmin ? "Create Admin Account" : "Create User Account";
+      submitBtn.textContent = isAdmin ? "Create Admin" : "Create User";
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeModal() {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    openButtons.forEach((btn) => {
+      btn.addEventListener("click", () => openModal(btn.dataset.openCreate));
+    });
+
+    closeBtn.addEventListener("click", closeModal);
+    cancelBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
+    });
+  })();
+</script>
 {% endblock %}

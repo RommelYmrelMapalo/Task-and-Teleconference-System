@@ -2,92 +2,264 @@
 {% block title %}Inbox{% endblock %}
 
 {% block content %}
+{% set ns = namespace(total=0, unread=0) %}
+{% if notifications %}
+  {% for n in notifications %}
+    {% set ns.total = ns.total + 1 %}
+    {% if not n.is_read %}
+      {% set ns.unread = ns.unread + 1 %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
 
-  <!-- RIGHT CONTENT -->
+<style>
+  .ib-wrap{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    padding-bottom:20px;
+    color:#e5e7eb;
+  }
+  .ib-wrap .td-sub{
+    color:#a5b4c7;
+    margin:-12px 0 0;
+  }
+  .ib-wrap .ib-muted{
+    color:#94a3b8 !important;
+  }
+
+  .ib-toolbar{
+    background:rgba(15,23,42,.88);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:14px;
+    box-shadow:0 12px 26px rgba(2, 6, 23, .35);
+    padding:12px;
+    display:grid;
+    grid-template-columns:minmax(230px, 1fr) auto;
+    gap:10px;
+    align-items:center;
+  }
+  .ib-toolbar .form-control{
+    border-radius:10px;
+    border-color:rgba(255,255,255,.18);
+    background:rgba(2,6,23,.7);
+    color:#e2e8f0;
+  }
+  .ib-toolbar .form-control::placeholder{
+    color:#94a3b8;
+  }
+  .ib-toolbar .form-control:focus{
+    background:rgba(2,6,23,.84);
+    color:#f8fafc;
+    border-color:#3b82f6;
+    box-shadow:0 0 0 .14rem rgba(59,130,246,.22);
+  }
+  .ib-visible-count{
+    justify-self:end;
+    font-size:12px;
+    font-weight:800;
+    color:#cbd5e1;
+    background:rgba(30,41,59,.8);
+    border:1px solid rgba(148,163,184,.35);
+    border-radius:999px;
+    padding:7px 11px;
+    white-space:nowrap;
+  }
+
+  .ib-wrap .mail-panel,
+  .ib-wrap .reader-panel{
+    background:linear-gradient(130deg, rgba(16,22,35,.94), rgba(20,28,44,.92));
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:14px;
+    box-shadow:0 12px 26px rgba(2, 6, 23, .35);
+    color:#e2e8f0;
+    overflow:hidden;
+  }
+  .ib-wrap .mail-toolbar{
+    padding:14px;
+    border-bottom:1px solid rgba(148,163,184,.24);
+    background:rgba(2,6,23,.3);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .ib-wrap .mail-title{
+    color:#f8fafc;
+    font-weight:900;
+    margin:0;
+  }
+  .ib-mail-chip{
+    font-size:11px;
+    font-weight:900;
+    border-radius:999px;
+    padding:5px 10px;
+    border:1px solid rgba(148,163,184,.35);
+    color:#cbd5e1;
+    background:rgba(30,41,59,.8);
+    text-transform:uppercase;
+    letter-spacing:.25px;
+  }
+
+  .ib-wrap .mail-item{
+    width:100%;
+    text-align:left;
+    border:0;
+    border-bottom:1px solid rgba(148,163,184,.2);
+    background:transparent;
+    color:#e2e8f0;
+    padding:12px 14px;
+    cursor:pointer;
+    transition:.15s ease;
+  }
+  .ib-wrap .mail-item:last-child{
+    border-bottom:0;
+  }
+  .ib-wrap .mail-item:hover{
+    background:rgba(30,41,59,.62);
+  }
+  .ib-wrap .mail-item.active{
+    background:rgba(59,130,246,.2);
+  }
+  .ib-wrap .mail-item.unread{
+    border-left:5px solid #3b82f6;
+    background:rgba(59,130,246,.12);
+  }
+  .ib-wrap .mail-subject,
+  .ib-wrap .reader-subject{
+    color:#f8fafc;
+    font-weight:800;
+  }
+  .ib-wrap .mail-date,
+  .ib-wrap .reader-meta{
+    color:#94a3b8;
+  }
+  .ib-wrap .mail-preview,
+  .ib-wrap .reader-body,
+  .ib-wrap .reader-text{
+    color:#cbd5e1;
+  }
+
+  .ib-wrap .reader-panel{
+    min-height:72vh;
+  }
+  .ib-wrap .reader-empty{
+    height:72vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    color:#94a3b8;
+    gap:10px;
+  }
+  .ib-wrap .reader-content{
+    height:72vh;
+    display:flex;
+    flex-direction:column;
+  }
+  .ib-wrap .reader-header{
+    border-bottom:1px solid rgba(148,163,184,.24);
+    background:rgba(2,6,23,.26);
+    padding:16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+  }
+  .ib-wrap .reader-body{
+    padding:16px;
+    overflow-y:auto;
+    font-size:14px;
+    line-height:1.6;
+  }
+  .ib-wrap .btn-outline-secondary{
+    color:#e2e8f0;
+    border-color:rgba(148,163,184,.55);
+    background:rgba(15,23,42,.65);
+  }
+  .ib-wrap .btn-outline-secondary:hover,
+  .ib-wrap .btn-outline-secondary:focus{
+    color:#fff;
+    border-color:#3b82f6;
+    background:rgba(59,130,246,.22);
+  }
+  .ib-wrap .badge-danger{
+    background:#ef4444;
+  }
+
+  @media (max-width: 980px){
+    .ib-toolbar{
+      grid-template-columns:1fr;
+    }
+    .ib-visible-count{
+      justify-self:start;
+    }
+  }
+</style>
+
   <main class="main-inner">
+    <div class="ib-wrap">
+      <div class="td-title">Dashboard &nbsp;&rsaquo;&nbsp; Inbox</div>
+      <div class="td-sub">View your notification inbox</div>
 
-    <div class="td-title">Dashboard &nbsp;›&nbsp; Inbox</div>
-    <div class="td-sub">View your notification inbox</div>
+      <section class="ib-toolbar" aria-label="Inbox filters">
+        <input id="mailSearch" type="text" class="form-control" placeholder="Search notifications..." autocomplete="off">
+        <div id="visibleCount" class="ib-visible-count">Showing {{ ns.total }} of {{ ns.total }}</div>
+      </section>
 
-    <div class="page-card">
-      <div class="d-flex align-items-center justify-content-between">
-        <div>
-          <h4 class="mb-0">Notification Inbox</h4>
-          <small class="text-muted">Select a notification to read.</small>
-        </div>
-        <div class="text-muted">
-          <span style="font-size:18px;">🔔</span>
-          {% if notification_count and notification_count > 0 %}
-            <span class="badge badge-danger">{{ notification_count }}</span>
-          {% endif %}
-        </div>
-      </div>
-    </div>
+      <div class="container-fluid px-0 py-1">
+        <div class="row">
+          <div class="col-lg-5 col-md-6 mb-3">
+            <div class="mail-panel">
+              <div class="mail-toolbar">
+                <h4 class="mail-title">Inbox</h4>
+                <span class="ib-mail-chip">{{ ns.unread }} unread</span>
+              </div>
 
-    <div class="container-fluid px-0 py-3">
-      <div class="row">
-
-        <!-- LEFT: MAIL LIST -->
-        <div class="col-lg-5 col-md-6 mb-3">
-          <div class="mail-panel">
-            <div class="mail-toolbar">
-              <div class="mail-title">Inbox</div>
-              <div class="mail-search">
-                <input id="mailSearch" type="text" class="form-control form-control-sm" placeholder="Search notifications...">
+              <div class="mail-list" id="mailList">
+                {% if notifications and notifications|length > 0 %}
+                  {% for n in notifications %}
+                    <button type="button"
+                            class="mail-item {% if not n.is_read %}unread{% endif %}"
+                            data-title="{{ n.title|e }}"
+                            data-message="{{ n.message|e }}"
+                            data-date="{{ n.created_at.strftime('%b %d, %Y %I:%M %p') }}"
+                            data-id="{{ n.id }}"
+                            data-read="{{ 1 if n.is_read else 0 }}">
+                      <div class="mail-item-top">
+                        <div class="mail-subject">{{ n.title }}</div>
+                        <div class="mail-date">{{ n.created_at.strftime('%b %d') }}</div>
+                      </div>
+                      <div class="mail-preview">{{ n.message }}</div>
+                    </button>
+                  {% endfor %}
+                {% else %}
+                  <div class="ib-muted p-3">No notifications yet.</div>
+                {% endif %}
               </div>
             </div>
-
-            <div class="mail-list" id="mailList">
-              {% if notifications and notifications|length > 0 %}
-                {% for n in notifications %}
-                  <button type="button"
-                          class="mail-item {% if not n.is_read %}unread{% endif %}"
-                          data-title="{{ n.title|e }}"
-                          data-message="{{ n.message|e }}"
-                          data-date="{{ n.created_at.strftime('%b %d, %Y %I:%M %p') }}"
-                          data-id="{{ n.id }}"
-                          data-read="{{ 1 if n.is_read else 0 }}">
-                    <div class="mail-item-top">
-                      <div class="mail-subject">{{ n.title }}</div>
-                      <div class="mail-date">{{ n.created_at.strftime('%b %d') }}</div>
-                    </div>
-                    <div class="mail-preview">
-                      {{ n.message }}
-                    </div>
-                  </button>
-                {% endfor %}
-              {% else %}
-                <div class="text-muted p-3">No notifications yet.</div>
-              {% endif %}
-            </div>
           </div>
-        </div>
 
-        <!-- RIGHT: MAIL READER -->
-        <div class="col-lg-7 col-md-6">
-          <div class="reader-panel" id="readerPanel">
-            <div class="reader-empty">
-              <div class="reader-icon">📩</div>
-              <div class="reader-text">Select a notification to read.</div>
-            </div>
+          <div class="col-lg-7 col-md-6">
+            <div class="reader-panel" id="readerPanel">
+              <div class="reader-empty">
+                <div class="reader-icon">&#128229;</div>
+                <div class="reader-text">Select a notification to read.</div>
+              </div>
 
-            <div class="reader-content d-none" id="readerContent">
-              <div class="reader-header">
-                <div>
-                  <div class="reader-subject" id="rSubject">—</div>
-                  <div class="reader-meta" id="rDate">—</div>
+              <div class="reader-content d-none" id="readerContent">
+                <div class="reader-header">
+                  <div>
+                    <div class="reader-subject" id="rSubject">&mdash;</div>
+                    <div class="reader-meta" id="rDate">&mdash;</div>
+                  </div>
+                  <button class="btn btn-sm btn-outline-secondary" id="markReadBtn">Mark as read</button>
                 </div>
-
-                <button class="btn btn-sm btn-outline-secondary" id="markReadBtn">
-                  Mark as read
-                </button>
+                <div class="reader-body" id="rBody">&mdash;</div>
               </div>
-
-              <div class="reader-body" id="rBody">—</div>
             </div>
           </div>
         </div>
-
       </div>
     </div>
 
@@ -100,9 +272,37 @@
       const rBody = document.getElementById("rBody");
       const markReadBtn = document.getElementById("markReadBtn");
       const mailSearch = document.getElementById("mailSearch");
+      const visibleCount = document.getElementById("visibleCount");
 
       let activeNotifId = null;
       let activeIsRead = true;
+
+      function recalcVisible() {
+        const q = (mailSearch.value || "").trim().toLowerCase();
+        let visible = 0;
+
+        mailItems.forEach((item) => {
+          const text = (item.dataset.title + " " + item.dataset.message).toLowerCase();
+          const isVisible = text.includes(q);
+          item.style.display = isVisible ? "" : "none";
+          if (isVisible) visible += 1;
+        });
+
+        if (visibleCount) {
+          visibleCount.textContent = `Showing ${visible} of ${mailItems.length}`;
+        }
+      }
+
+      function recalcReadStats() {
+        const total = mailItems.length;
+        const unread = Array.from(mailItems).filter(item => item.dataset.read === "0").length;
+        const read = total - unread;
+
+        const chip = document.querySelector(".ib-mail-chip");
+        if (chip) {
+          chip.textContent = `${unread} unread`;
+        }
+      }
 
       function openMail(item){
         activeNotifId = item.dataset.id;
@@ -144,16 +344,13 @@
           }
           markReadBtn.disabled = true;
           markReadBtn.textContent = "Read";
+          recalcReadStats();
         }
       });
 
-      mailSearch.addEventListener("input", () => {
-        const q = mailSearch.value.toLowerCase();
-        mailItems.forEach((item) => {
-          const text = (item.dataset.title + " " + item.dataset.message).toLowerCase();
-          item.style.display = text.includes(q) ? "" : "none";
-        });
-      });
+      mailSearch.addEventListener("input", recalcVisible);
+      recalcVisible();
+      recalcReadStats();
     </script>
 
   </main>
@@ -161,3 +358,5 @@
 </div>
 
 {% endblock %}
+
+

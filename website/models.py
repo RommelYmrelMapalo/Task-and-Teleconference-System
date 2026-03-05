@@ -23,6 +23,7 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(150))
     firstname = db.Column(db.String(150))
     is_admin = db.Column(db.Boolean, default=False)
+    last_login = db.Column(db.DateTime(timezone=True), nullable=True)
 
     role = db.Column(db.String(20), default="user")
 

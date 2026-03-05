@@ -4,6 +4,7 @@ from . import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, login_required, logout_user, current_user
 from sqlalchemy import func
+from datetime import datetime
 
 auth = Blueprint('auth', __name__)
 
@@ -26,6 +27,8 @@ def login():
                 return render_template("login.html", user=current_user)
 
             if check_password_hash(user.password, password):
+                user.last_login = datetime.utcnow()
+                db.session.commit()
                 login_user(user, remember=True)
                 flash('Logged in Successfully', category='success')
                 return redirect(url_for('views.user_dashboard'))
@@ -53,6 +56,8 @@ def admin_login():
                 return render_template("admin_login.html", user=current_user)
 
             if check_password_hash(user.password, password):
+                user.last_login = datetime.utcnow()
+                db.session.commit()
                 login_user(user, remember=True)
                 flash("Admin logged in successfully.", category="success")
                 return redirect(url_for('views.admin_dashboard'))
@@ -97,6 +102,7 @@ def sign_up():
                 email=email,
                 firstname=f"{firstname} {lastname}".strip(),
                 is_admin=False,  # ✅ force user account
+                last_login=datetime.utcnow(),
                 password=generate_password_hash(password1, method='pbkdf2:sha256')
             )
             db.session.add(new_user)

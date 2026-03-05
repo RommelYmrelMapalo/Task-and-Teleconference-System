@@ -249,6 +249,124 @@
       justify-content:flex-start;
     }
   }
+
+  /* Dark-mode alignment with admin pages */
+  .dashboard-head{
+    background:transparent;
+  }
+  .planner-wrap{
+    background:
+      radial-gradient(1200px 300px at 50% -120px, rgba(59,130,246,.12), transparent 60%),
+      linear-gradient(180deg, #0f172a 0%, #111827 100%);
+    border:1px solid rgba(255,255,255,.08);
+  }
+  .day-block{
+    background:rgba(2,6,23,.45);
+    border:1px solid rgba(255,255,255,.12);
+  }
+  .day-head{
+    background:rgba(2,6,23,.45);
+  }
+  .day-title,
+  .day-sub{
+    color:#cbd5e1;
+  }
+  .day-title.today-title{
+    color:#60a5fa;
+  }
+  .day-line{
+    background:rgba(148,163,184,.26);
+  }
+  .plan-row{
+    background:rgba(15,23,42,.72);
+    border-color:rgba(148,163,184,.26);
+  }
+  .plan-row:hover{
+    border-color:rgba(59,130,246,.55);
+    box-shadow:0 8px 18px rgba(2, 6, 23, .35);
+  }
+  .plan-title,
+  .plan-sub{
+    color:#e2e8f0;
+  }
+  .nothing{
+    border:1px dashed rgba(148,163,184,.45);
+    background:rgba(15,23,42,.55);
+    color:#94a3b8;
+  }
+  .planner-actions-top .view-kebab{
+    border:1px solid rgba(148,163,184,.35);
+    background:rgba(15,23,42,.72);
+    color:#e2e8f0;
+  }
+  .planner-actions-top .view-kebab:hover{
+    background:rgba(30,41,59,.9);
+    border-color:rgba(59,130,246,.55);
+  }
+  .planner-actions-top .view-menu{
+    background:rgba(15,23,42,.98);
+    border:1px solid rgba(148,163,184,.35);
+    box-shadow:0 12px 26px rgba(2,6,23,.4);
+  }
+  .planner-actions-top .view-menu-item{
+    color:#e2e8f0;
+  }
+  .planner-actions-top .view-menu-item:hover{
+    background:rgba(30,41,59,.9);
+  }
+
+  /* Card view dark mode */
+  .card-grid{
+    background:transparent;
+  }
+  .gcard{
+    background:linear-gradient(130deg, rgba(16,22,35,.94), rgba(20,28,44,.92));
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 12px 26px rgba(2,6,23,.35);
+  }
+  .gcard-body{
+    background:transparent;
+  }
+  .gcard-topline,
+  .gcard-subline{
+    color:#f8fafc;
+  }
+  .gcard-small{
+    color:#94a3b8;
+  }
+  .gcard-footer{
+    border-top:1px solid rgba(148,163,184,.22);
+    background:rgba(15,23,42,.4);
+  }
+  .gicons{
+    color:#cbd5e1;
+  }
+  .gicon{
+    color:#cbd5e1;
+    text-decoration:none;
+  }
+  .gcheck{
+    border-color:rgba(148,163,184,.45);
+    background:rgba(15,23,42,.72);
+    color:#e2e8f0;
+  }
+  .gcheck.is-done{
+    background:#2563eb;
+    border-color:#2563eb;
+    color:#fff;
+  }
+  .gcheck.is-disabled{
+    opacity:.35;
+  }
+  .gcard-pill{
+    font-size:12px;
+    font-weight:800;
+    padding:4px 10px;
+    border-radius:999px;
+    border:1px solid rgba(148,163,184,.45);
+    color:#cbd5e1;
+    background:rgba(30,41,59,.8);
+  }
 </style>
 
 <div class="main-inner">
@@ -435,15 +553,15 @@
                         <div style="display:flex; align-items:center; gap:10px;">
                           <button type="button"
                                   class="gcheck {% if t.status == 'completed' %}is-done{% endif %}"
-                                  aria-label="Mark complete"
+                                  aria-label="{% if t.status == 'completed' %}Completed task{% else %}Mark complete{% endif %}"
                                   data-complete-task="{{ t.id }}"
-                            data-original-status="{{ t.status if t.status != 'completed' else 'in_progress' }}">✓</button>
+                            data-original-status="{{ t.status if t.status != 'completed' else 'in_progress' }}">{% if t.status == 'completed' %}✓{% endif %}</button>
 
                           {% set status_label = 'COMPLETED' if t.status == 'completed' else ('DELAYED' if t.is_delayed else (t.status|replace("_"," ")|upper)) %}
                           {% set status_class = 'status-completed' if t.status == 'completed' else ('status-delayed' if t.is_delayed else 'status-pending') %}
                           <span class="task-status-pill {{ status_class }}" data-status-pill>{{ status_label }}</span>
                           <span class="pill task">Task</span>
-                        </div> 404
+                        </div>
                       </div>
                     </div>
                   {% endfor %}
@@ -692,6 +810,9 @@ document.addEventListener("click", async (e) => {
 
     document.querySelectorAll(`[data-complete-task="${id}"]`).forEach((b) => {
       b.classList.toggle("is-done", done);
+      if (b.classList.contains("gcheck")) {
+        b.textContent = done ? "✓" : "";
+      }
     });
 
     document.querySelectorAll(`[data-task-id="${id}"][data-item-type="task"]`).forEach((taskEl) => {

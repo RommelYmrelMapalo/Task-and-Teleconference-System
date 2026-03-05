@@ -10,7 +10,7 @@ from flask_migrate import Migrate
 db = SQLAlchemy()
 
 
-def _ensure_task_schema_columns():
+def _ensure_schema_columns():
     """Backfill schema drift in environments where migrations were not applied."""
     inspector = inspect(db.engine)
 
@@ -43,6 +43,12 @@ def _ensure_task_schema_columns():
 
     if statements:
         db.session.commit()
+
+    if inspector.has_table("user"):
+        user_columns = {column["name"] for column in inspector.get_columns("user")}
+        if "last_login" not in user_columns:
+            db.session.execute(text("ALTER TABLE user ADD COLUMN last_login TIMESTAMP"))
+            db.session.commit()
 
 
 
@@ -98,7 +104,7 @@ def create_app():
 
     with app.app_context():
         db.create_all()
-        _ensure_task_schema_columns()
+        _ensure_schema_columns()
 
     # Blueprints
     from .views import views

@@ -93,6 +93,15 @@ def as_ph_naive(dt):
     return dt.astimezone(PH_TIMEZONE).replace(tzinfo=None)
 
 
+def as_ph_naive_from_utc(dt):
+    """Convert UTC timestamps (aware or naive) to naive Philippine time."""
+    if not dt:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(PH_TIMEZONE).replace(tzinfo=None)
+
+
 def _legacy_upload_dir():
     return os.path.join(current_app.root_path, "static", "uploads")
 
@@ -429,8 +438,8 @@ def user_dashboard():
         meetings_data.append({
             "id": notif.id,
             "title": title or "Meeting",
-            "meeting_date": as_ph_naive(notif.created_at).date() if notif.created_at else None,
-            "time_range": as_ph_naive(notif.created_at).strftime("%I:%M %p") if notif.created_at else "",
+            "meeting_date": as_ph_naive_from_utc(notif.created_at).date() if notif.created_at else None,
+            "time_range": as_ph_naive_from_utc(notif.created_at).strftime("%I:%M %p") if notif.created_at else "",
             "room": "",
         })
 
@@ -616,9 +625,22 @@ def admin_profile():
         abort(403)
 
     if request.method == 'POST':
-        _handle_password_change()
+        form_action = (request.form.get('form_action') or '').strip().lower()
+        if form_action == 'change_name':
+            _handle_name_change()
+        elif form_action == 'change_email':
+            _handle_email_change()
+        else:
+            _handle_password_change()
 
-    return render_template("admin_profile.html", user=current_user)
+    profile_firstname, profile_lastname = split_name(current_user.firstname)
+    return render_template(
+        "admin_profile.html",
+        user=current_user,
+        profile_firstname=profile_firstname,
+        profile_lastname=profile_lastname,
+        masked_email=mask_email(current_user.email),
+    )
 
 
 @views.route('/shared-tasks')
@@ -927,7 +949,8 @@ def create_task():
         assigned_to=current_user.id,
         status=status,
         priority=priority,          # ✅ save priority too (your model has this)
-        deadline=deadline_dt
+        deadline=deadline_dt,
+        created_at=datetime.now(timezone.utc)
     )
 
     db.session.add(new_task)
@@ -950,12 +973,60 @@ def task_dashboard():
     else:
         tasks = Task.query.all()
 
+    recent_now = ph_now()
+    recent_task_activity = []
+    for task in tasks:
+        created_at = as_ph_naive_from_utc(task.created_at) if getattr(task, "created_at", None) else None
+        edited_at = as_ph_naive_from_utc(task.last_edited_at) if getattr(task, "last_edited_at", None) else None
+        deadline_at = as_ph_naive(task.deadline) if getattr(task, "deadline", None) else None
+        activity_at = edited_at or created_at
+        if not activity_at:
+            continue
+
+        raw_status = (task.status or "").strip().lower()
+        is_delayed = bool(raw_status != "completed" and deadline_at and deadline_at < recent_now)
+        if is_delayed:
+            status_label = "Delayed"
+            status_class = "delayed"
+        elif raw_status == "completed":
+            status_label = "Completed"
+            status_class = "completed"
+        elif raw_status == "for_revision":
+            status_label = "For Revision"
+            status_class = "revision"
+        else:
+            status_label = "Pending"
+            status_class = "pending"
+
+        if created_at and (not edited_at or abs((edited_at - created_at).total_seconds()) <= 2):
+            action = "Created"
+        else:
+            action = "Edited"
+
+        recent_task_activity.append({
+            "id": task.id,
+            "title": task.title,
+            "status": task.status or "in_progress",
+            "priority": (task.priority or "normal").strip().lower() if getattr(task, "priority", None) else "normal",
+            "action": action,
+            "status_label": status_label,
+            "status_class": status_class,
+            "is_delayed": is_delayed,
+            "created_at": created_at,
+            "deadline_at": deadline_at,
+            "activity_at": activity_at,
+        })
+
+    recent_task_activity.sort(key=lambda item: item["activity_at"], reverse=True)
+    recent_task_activity = recent_task_activity[:5]
+
     unread_count = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
 
     return render_template(
         "task_dashboard.html",
         user=current_user,
         tasks=tasks,
+        recent_task_activity=recent_task_activity,
         unread_count=unread_count,
         now_dt=ph_now(),
     )
@@ -1229,6 +1300,53 @@ def manage_meetings():
 def manage_tasks():
     users = User.query.filter_by(is_admin=False).order_by(User.firstname.asc()).all()
     tasks = Task.query.order_by(Task.created_at.desc()).all()
+    recent_now = ph_now()
+    recent_task_activity = []
+    for task in tasks:
+        created_at = as_ph_naive_from_utc(task.created_at) if getattr(task, "created_at", None) else None
+        edited_at = as_ph_naive_from_utc(task.last_edited_at) if getattr(task, "last_edited_at", None) else None
+        deadline_at = as_ph_naive(task.deadline) if getattr(task, "deadline", None) else None
+        activity_at = edited_at or created_at
+        if not activity_at:
+            continue
+
+        raw_status = (task.status or "").strip().lower()
+        is_delayed = bool(raw_status != "completed" and deadline_at and deadline_at < recent_now)
+        if is_delayed:
+            status_label = "Delayed"
+            status_class = "delayed"
+        elif raw_status == "completed":
+            status_label = "Completed"
+            status_class = "completed"
+        elif raw_status == "for_revision":
+            status_label = "For Revision"
+            status_class = "revision"
+        else:
+            status_label = "Pending"
+            status_class = "pending"
+
+        if created_at and (not edited_at or abs((edited_at - created_at).total_seconds()) <= 2):
+            action = "Created"
+        else:
+            action = "Edited"
+
+        recent_task_activity.append({
+            "id": task.id,
+            "title": task.title,
+            "status": task.status or "in_progress",
+            "priority": (task.priority or "normal").strip().lower() if getattr(task, "priority", None) else "normal",
+            "action": action,
+            "status_label": status_label,
+            "status_class": status_class,
+            "is_delayed": is_delayed,
+            "created_at": created_at,
+            "deadline_at": deadline_at,
+            "activity_at": activity_at,
+        })
+
+    recent_task_activity.sort(key=lambda item: item["activity_at"], reverse=True)
+    recent_task_activity = recent_task_activity[:5]
+
     selected_filter = (request.args.get("filter") or "all").strip().lower()
     allowed_filters = {"all", "delayed", "pending", "completed"}
     if selected_filter not in allowed_filters:
@@ -1239,6 +1357,7 @@ def manage_tasks():
         user=current_user,
         users=users,
         tasks=tasks,
+        recent_task_activity=recent_task_activity,
         selected_filter=selected_filter,
         now_dt=ph_now(),
     )
@@ -1302,6 +1421,7 @@ def manage_tasks_create():
         status=status,
         priority=priority,
         deadline=deadline_dt,
+        created_at=datetime.now(timezone.utc),
         file_path=None
     )
     db.session.add(task)
@@ -1355,9 +1475,75 @@ def inbox_admin():
     )
 
 @views.route('/admin/manage-users')
-@login_required
+@admin_only
 def manage_users():
-    return render_template("manage_users.html", user=current_user)
+    users = User.query.order_by(
+        User.is_admin.desc(),
+        User.firstname.asc(),
+        User.email.asc()
+    ).all()
+
+    total_users = len(users)
+    admin_count = sum(1 for account in users if account.is_admin)
+    staff_count = total_users - admin_count
+
+    return render_template(
+        "manage_users.html",
+        user=current_user,
+        users=users,
+        total_users=total_users,
+        admin_count=admin_count,
+        staff_count=staff_count,
+        as_ph_naive_from_utc=as_ph_naive_from_utc
+    )
+
+
+@views.route('/admin/manage-users/create', methods=['POST'])
+@admin_only
+def create_user_account():
+    firstname = normalize_person_name(request.form.get('firstname'))
+    lastname = normalize_person_name(request.form.get('lastname'))
+    email = normalize_email(request.form.get('email'))
+    password = request.form.get('password') or ""
+    account_type = (request.form.get('account_type') or 'user').strip().lower()
+
+    is_admin = account_type == 'admin'
+    role = 'admin' if is_admin else 'user'
+
+    if len(firstname) < 2:
+        flash('First name must be at least 2 characters.', 'error')
+        return redirect(url_for('views.manage_users'))
+    if not email:
+        flash('Email is required.', 'error')
+        return redirect(url_for('views.manage_users'))
+    if not EMAIL_PATTERN.match(email):
+        flash('Please enter a valid email address.', 'error')
+        return redirect(url_for('views.manage_users'))
+    if len(password) < 7:
+        flash('Password must be at least 7 characters.', 'error')
+        return redirect(url_for('views.manage_users'))
+
+    existing_user = User.query.filter(func.lower(User.email) == email).first()
+    if existing_user:
+        flash('Email already exists.', 'error')
+        return redirect(url_for('views.manage_users'))
+
+    full_name = f"{firstname} {lastname}".strip()
+    new_user = User(
+        email=email,
+        firstname=full_name,
+        is_admin=is_admin,
+        role=role,
+        password=generate_password_hash(password, method='pbkdf2:sha256')
+    )
+    db.session.add(new_user)
+    db.session.commit()
+
+    if is_admin:
+        flash('Admin account created successfully.', 'success')
+    else:
+        flash('User account created successfully.', 'success')
+    return redirect(url_for('views.manage_users'))
 
 @views.route('/admin/reports')
 @login_required
