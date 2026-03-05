@@ -30,9 +30,16 @@ class User(db.Model, UserMixin):
     notifications = db.relationship('Notification', lazy=True, cascade="all, delete-orphan")
 
     # ✅ Automatically capitalize before saving
+    @staticmethod
+    def _normalize_name(value):
+        raw = (value or "").strip()
+        if not raw:
+            return ""
+        return " ".join(part.capitalize() for part in raw.split())
+
     def __init__(self, **kwargs):
         if "firstname" in kwargs and kwargs["firstname"]:
-            kwargs["firstname"] = kwargs["firstname"].strip().capitalize()
+            kwargs["firstname"] = User._normalize_name(kwargs["firstname"])
         super().__init__(**kwargs)
 
     

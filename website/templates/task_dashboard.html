@@ -621,22 +621,13 @@
       <input name="title" class="drawer-input" placeholder="Task title..." required>
     </div>
 
-    <div class="drawer-grid3">
+    <div class="drawer-grid3" style="grid-template-columns: repeat(2, 1fr);">
       <div class="drawer-field">
         <div class="drawer-label">STATUS</div>
         <select name="status" class="drawer-input">
           <option value="in_progress" selected>In Progress</option>
           <option value="for_revision">For Revision</option>
           <option value="completed">Completed</option>
-        </select>
-      </div>
-
-      <div class="drawer-field">
-        <div class="drawer-label">TYPE</div>
-        <select name="type" class="drawer-input">
-          <option value="operational">Operational</option>
-          <option value="meeting">Meeting</option>
-          <option value="documentation">Documentation</option>
         </select>
       </div>
 

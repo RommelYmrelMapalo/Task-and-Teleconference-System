@@ -76,7 +76,8 @@ def logout():
 def sign_up():
     if request.method == 'POST':
         email = normalize_email(request.form.get('email'))
-        firstname = request.form.get('firstname')
+        firstname = (request.form.get('firstname') or '').strip()
+        lastname = (request.form.get('lastname') or '').strip()
         password1 = request.form.get('password1')
         password2 = request.form.get('password2')
 
@@ -94,7 +95,7 @@ def sign_up():
         else:
             new_user = User(
                 email=email,
-                firstname=firstname,
+                firstname=f"{firstname} {lastname}".strip(),
                 is_admin=False,  # ✅ force user account
                 password=generate_password_hash(password1, method='pbkdf2:sha256')
             )

@@ -5,7 +5,7 @@ from flask import abort
 from .models import Notification, Task, TaskAttachment, User
 from . import db
 from datetime import datetime, date, timedelta, timezone
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import calendar
 import os
 import mimetypes
@@ -16,11 +16,18 @@ import xml.etree.ElementTree as ET
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
+from sqlalchemy import func
+import re
 
 
 views = Blueprint('views', __name__)
 
-PH_TIMEZONE = ZoneInfo("Asia/Manila")
+try:
+    PH_TIMEZONE = ZoneInfo("Asia/Manila")
+except ZoneInfoNotFoundError:
+    # Fallback for environments without tzdata (common on Windows store Python).
+    PH_TIMEZONE = timezone(timedelta(hours=8))
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def ph_now():
@@ -30,6 +37,52 @@ def ph_now():
 
 def ph_today():
     return ph_now().date()
+
+
+def normalize_email(email):
+    return (email or "").strip().lower()
+
+
+def split_name(full_name):
+    raw = (full_name or "").strip()
+    if not raw:
+        return "", ""
+    parts = raw.split(None, 1)
+    first = parts[0].strip()
+    last = parts[1].strip() if len(parts) > 1 else ""
+    return first, last
+
+
+def normalize_person_name(value):
+    raw = (value or "").strip()
+    if not raw:
+        return ""
+    return " ".join(part.capitalize() for part in raw.split())
+
+
+def mask_email(email):
+    value = normalize_email(email)
+    if not value or "@" not in value:
+        return ""
+
+    local, domain = value.split("@", 1)
+    if not local or not domain:
+        return value
+
+    domain_parts = domain.split(".", 1)
+    domain_name = domain_parts[0]
+    domain_suffix = f".{domain_parts[1]}" if len(domain_parts) > 1 else ""
+
+    local_visible = min(3, len(local))
+    domain_visible = min(2, len(domain_name))
+
+    # Keep a small visible prefix, but always show a hidden segment.
+    local_hidden_len = max(3, len(local) - local_visible)
+    domain_hidden_len = max(3, len(domain_name) - domain_visible)
+
+    masked_local = local[:local_visible] + ("*" * local_hidden_len)
+    masked_domain = domain_name[:domain_visible] + ("*" * domain_hidden_len)
+    return f"{masked_local}@{masked_domain}{domain_suffix}"
 
 
 def as_ph_naive(dt):
@@ -474,7 +527,13 @@ def mark_notification_read(notif_id):
 @login_required
 def user_profile():
     if request.method == 'POST':
-        _handle_password_change()
+        form_action = (request.form.get('form_action') or '').strip().lower()
+        if form_action == 'change_name':
+            _handle_name_change()
+        elif form_action == 'change_email':
+            _handle_email_change()
+        else:
+            _handle_password_change()
     return redirect(url_for('views.profile'))
 
 
@@ -495,6 +554,60 @@ def _handle_password_change():
         current_user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
         db.session.commit()
         flash('Password changed successfully.', 'success')
+
+
+def _handle_name_change():
+    first_name = normalize_person_name(request.form.get('profile_firstname'))
+    last_name = normalize_person_name(request.form.get('profile_lastname'))
+
+    if len(first_name) < 2:
+        flash('First name must be at least 2 characters.', 'error')
+        return
+
+    combined_name = f"{first_name} {last_name}".strip()
+    if combined_name == (current_user.firstname or "").strip():
+        flash('No profile changes detected.', 'error')
+        return
+
+    current_user.firstname = combined_name
+    db.session.commit()
+    flash('Profile name updated successfully.', 'success')
+
+
+def _handle_email_change():
+    current_password = (request.form.get('profile_email_current_password') or '').strip()
+    new_email = normalize_email(request.form.get('profile_email'))
+
+    if not current_password:
+        flash('Current password is required for email change.', 'error')
+        return
+    if not check_password_hash(current_user.password, current_password):
+        flash('Current password is incorrect for email change.', 'error')
+        return
+
+    if not new_email:
+        flash('Email address is required.', 'error')
+        return
+
+    if len(new_email) < 4 or not EMAIL_PATTERN.match(new_email):
+        flash('Please enter a valid email address.', 'error')
+        return
+
+    if new_email == normalize_email(current_user.email):
+        flash('No email changes detected.', 'error')
+        return
+
+    existing_user = User.query.filter(
+        func.lower(User.email) == new_email,
+        User.id != current_user.id,
+    ).first()
+    if existing_user:
+        flash('Email already exists.', 'error')
+        return
+
+    current_user.email = new_email
+    db.session.commit()
+    flash('Email updated successfully.', 'success')
 
 @views.route('/admin_profile', methods=['GET', 'POST'])
 @login_required
@@ -882,8 +995,21 @@ def inbox():
 @login_required
 def profile():
     if request.method == 'POST':
-        _handle_password_change()
-    return render_template("user_profile.html", user=current_user)
+        form_action = (request.form.get('form_action') or '').strip().lower()
+        if form_action == 'change_name':
+            _handle_name_change()
+        elif form_action == 'change_email':
+            _handle_email_change()
+        else:
+            _handle_password_change()
+    profile_firstname, profile_lastname = split_name(current_user.firstname)
+    return render_template(
+        "user_profile.html",
+        user=current_user,
+        profile_firstname=profile_firstname,
+        profile_lastname=profile_lastname,
+        masked_email=mask_email(current_user.email),
+    )
 
 def admin_only(func):
     @wraps(func)
