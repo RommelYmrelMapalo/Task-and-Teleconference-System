@@ -1,10 +1,18 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+import { getSupabaseEnv, hasSupabaseEnv } from "@/app/utils/utils/supabase/env";
 
 export const createClient = (request: NextRequest) => {
+  if (!hasSupabaseEnv()) {
+    return NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    });
+  }
+
+  const { url, publishableKey } = getSupabaseEnv();
+
   // Create an unmodified response
   let supabaseResponse = NextResponse.next({
     request: {
@@ -13,8 +21,8 @@ export const createClient = (request: NextRequest) => {
   });
 
   createServerClient(
-    supabaseUrl!,
-    supabaseKey!,
+    url,
+    publishableKey,
     {
       cookies: {
         getAll() {
