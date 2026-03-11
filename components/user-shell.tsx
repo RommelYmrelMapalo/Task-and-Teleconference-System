@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useEffect, useRef, useState } from "react";
+import type { ShellUser } from "@/lib/ttcs-data";
+import { SignOutButton } from "./auth/sign-out-button";
 import { SidebarIcon } from "./sidebar-icons";
 
 type FlashMessage = {
@@ -39,22 +41,36 @@ const navGroups: Array<{ section: string; items: UserNavItem[] }> = [
   },
 ];
 
+function formatDisplayName(fullName: string) {
+  return fullName
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
 export function UserShell({
   title,
   subtitle,
   actions,
   flashes,
+  user,
+  unreadCount = 0,
   children,
 }: {
   title: string;
   subtitle?: string;
   actions?: ReactNode;
   flashes?: FlashMessage[];
+  user: ShellUser;
+  unreadCount?: number;
   children: ReactNode;
 }) {
   const pathname = usePathname();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement | null>(null);
+  const displayName = formatDisplayName(user.fullName);
 
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
@@ -116,7 +132,11 @@ export function UserShell({
                         <SidebarIcon icon={item.icon} />
                       </span>
                       <span>{item.label}</span>
-                      {item.badge ? <span className="sidebar-badge">{item.badge}</span> : null}
+                      {item.icon === "inbox" ? (
+                        <span className="sidebar-badge">{unreadCount}</span>
+                      ) : item.badge ? (
+                        <span className="sidebar-badge">{item.badge}</span>
+                      ) : null}
                     </Link>
                   );
                 })}
@@ -130,9 +150,7 @@ export function UserShell({
                 <Link className="user-action-link" href="/profile">
                   Settings
                 </Link>
-                <Link className="user-action-link" href="/login">
-                  Logout
-                </Link>
+                <SignOutButton className="user-action-link" />
               </div>
 
               <button
@@ -144,10 +162,10 @@ export function UserShell({
                 }}
               >
                 <div className="user-row">
-                  <div className="user-avatar">JS</div>
+                  <div className="user-avatar">{user.initials}</div>
                   <div>
-                    <div className="user-name">Juan Student</div>
-                    <div className="user-sub">User</div>
+                    <div className="user-name">{displayName}</div>
+                    <div className="user-sub">{user.roleLabel}</div>
                   </div>
                 </div>
                 <div className="caret">{userMenuOpen ? "\u25B4" : "\u25BE"}</div>

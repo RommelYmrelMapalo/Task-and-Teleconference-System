@@ -1,16 +1,32 @@
 import { UserShell } from "@/components/user-shell";
+import { getUserTasks, requireSessionContext } from "@/lib/ttcs-data";
 
-export default function SharedTaskPage() {
+export default async function SharedTaskPage() {
+  const { supabase, profile, shellUser, unreadCount } = await requireSessionContext();
+  const tasks = await getUserTasks(supabase, profile.id);
+  const task = tasks[0];
+
   return (
-    <UserShell title="Shared Task" subtitle="View a task shared through a public or internal link">
+    <UserShell
+      title="Shared Task"
+      subtitle="Preview the latest task currently available to your account"
+      user={shellUser}
+      unreadCount={unreadCount}
+    >
       <section className="page-card">
-        <h3>Prepare testing handoff notes</h3>
-        <p>Priority: High</p>
-        <p>Due: March 11, 2026 at 9:00 AM</p>
-        <p>
-          This page replaces the legacy shared task template. In the Next.js app, the final version
-          should be backed by a dynamic route and task lookup API.
-        </p>
+        {task ? (
+          <>
+            <h3>{task.title}</h3>
+            <p>Priority: {task.priority.toUpperCase()}</p>
+            <p>Due: {task.dueLabel}</p>
+            <p>{task.description}</p>
+          </>
+        ) : (
+          <>
+            <h3>No task available</h3>
+            <p>A dedicated dynamic shared-task route still needs to be added if you want public task links.</p>
+          </>
+        )}
       </section>
     </UserShell>
   );

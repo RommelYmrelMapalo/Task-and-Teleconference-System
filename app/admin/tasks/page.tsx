@@ -1,33 +1,51 @@
 import { AdminShell } from "@/components/admin-shell";
-import { userTasks } from "@/lib/mock-data";
+import { getAdminTasks, requireSessionContext } from "@/lib/ttcs-data";
 
-export default function AdminTasksPage() {
+function statusLabel(task: { status: string; isDelayed: boolean }) {
+  if (task.status === "completed") {
+    return "Completed";
+  }
+
+  if (task.isDelayed) {
+    return "Delayed";
+  }
+
+  if (task.status === "for_revision") {
+    return "For Revision";
+  }
+
+  return task.status === "assigned" ? "Assigned" : "In Progress";
+}
+
+export default async function AdminTasksPage() {
+  const { supabase, shellUser, unreadCount } = await requireSessionContext({ admin: true });
+  const tasks = await getAdminTasks(supabase);
+
   return (
-    <AdminShell title="Manage Tasks" subtitle="Review and organize all task records">
-      <div className="page-stack">
-        <div className="toolbar-card">
-          <input className="field-input" placeholder="Search tasks" />
-          <select className="field-input field-select" defaultValue="all">
-            <option value="all">All sections</option>
-            <option value="pending">Pending</option>
-            <option value="completed">Completed</option>
-          </select>
-          <button className="primary-btn" type="button">
-            New Task
-          </button>
-        </div>
-
-        <div className="table-shell">
-          {userTasks.map((task) => (
+    <AdminShell
+      title="Manage Tasks"
+      subtitle="Review task records and assignees stored in Supabase"
+      user={shellUser}
+      unreadCount={unreadCount}
+    >
+      <div className="table-shell">
+        {tasks.length ? (
+          tasks.map((task) => (
             <article className="table-row" key={task.id}>
               <div>
                 <h3>{task.title}</h3>
-                <p>{task.due}</p>
+                <p>{task.description}</p>
+                <p>Assignees: {task.assignees.length ? task.assignees.map((assignee) => assignee.fullName).join(", ") : "Unassigned"}</p>
               </div>
-              <span className="soft-badge">{task.status}</span>
+              <div className="row-end">
+                <span className="soft-badge">{statusLabel(task)}</span>
+                <span className="soft-badge">{task.priority.toUpperCase()}</span>
+              </div>
             </article>
-          ))}
-        </div>
+          ))
+        ) : (
+          <div className="task-empty">No tasks found.</div>
+        )}
       </div>
     </AdminShell>
   );

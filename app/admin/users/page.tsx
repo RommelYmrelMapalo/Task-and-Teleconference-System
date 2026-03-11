@@ -1,19 +1,28 @@
 import { AdminShell } from "@/components/admin-shell";
-import { adminUsers } from "@/lib/mock-data";
+import { getAllProfiles, requireSessionContext } from "@/lib/ttcs-data";
 
-export default function AdminUsersPage() {
+export default async function AdminUsersPage() {
+  const { supabase, shellUser, unreadCount } = await requireSessionContext({ admin: true });
+  const users = await getAllProfiles(supabase);
+
   return (
-    <AdminShell title="Manage Users" subtitle="Review user accounts and roles">
+    <AdminShell
+      title="Manage Users"
+      subtitle="Review profiles stored in Supabase"
+      user={shellUser}
+      unreadCount={unreadCount}
+    >
       <div className="table-shell">
-        {adminUsers.map((user) => (
+        {users.map((user) => (
           <article className="table-row" key={user.id}>
             <div>
-              <h3>{user.name}</h3>
+              <h3>{user.fullName}</h3>
               <p>{user.email}</p>
+              <p>Created {user.createdLabel}</p>
             </div>
             <div className="row-end">
-              <span className="soft-badge">{user.role}</span>
-              <span className="soft-badge">{user.status}</span>
+              <span className="soft-badge">{user.roleLabel}</span>
+              <span className="soft-badge">Last login: {user.lastLoginLabel}</span>
             </div>
           </article>
         ))}

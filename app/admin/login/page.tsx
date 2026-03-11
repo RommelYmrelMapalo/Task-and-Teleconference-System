@@ -1,19 +1,18 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
 import { PublicShell } from "@/components/public-shell";
+import { LoginForm } from "@/components/auth/login-form";
+import { getOptionalSessionContext } from "@/lib/ttcs-data";
 
-export default function AdminLoginPage() {
+export default async function AdminLoginPage() {
+  const context = await getOptionalSessionContext();
+
+  if (context) {
+    redirect(context.profile.is_admin ? "/admin" : "/dashboard");
+  }
+
   return (
     <PublicShell title="Admin Login" subtitle="Access the TTCS administration panel">
-      <div className="form-stack">
-        <input className="field-input light" type="email" placeholder="Admin Email" />
-        <input className="field-input light" type="password" placeholder="Password" />
-        <button className="primary-btn wide" type="button">
-          Login as Admin
-        </button>
-        <div className="auth-links-row">
-          <Link href="/">Back to user login</Link>
-        </div>
-      </div>
+      <LoginForm adminOnly />
     </PublicShell>
   );
 }

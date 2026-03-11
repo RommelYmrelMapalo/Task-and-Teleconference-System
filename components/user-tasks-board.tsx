@@ -1,0 +1,913 @@
+"use client";
+
+import {
+  ChangeEvent,
+  FocusEvent,
+  FormEvent,
+  KeyboardEvent,
+  PointerEvent,
+  startTransition,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import type { TaskAttachment, TaskItem, TaskPriority, TaskStatus } from "@/lib/ttcs-data";
+import { getTaskCacheEvent, mergeTaskCache, readCachedTasks, toggleTaskCompletion, writeCachedTasks } from "@/lib/task-cache";
+
+type TaskFilter = "all" | "active" | "revision" | "completed" | "delayed";
+type EditableTask = TaskItem;
+type EditableAttachment = TaskAttachment;
+
+function generateAttachmentId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function formatAttachmentSize(size: number | null) {
+  if (!size || Number.isNaN(size)) {
+    return "Stored attachment";
+  }
+
+  if (size < 1024) {
+    return `${size} B`;
+  }
+
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function buildAttachmentsFromFiles(files: FileList) {
+  const createdAt = new Date().toISOString();
+
+  return Array.from(files).map((file) => ({
+    id: `local-${generateAttachmentId()}`,
+    filename: file.name,
+    mimetype: file.type || null,
+    storagePath: `local://${file.name}`,
+    createdAt,
+    size: file.size,
+    downloadUrl: URL.createObjectURL(file),
+  }));
+}
+
+function matchesFilter(task: EditableTask, filter: TaskFilter) {
+  if (filter === "all") return true;
+  if (filter === "active") return task.status === "assigned" || task.status === "in_progress";
+  if (filter === "revision") return task.status === "for_revision";
+  if (filter === "completed") return task.status === "completed";
+  return task.isDelayed;
+}
+
+function statusLabel(task: EditableTask) {
+  if (task.status === "completed") return "COMPLETED";
+  if (task.isDelayed) return "DELAYED";
+  if (task.status === "for_revision") return "FOR REVISION";
+  if (task.status === "assigned") return "ASSIGNED";
+  return "IN PROGRESS";
+}
+
+function statusClass(task: EditableTask) {
+  if (task.status === "completed") return "st-completed";
+  if (task.isDelayed) return "st-delayed";
+  if (task.status === "for_revision") return "st-revision";
+  return "st-pending";
+}
+
+function buildDueLabels(deadline: string | null) {
+  if (!deadline) {
+    return { dueLabel: "No deadline", dueTimeLabel: "No due time", isDelayed: false };
+  }
+
+  const date = new Date(deadline);
+  return {
+    dueLabel: new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date),
+    dueTimeLabel: new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date),
+    isDelayed: date.getTime() < Date.now(),
+  };
+}
+
+function normalizeTask(
+  base: Pick<EditableTask, "id" | "createdAt" | "activityAt" | "assignees" | "previousStatus" | "attachments">,
+  values: {
+    title: string;
+    description: string;
+    status: TaskStatus;
+    priority: TaskPriority;
+    deadline: string | null;
+  },
+): EditableTask {
+  const labels = buildDueLabels(values.deadline);
+
+  return {
+    ...base,
+    title: values.title,
+    description: values.description || "No description provided.",
+    status: values.status,
+    previousStatus:
+      values.status === "completed" ? base.previousStatus ?? null : values.status,
+    priority: values.priority,
+    deadline: values.deadline,
+    dueLabel: labels.dueLabel,
+    dueTimeLabel: labels.dueTimeLabel,
+    createdLabel: new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(base.createdAt)),
+    activityLabel: new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(base.activityAt)),
+    isDelayed: values.status !== "completed" && labels.isDelayed,
+    attachments: base.attachments,
+  };
+}
+
+function toInputDateTime(deadline: string | null) {
+  if (!deadline) {
+    return { dueDate: "", dueTime: "" };
+  }
+
+  const date = new Date(deadline);
+  return {
+    dueDate: `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, "0")}-${`${date.getDate()}`.padStart(2, "0")}`,
+    dueTime: `${`${date.getHours()}`.padStart(2, "0")}:${`${date.getMinutes()}`.padStart(2, "0")}`,
+  };
+}
+
+function combineDueDate(date: string, time: string) {
+  if (!date) {
+    return null;
+  }
+
+  return new Date(`${date}T${time || "09:00"}`).toISOString();
+}
+
+function markSelectOpen(
+  event:
+    | PointerEvent<HTMLSelectElement>
+    | FocusEvent<HTMLSelectElement>
+    | KeyboardEvent<HTMLSelectElement>,
+) {
+  event.currentTarget.dataset.open = "true";
+  event.currentTarget.parentElement?.setAttribute("data-open", "true");
+}
+
+function clearSelectOpen(event: ChangeEvent<HTMLSelectElement> | FocusEvent<HTMLSelectElement>) {
+  delete event.currentTarget.dataset.open;
+  event.currentTarget.parentElement?.removeAttribute("data-open");
+}
+
+function handleSelectKeyDown(event: KeyboardEvent<HTMLSelectElement>) {
+  if (event.key === "ArrowDown" || event.key === "ArrowUp" || event.key === "Enter" || event.key === " ") {
+    markSelectOpen(event);
+    return;
+  }
+
+  if (event.key === "Escape" || event.key === "Tab") {
+    delete event.currentTarget.dataset.open;
+    event.currentTarget.parentElement?.removeAttribute("data-open");
+  }
+}
+
+function SelectChevron() {
+  return <span className="select-arrow" aria-hidden="true" />;
+}
+
+function AttachmentList({
+  attachments,
+  onRemove,
+}: {
+  attachments: EditableAttachment[];
+  onRemove?: (attachmentId: string) => void;
+}) {
+  if (!attachments.length) {
+    return null;
+  }
+
+  return (
+    <div className="attachment-list" role="list">
+      {attachments.map((attachment) => (
+        <div className="attachment-chip" key={attachment.id} role="listitem">
+          <div className="attachment-copy">
+            {attachment.downloadUrl ? (
+              <a
+                className="attachment-name"
+                href={attachment.downloadUrl}
+                download={attachment.filename}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {attachment.filename}
+              </a>
+            ) : (
+              <span className="attachment-name attachment-name-static">{attachment.filename}</span>
+            )}
+            <span className="attachment-meta">
+              {attachment.mimetype || "File"} | {formatAttachmentSize(attachment.size)}
+            </span>
+          </div>
+          {onRemove ? (
+            <button type="button" className="attachment-remove" onClick={() => onRemove(attachment.id)}>
+              Remove
+            </button>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [taskList, setTaskList] = useState<EditableTask[]>(tasks);
+  const [activeFilter, setActiveFilter] = useState<TaskFilter>("all");
+  const [priorityFilter, setPriorityFilter] = useState<"all" | "high" | "normal" | "low">("all");
+  const [search, setSearch] = useState("");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<EditableTask | null>(null);
+  const [editingTask, setEditingTask] = useState<EditableTask | null>(null);
+  const [createAttachments, setCreateAttachments] = useState<EditableAttachment[]>([]);
+  const [createAttachmentsBusy, setCreateAttachmentsBusy] = useState(false);
+  const [createAttachmentError, setCreateAttachmentError] = useState<string | null>(null);
+  const [editAttachments, setEditAttachments] = useState<EditableAttachment[]>([]);
+  const [editAttachmentsBusy, setEditAttachmentsBusy] = useState(false);
+  const [editAttachmentError, setEditAttachmentError] = useState<string | null>(null);
+  const [highlightedTaskId, setHighlightedTaskId] = useState<number | null>(null);
+  const handledTaskTargetRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const syncTasks = () => {
+      setTaskList(mergeTaskCache(tasks, readCachedTasks()));
+    };
+
+    syncTasks();
+    window.addEventListener(getTaskCacheEvent(), syncTasks);
+    return () => window.removeEventListener(getTaskCacheEvent(), syncTasks);
+  }, [tasks]);
+
+  useEffect(() => {
+    if (!taskModalOpen) return;
+    const timeout = window.setTimeout(() => setTaskModalOpen(false), 1500);
+    return () => window.clearTimeout(timeout);
+  }, [taskModalOpen]);
+
+  useEffect(() => {
+    if (highlightedTaskId === null) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setHighlightedTaskId(null), 2400);
+    return () => window.clearTimeout(timeout);
+  }, [highlightedTaskId]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const body = document.body;
+
+    if (drawerOpen) {
+      root.dataset.taskDrawerOpen = "true";
+      body.classList.add("task-drawer-open");
+      return () => {
+        delete root.dataset.taskDrawerOpen;
+        body.classList.remove("task-drawer-open");
+      };
+    }
+
+    delete root.dataset.taskDrawerOpen;
+    body.classList.remove("task-drawer-open");
+    return undefined;
+  }, [drawerOpen]);
+
+  useEffect(() => {
+    if (!editingTask) {
+      setEditAttachments([]);
+      setEditAttachmentError(null);
+      setEditAttachmentsBusy(false);
+      return;
+    }
+
+    setEditAttachments(editingTask.attachments ?? []);
+    setEditAttachmentError(null);
+  }, [editingTask]);
+
+  useEffect(() => {
+    const taskId = searchParams.get("task");
+    if (!taskId) {
+      handledTaskTargetRef.current = null;
+      return;
+    }
+
+    const targetId = Number(taskId);
+    if (!Number.isFinite(targetId)) {
+      return;
+    }
+
+    const targetKey = `${taskId}:${searchParams.get("open") ?? "0"}`;
+    if (handledTaskTargetRef.current === targetKey) {
+      return;
+    }
+
+    const targetTask = taskList.find((task) => task.id === targetId);
+    if (!targetTask) {
+      return;
+    }
+
+    handledTaskTargetRef.current = targetKey;
+    startTransition(() => {
+      setActiveFilter("all");
+      setPriorityFilter("all");
+      setSearch("");
+      setHighlightedTaskId(targetId);
+    });
+
+    window.setTimeout(() => {
+      const element = document.getElementById(`task-${targetId}`);
+      element?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+      if (searchParams.get("open") === "1") {
+        window.setTimeout(() => setSelectedTask(targetTask), 280);
+      }
+    }, 60);
+
+    router.replace(pathname, { scroll: false });
+  }, [pathname, router, searchParams, taskList]);
+
+  const counts = useMemo(
+    () => ({
+      all: taskList.length,
+      active: taskList.filter((task) => task.status === "assigned" || task.status === "in_progress").length,
+      revision: taskList.filter((task) => task.status === "for_revision").length,
+      completed: taskList.filter((task) => task.status === "completed").length,
+      delayed: taskList.filter((task) => task.isDelayed).length,
+    }),
+    [taskList],
+  );
+
+  const visibleItems = useMemo(() => {
+    return taskList.filter((task) => {
+      const query = `${task.title} ${task.description}`.toLowerCase();
+      const okSearch = !search.trim() || query.includes(search.trim().toLowerCase());
+      const okPriority = priorityFilter === "all" || task.priority === priorityFilter;
+      const okFilter = matchesFilter(task, activeFilter);
+      return okSearch && okPriority && okFilter;
+    });
+  }, [activeFilter, priorityFilter, search, taskList]);
+
+  const recentItems = taskList.slice(0, 5);
+
+  const toggleTask = (taskId: number) => {
+    setTaskList((current) => {
+      const next = toggleTaskCompletion(current, taskId);
+      writeCachedTasks(next);
+      return next;
+    });
+  };
+
+  const addCreateFiles = async (event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const { files } = input;
+    if (!files?.length) {
+      return;
+    }
+
+    setCreateAttachmentError(null);
+    setCreateAttachmentsBusy(true);
+
+    try {
+      const nextAttachments = buildAttachmentsFromFiles(files);
+      setCreateAttachments((current) => [...current, ...nextAttachments]);
+    } catch {
+      setCreateAttachmentError("Could not add one or more attachments.");
+    } finally {
+      setCreateAttachmentsBusy(false);
+      input.value = "";
+    }
+  };
+
+  const addEditFiles = async (event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const { files } = input;
+    if (!files?.length) {
+      return;
+    }
+
+    setEditAttachmentError(null);
+    setEditAttachmentsBusy(true);
+
+    try {
+      const nextAttachments = buildAttachmentsFromFiles(files);
+      setEditAttachments((current) => [...current, ...nextAttachments]);
+    } catch {
+      setEditAttachmentError("Could not add one or more attachments.");
+    } finally {
+      setEditAttachmentsBusy(false);
+      input.value = "";
+    }
+  };
+
+  const createTask = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (createAttachmentsBusy) return;
+    const formData = new FormData(event.currentTarget);
+    const title = String(formData.get("title") || "").trim();
+    if (!title) return;
+
+    const description = String(formData.get("description") || "").trim();
+    const status = String(formData.get("status") || "assigned") as TaskStatus;
+    const priority = String(formData.get("priority") || "normal") as TaskPriority;
+    const deadline = combineDueDate(String(formData.get("dueDate") || ""), String(formData.get("dueTime") || ""));
+    const now = new Date().toISOString();
+
+    const created = normalizeTask(
+      { id: Date.now(), createdAt: now, activityAt: now, assignees: [], previousStatus: null, attachments: createAttachments },
+      { title, description, status, priority, deadline },
+    );
+
+    setTaskList((current) => {
+      const next = mergeTaskCache(current, [created]);
+      writeCachedTasks(next);
+      return next;
+    });
+    setDrawerOpen(false);
+    setTaskModalOpen(true);
+    event.currentTarget.reset();
+    setCreateAttachments([]);
+    setCreateAttachmentError(null);
+  };
+
+  const saveEdit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingTask || editAttachmentsBusy) return;
+
+    const formData = new FormData(event.currentTarget);
+    const title = String(formData.get("title") || "").trim() || editingTask.title;
+    const description = String(formData.get("description") || "").trim();
+    const status = String(formData.get("status") || editingTask.status) as TaskStatus;
+    const priority = String(formData.get("priority") || editingTask.priority) as TaskPriority;
+    const deadline = combineDueDate(String(formData.get("dueDate") || ""), String(formData.get("dueTime") || ""));
+
+    const updated = normalizeTask(
+      {
+        id: editingTask.id,
+        createdAt: editingTask.createdAt,
+        activityAt: new Date().toISOString(),
+        assignees: editingTask.assignees,
+        attachments: editAttachments,
+        previousStatus:
+          status === "completed"
+            ? editingTask.status === "completed"
+              ? editingTask.previousStatus ?? null
+              : editingTask.status
+            : status,
+      },
+      { title, description, status, priority, deadline },
+    );
+
+    setTaskList((current) => {
+      const next = current.map((task) => (task.id === editingTask.id ? updated : task));
+      writeCachedTasks(next);
+      return next;
+    });
+    setEditingTask(null);
+  };
+
+  return (
+    <div className="taskdash-wrap">
+      {taskModalOpen ? (
+        <div className="modal-overlay show autoModal">
+          <div className="modal-popup success modern-popup" role="status" aria-live="polite">
+            <div className="modal-icon-wrap">
+              <div className="modal-icon" aria-hidden="true">
+                {"\u2713"}
+              </div>
+            </div>
+            <div className="modal-text">Task created!</div>
+            <div className="modal-subtext">The task has been added back into your current dashboard view.</div>
+            <div className="modal-progress" aria-hidden="true" />
+          </div>
+        </div>
+      ) : null}
+
+      {selectedTask ? (
+        <div className="modal-overlay show" onClick={() => setSelectedTask(null)}>
+          <div className="modal-popup modern-popup task-detail-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-text">{selectedTask.title}</div>
+            <div className="modal-subtext">{selectedTask.description}</div>
+            <div className="form-stack task-detail-body">
+              <div className="task-meta">Status: {statusLabel(selectedTask)}</div>
+              <div className="task-meta">Priority: {selectedTask.priority.toUpperCase()}</div>
+              <div className="task-meta">Deadline: {selectedTask.dueLabel}</div>
+              {selectedTask.attachments.length ? (
+                <div className="task-detail-attachments">
+                  <div className="task-meta">Attachments</div>
+                  <AttachmentList attachments={selectedTask.attachments} />
+                </div>
+              ) : null}
+              <div className="task-detail-actions">
+                <button
+                  type="button"
+                  className="btn-mini task-detail-edit"
+                  onClick={() => {
+                    setEditingTask(selectedTask);
+                    setSelectedTask(null);
+                  }}
+                >
+                  Edit
+                </button>
+                <button type="button" className="primary-btn task-detail-close" onClick={() => setSelectedTask(null)}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {editingTask ? (
+        <div className="modal-overlay show" onClick={() => setEditingTask(null)}>
+          <div className="modal-popup modern-popup task-edit-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-text">Edit Task</div>
+            <form className="form-stack task-edit-form" onSubmit={saveEdit}>
+              {(() => {
+                const inputs = toInputDateTime(editingTask.deadline);
+                return (
+                  <>
+                    <input className="field-input" name="title" defaultValue={editingTask.title} />
+                    <textarea className="drawer-textarea" name="description" defaultValue={editingTask.description} rows={4} />
+                    <div className="select-shell">
+                      <select
+                        className="field-input field-select"
+                        name="status"
+                        defaultValue={editingTask.status}
+                        onPointerDown={markSelectOpen}
+                        onFocus={markSelectOpen}
+                        onBlur={clearSelectOpen}
+                        onChange={clearSelectOpen}
+                        onKeyDown={handleSelectKeyDown}
+                      >
+                        <option value="assigned">Assigned</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="for_revision">For Revision</option>
+                        <option value="completed">Completed</option>
+                      </select>
+                      <SelectChevron />
+                    </div>
+                    <div className="select-shell">
+                      <select
+                        className="field-input field-select"
+                        name="priority"
+                        defaultValue={editingTask.priority}
+                        onPointerDown={markSelectOpen}
+                        onFocus={markSelectOpen}
+                        onBlur={clearSelectOpen}
+                        onChange={clearSelectOpen}
+                        onKeyDown={handleSelectKeyDown}
+                      >
+                        <option value="low">Low</option>
+                        <option value="normal">Normal</option>
+                        <option value="high">High</option>
+                      </select>
+                      <SelectChevron />
+                    </div>
+                    <input className="field-input" type="date" name="dueDate" defaultValue={inputs.dueDate} />
+                    <input className="field-input" type="time" name="dueTime" defaultValue={inputs.dueTime} />
+                    <div className="drawer-field task-attachment-field">
+                      <div className="drawer-label">ATTACHMENTS</div>
+                      <label className="attachment-picker" htmlFor="edit-task-attachments">
+                        <span className="attachment-picker-title">Add or replace files</span>
+                        <span className="attachment-picker-subtitle">Select multiple files. Remove any file before saving.</span>
+                      </label>
+                      <input
+                        id="edit-task-attachments"
+                        className="attachment-input"
+                        type="file"
+                        multiple
+                        onChange={addEditFiles}
+                      />
+                      {editAttachmentsBusy ? <div className="attachment-note">Adding attachments...</div> : null}
+                      {editAttachmentError ? <div className="attachment-note attachment-error">{editAttachmentError}</div> : null}
+                      <AttachmentList
+                        attachments={editAttachments}
+                        onRemove={(attachmentId) =>
+                          setEditAttachments((current) => current.filter((attachment) => attachment.id !== attachmentId))
+                        }
+                      />
+                    </div>
+                    <div className="drawer-footer">
+                      <button type="button" className="btn-mini drawer-cancel" onClick={() => setEditingTask(null)}>
+                        Cancel
+                      </button>
+                      <button type="submit" className="primary-btn drawer-publish" disabled={editAttachmentsBusy}>
+                        Save
+                      </button>
+                    </div>
+                  </>
+                );
+              })()}
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="td-pills">
+        {([
+          ["all", "All Tasks"],
+          ["active", "Active"],
+          ["revision", "For Revision"],
+          ["completed", "Completed"],
+          ["delayed", "Delayed"],
+        ] as Array<[TaskFilter, string]>).map(([key, label]) => (
+          <button
+            key={key}
+            className={`pill-tab${activeFilter === key ? " active" : ""}`}
+            type="button"
+            onClick={() => setActiveFilter(key)}
+          >
+            {label}
+            <span className="pill-count">{counts[key]}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="td-toolbar taskdash-toolbar">
+        <div className="select-shell td-filter">
+          <select
+            className="field-input field-select"
+            value={priorityFilter}
+            onChange={(event) => {
+              clearSelectOpen(event);
+              setPriorityFilter(event.target.value as "all" | "high" | "normal" | "low");
+            }}
+            onPointerDown={markSelectOpen}
+            onFocus={markSelectOpen}
+            onBlur={clearSelectOpen}
+            onKeyDown={handleSelectKeyDown}
+          >
+            <option value="all">All Priority</option>
+            <option value="high">High</option>
+            <option value="normal">Normal</option>
+            <option value="low">Low</option>
+          </select>
+          <SelectChevron />
+        </div>
+        <input
+          className="field-input td-search"
+          placeholder="Search tasks..."
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+      </div>
+
+      <div className="scroll">
+        <div className="recent-wrap">
+          <div className="recent-title">Recent Task Activity</div>
+          {recentItems.length ? (
+            <div className="recent-list">
+              {recentItems.map((item) => (
+                <article
+                  className="recent-item"
+                  key={item.id}
+                  onClick={() => setSelectedTask(item)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelectedTask(item);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="recent-main">
+                    <span className={`recent-action ${statusClass(item).replace("st-", "")}`}>{statusLabel(item)}</span>
+                    <div className="recent-text">
+                      <span className="recent-task-name">{item.title}</span>
+                      <div className="recent-meta">
+                        <span>Created: {item.createdLabel}</span>
+                        <span>Priority: {item.priority.toUpperCase()}</span>
+                        <span className={`recent-deadline${item.isDelayed ? " delayed" : ""}`}>Deadline: {item.dueLabel}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <span className="recent-time">{item.activityLabel}</span>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="recent-time">No recent task activity yet.</div>
+          )}
+        </div>
+
+        <div className="table-shell">
+          {visibleItems.length ? (
+            visibleItems.map((task) => (
+              <article
+                className={`task-row task-item${task.status === "completed" ? " is-completed" : ""}${highlightedTaskId === task.id ? " is-highlighted" : ""}`}
+                id={`task-${task.id}`}
+                key={task.id}
+              >
+                <div className="task-left">
+                  <button
+                    type="button"
+                    className={`task-check${task.status === "completed" ? " is-done" : ""}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleTask(task.id);
+                    }}
+                    aria-label={
+                      task.status === "completed" ? `Restore ${task.title} to previous status` : `Mark ${task.title} complete`
+                    }
+                  >
+                    {"\u2713"}
+                  </button>
+
+                  <div className="task-info">
+                    <button type="button" className="task-title-link" onClick={() => setSelectedTask(task)}>
+                      {task.title}
+                    </button>
+                    <div className="task-meta">{task.description}</div>
+                  </div>
+
+                  <div className="task-tags">
+                    <span className={`status ${statusClass(task)}`}>{statusLabel(task)}</span>
+                    <span className={`prio prio-${task.priority}`}>{task.priority.toUpperCase()}</span>
+                  </div>
+                </div>
+
+                <div className="task-right">
+                  <div className="task-actions">
+                    <button
+                      type="button"
+                      className="btn-mini"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSelectedTask(task);
+                      }}
+                    >
+                      Open
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-mini ghost"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setEditingTask(task);
+                      }}
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))
+          ) : (
+            <div className="task-empty">No tasks found.</div>
+          )}
+        </div>
+      </div>
+
+      <button type="button" className={`fab-task${drawerOpen ? " fab-hidden" : ""}`} onClick={() => setDrawerOpen(true)}>
+        <span className="fab-plus">+</span>
+      </button>
+
+      <div className={`drawer-backdrop${drawerOpen ? " open" : ""}`} onClick={() => setDrawerOpen(false)} />
+
+      <aside className={`task-drawer${drawerOpen ? " open" : ""}`} aria-hidden={!drawerOpen}>
+        <div className="drawer-head">
+          <div>
+            <div className="drawer-title">New Task</div>
+            <div className="drawer-sub">Create a task card from the dashboard again</div>
+          </div>
+          <button type="button" className="drawer-x drawer-x-danger" onClick={() => setDrawerOpen(false)}>
+            {"\u00D7"}
+          </button>
+        </div>
+
+        <form className="drawer-body" onSubmit={createTask}>
+          <div className="drawer-field">
+            <div className="drawer-label">TITLE</div>
+            <input className="drawer-input" name="title" placeholder="Task title..." />
+          </div>
+
+          <div className="drawer-grid3 two-up">
+            <div className="drawer-field">
+              <div className="drawer-label">STATUS</div>
+              <div className="select-shell">
+                <select
+                  className="drawer-input"
+                  name="status"
+                  defaultValue="assigned"
+                  onPointerDown={markSelectOpen}
+                  onFocus={markSelectOpen}
+                  onBlur={clearSelectOpen}
+                  onChange={clearSelectOpen}
+                  onKeyDown={handleSelectKeyDown}
+                >
+                  <option value="assigned">Assigned</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="for_revision">For Revision</option>
+                  <option value="completed">Completed</option>
+                </select>
+                <SelectChevron />
+              </div>
+            </div>
+
+            <div className="drawer-field">
+              <div className="drawer-label">PRIORITY</div>
+              <div className="select-shell">
+                <select
+                  className="drawer-input"
+                  name="priority"
+                  defaultValue="normal"
+                  onPointerDown={markSelectOpen}
+                  onFocus={markSelectOpen}
+                  onBlur={clearSelectOpen}
+                  onChange={clearSelectOpen}
+                  onKeyDown={handleSelectKeyDown}
+                >
+                  <option value="low">Low</option>
+                  <option value="normal">Normal</option>
+                  <option value="high">High</option>
+                </select>
+                <SelectChevron />
+              </div>
+            </div>
+          </div>
+
+          <div className="drawer-grid3 two-up">
+            <div className="drawer-field">
+              <div className="drawer-label">DUE DATE</div>
+              <input className="drawer-input" type="date" name="dueDate" />
+            </div>
+            <div className="drawer-field">
+              <div className="drawer-label">DUE TIME</div>
+              <input className="drawer-input" type="time" name="dueTime" />
+            </div>
+          </div>
+
+          <div className="drawer-field">
+            <div className="drawer-label">DESCRIPTION</div>
+            <textarea className="drawer-textarea" name="description" rows={5} placeholder="Write details..." />
+          </div>
+
+          <div className="drawer-field task-attachment-field">
+            <div className="drawer-label">ATTACHMENTS</div>
+            <label className="attachment-picker" htmlFor="new-task-attachments">
+              <span className="attachment-picker-title">Add attachments</span>
+              <span className="attachment-picker-subtitle">Select multiple files, then remove any file before publishing.</span>
+            </label>
+            <input
+              id="new-task-attachments"
+              className="attachment-input"
+              type="file"
+              multiple
+              onChange={addCreateFiles}
+            />
+            {createAttachmentsBusy ? <div className="attachment-note">Adding attachments...</div> : null}
+            {createAttachmentError ? <div className="attachment-note attachment-error">{createAttachmentError}</div> : null}
+            <AttachmentList
+              attachments={createAttachments}
+              onRemove={(attachmentId) =>
+                setCreateAttachments((current) => current.filter((attachment) => attachment.id !== attachmentId))
+              }
+            />
+          </div>
+
+          <div className="drawer-footer">
+            <button type="button" className="btn-mini drawer-cancel" onClick={() => setDrawerOpen(false)}>
+              Cancel
+            </button>
+            <button type="submit" className="primary-btn drawer-publish" disabled={createAttachmentsBusy}>
+              Publish
+            </button>
+          </div>
+        </form>
+      </aside>
+    </div>
+  );
+}

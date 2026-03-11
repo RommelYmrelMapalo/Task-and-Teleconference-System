@@ -1,17 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeToggle } from "@/components/theme-toggle";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -30,23 +19,21 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `(() => {
               try {
-                const stored = localStorage.getItem("ttcs-theme") || "light";
+                const stored = localStorage.getItem("ttcs-theme") || "system";
                 const resolved = stored === "system"
                   ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
                   : stored;
                 document.documentElement.dataset.themePreference = stored;
                 document.documentElement.dataset.theme = resolved;
               } catch (error) {
-                document.documentElement.dataset.themePreference = "light";
-                document.documentElement.dataset.theme = "light";
+                document.documentElement.dataset.themePreference = "system";
+                document.documentElement.dataset.theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
               }
             })();`,
           }}
         />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         {children}
         <ThemeToggle />
       </body>

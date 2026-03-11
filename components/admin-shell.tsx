@@ -3,7 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
+import type { ShellUser } from "@/lib/ttcs-data";
+import { SignOutButton } from "./auth/sign-out-button";
 import { SidebarIcon } from "./sidebar-icons";
 
 const navGroups = [
@@ -25,16 +27,55 @@ const navGroups = [
   },
 ];
 
+function formatDisplayName(fullName: string) {
+  return fullName
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
 export function AdminShell({
   title,
   subtitle,
+  user,
+  unreadCount = 0,
   children,
 }: {
   title: string;
   subtitle?: string;
+  user: ShellUser;
+  unreadCount?: number;
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  const displayName = formatDisplayName(user.fullName);
+
+  useEffect(() => {
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!boxRef.current?.contains(target)) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("click", handleClick);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("click", handleClick);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
 
   return (
     <main className="dashboard-page">
@@ -70,13 +111,44 @@ export function AdminShell({
                       <SidebarIcon icon={item.icon} />
                     </span>
                     <span>{item.label}</span>
-                    {"badge" in item && item.badge ? (
+                    {item.href === "/admin/inbox" ? (
+                      <span className="sidebar-badge">{unreadCount}</span>
+                    ) : "badge" in item && item.badge ? (
                       <span className="sidebar-badge">{item.badge}</span>
                     ) : null}
                   </Link>
                 ))}
               </div>
             ))}
+          </div>
+
+          <div className="sidebar-footer">
+            <div className={`user-box${userMenuOpen ? " open" : ""}`} ref={boxRef}>
+              <div className="user-actions">
+                <Link className="user-action-link" href="/admin/profile">
+                  Settings
+                </Link>
+                <SignOutButton className="user-action-link" />
+              </div>
+
+              <button
+                className="user-trigger"
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setUserMenuOpen((open) => !open);
+                }}
+              >
+                <div className="user-row">
+                  <div className="user-avatar">{user.initials}</div>
+                  <div>
+                    <div className="user-name">{displayName}</div>
+                    <div className="user-sub">{user.roleLabel}</div>
+                  </div>
+                </div>
+                <div className="caret">{userMenuOpen ? "\u25B4" : "\u25BE"}</div>
+              </button>
+            </div>
           </div>
         </aside>
 
