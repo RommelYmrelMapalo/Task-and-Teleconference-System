@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { createClient } from "@/app/utils/utils/supabase/client";
-import { hasSupabaseEnv } from "@/app/utils/utils/supabase/env";
+import { hasSupabaseEnv, SUPABASE_ENV_HINT } from "@/app/utils/utils/supabase/env";
 import { isMissingSupabaseTable } from "@/lib/supabase-errors";
 
 const isConfigured = hasSupabaseEnv();
@@ -18,7 +18,7 @@ export function LoginForm({ adminOnly = false }: { adminOnly?: boolean }) {
     event.preventDefault();
 
     if (!isConfigured) {
-      setError("Supabase is not configured yet. Add the keys in ttcs/.env.local first.");
+      setError(`Supabase is not configured yet. ${SUPABASE_ENV_HINT}`);
       return;
     }
 
@@ -120,9 +120,7 @@ export function LoginForm({ adminOnly = false }: { adminOnly?: boolean }) {
         {pending ? "Signing In..." : adminOnly ? "Login as Admin" : "Login"}
       </button>
       {error ? <div className="field-error">{error}</div> : null}
-      {!isConfigured ? (
-        <div className="field-error">Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` first.</div>
-      ) : null}
+      {!isConfigured ? <div className="field-error">{SUPABASE_ENV_HINT}</div> : null}
       <div className="auth-links-row">
         {adminOnly ? <Link href="/">Back to user login</Link> : <Link href="/sign-up">Create an account</Link>}
         {adminOnly ? null : <Link href="/admin/login">Admin login</Link>}
