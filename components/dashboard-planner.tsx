@@ -180,7 +180,7 @@ export function DashboardPlanner({
   const canModifyTask = (task: TaskItem) =>
     viewerCanManageAll || task.assignees.some((assignee) => assignee.id === viewerId);
   const canToggleTaskWithoutWarning = (task: TaskItem) => canModifyTask(task);
-  const canToggleTask = () => true;
+  const canToggleTask = (task: TaskItem) => Boolean(task);
 
   useEffect(() => {
     const scrollPlannerToToday = () => {

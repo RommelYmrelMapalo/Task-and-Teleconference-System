@@ -351,7 +351,7 @@ export function UserTasksBoard({
   const canModifyTask = (task: EditableTask) =>
     viewerCanManageAll || task.assignees.some((assignee) => assignee.id === viewerId);
   const canToggleTaskWithoutWarning = (task: EditableTask) => canModifyTask(task);
-  const canToggleTask = () => true;
+  const canToggleTask = (task: EditableTask) => Boolean(task);
   const requestEditTask = (task: EditableTask) => {
     if (canModifyTask(task)) {
       setEditingTask(task);
