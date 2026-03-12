@@ -132,8 +132,40 @@ function unique<T>(values: T[]) {
   return Array.from(new Set(values));
 }
 
-function resolveAttachmentUrl(storagePath: string) {
-  return /^(https?:|data:)/i.test(storagePath) ? storagePath : null;
+function parseStorageLocation(storagePath: string) {
+  const normalized = storagePath.replace(/^\/+/, "");
+  const slashIndex = normalized.indexOf("/");
+
+  if (slashIndex <= 0 || slashIndex === normalized.length - 1) {
+    return null;
+  }
+
+  return {
+    bucket: normalized.slice(0, slashIndex),
+    path: normalized.slice(slashIndex + 1),
+  };
+}
+
+async function resolveAttachmentUrl(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  storagePath: string,
+) {
+  if (/^(https?:|data:|blob:)/i.test(storagePath)) {
+    return storagePath;
+  }
+
+  const location = parseStorageLocation(storagePath);
+  if (!location) {
+    return null;
+  }
+
+  const signedResult = await supabase.storage.from(location.bucket).createSignedUrl(location.path, 60 * 60);
+  if (!signedResult.error && signedResult.data?.signedUrl) {
+    return signedResult.data.signedUrl;
+  }
+
+  const publicResult = supabase.storage.from(location.bucket).getPublicUrl(location.path);
+  return publicResult.data.publicUrl || null;
 }
 
 function formatWithTz(value: string | null | undefined, options: Intl.DateTimeFormatOptions) {
@@ -323,7 +355,7 @@ function mapNotificationRow(row: NotificationRow): NotificationItem {
   };
 }
 
-function mapAttachmentRow(row: AttachmentRow): TaskAttachment {
+function mapAttachmentRow(row: AttachmentRow, downloadUrl: string | null): TaskAttachment {
   return {
     id: String(row.id),
     filename: row.filename,
@@ -331,7 +363,7 @@ function mapAttachmentRow(row: AttachmentRow): TaskAttachment {
     storagePath: row.storage_path,
     createdAt: row.created_at,
     size: null,
-    downloadUrl: resolveAttachmentUrl(row.storage_path),
+    downloadUrl,
   };
 }
 
@@ -405,11 +437,17 @@ async function getTaskAttachmentsByTaskId(
   }
 
   const rows = (data as AttachmentRow[] | null) ?? [];
+  const rowsWithUrls = await Promise.all(
+    rows.map(async (row) => ({
+      row,
+      downloadUrl: await resolveAttachmentUrl(supabase, row.storage_path),
+    })),
+  );
   const attachmentsByTask = new Map<number, TaskAttachment[]>();
 
-  for (const row of rows) {
+  for (const { row, downloadUrl } of rowsWithUrls) {
     const existing = attachmentsByTask.get(row.task_id) ?? [];
-    existing.push(mapAttachmentRow(row));
+    existing.push(mapAttachmentRow(row, downloadUrl));
     attachmentsByTask.set(row.task_id, existing);
   }
 

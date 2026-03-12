@@ -13,12 +13,12 @@ import {
   useState,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import type { TaskAttachment, TaskItem, TaskPriority, TaskStatus } from "@/lib/ttcs-data";
-import { getTaskCacheEvent, mergeTaskCache, readCachedTasks, toggleTaskCompletion, writeCachedTasks } from "@/lib/task-cache";
+import type { TaskAttachment, TaskItem } from "@/lib/ttcs-data";
+import { toggleTaskCompletion } from "@/lib/task-cache";
 
 type TaskFilter = "all" | "active" | "revision" | "completed" | "delayed";
 type EditableTask = TaskItem;
-type EditableAttachment = TaskAttachment;
+type EditableAttachment = TaskAttachment & { localFile?: File | null };
 
 function generateAttachmentId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -46,7 +46,6 @@ function formatAttachmentSize(size: number | null) {
 
 function buildAttachmentsFromFiles(files: FileList) {
   const createdAt = new Date().toISOString();
-
   return Array.from(files).map((file) => ({
     id: `local-${generateAttachmentId()}`,
     filename: file.name,
@@ -55,6 +54,7 @@ function buildAttachmentsFromFiles(files: FileList) {
     createdAt,
     size: file.size,
     downloadUrl: URL.createObjectURL(file),
+    localFile: file,
   }));
 }
 
@@ -81,70 +81,6 @@ function statusClass(task: EditableTask) {
   return "st-pending";
 }
 
-function buildDueLabels(deadline: string | null) {
-  if (!deadline) {
-    return { dueLabel: "No deadline", dueTimeLabel: "No due time", isDelayed: false };
-  }
-
-  const date = new Date(deadline);
-  return {
-    dueLabel: new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    }).format(date),
-    dueTimeLabel: new Intl.DateTimeFormat("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-    }).format(date),
-    isDelayed: date.getTime() < Date.now(),
-  };
-}
-
-function normalizeTask(
-  base: Pick<EditableTask, "id" | "createdAt" | "activityAt" | "assignees" | "previousStatus" | "attachments">,
-  values: {
-    title: string;
-    description: string;
-    status: TaskStatus;
-    priority: TaskPriority;
-    deadline: string | null;
-  },
-): EditableTask {
-  const labels = buildDueLabels(values.deadline);
-
-  return {
-    ...base,
-    title: values.title,
-    description: values.description || "No description provided.",
-    status: values.status,
-    previousStatus:
-      values.status === "completed" ? base.previousStatus ?? null : values.status,
-    priority: values.priority,
-    deadline: values.deadline,
-    dueLabel: labels.dueLabel,
-    dueTimeLabel: labels.dueTimeLabel,
-    createdLabel: new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    }).format(new Date(base.createdAt)),
-    activityLabel: new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    }).format(new Date(base.activityAt)),
-    isDelayed: values.status !== "completed" && labels.isDelayed,
-    attachments: base.attachments,
-  };
-}
-
 function toInputDateTime(deadline: string | null) {
   if (!deadline) {
     return { dueDate: "", dueTime: "" };
@@ -155,14 +91,6 @@ function toInputDateTime(deadline: string | null) {
     dueDate: `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, "0")}-${`${date.getDate()}`.padStart(2, "0")}`,
     dueTime: `${`${date.getHours()}`.padStart(2, "0")}:${`${date.getMinutes()}`.padStart(2, "0")}`,
   };
-}
-
-function combineDueDate(date: string, time: string) {
-  if (!date) {
-    return null;
-  }
-
-  return new Date(`${date}T${time || "09:00"}`).toISOString();
 }
 
 function markSelectOpen(
@@ -196,6 +124,22 @@ function SelectChevron() {
   return <span className="select-arrow" aria-hidden="true" />;
 }
 
+function attachmentStatusLabel(count: number, busy: boolean) {
+  if (busy) {
+    return "Adding attachments...";
+  }
+
+  if (count === 0) {
+    return "No files selected yet";
+  }
+
+  if (count === 1) {
+    return "1 file selected";
+  }
+
+  return `${count} files selected`;
+}
+
 function AttachmentList({
   attachments,
   onRemove,
@@ -212,19 +156,9 @@ function AttachmentList({
       {attachments.map((attachment) => (
         <div className="attachment-chip" key={attachment.id} role="listitem">
           <div className="attachment-copy">
-            {attachment.downloadUrl ? (
-              <a
-                className="attachment-name"
-                href={attachment.downloadUrl}
-                download={attachment.filename}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {attachment.filename}
-              </a>
-            ) : (
-              <span className="attachment-name attachment-name-static">{attachment.filename}</span>
-            )}
+            <span className={`attachment-name${attachment.downloadUrl ? "" : " attachment-name-static"}`}>
+              {attachment.filename}
+            </span>
             <span className="attachment-meta">
               {attachment.mimetype || "File"} | {formatAttachmentSize(attachment.size)}
             </span>
@@ -233,6 +167,25 @@ function AttachmentList({
             <button type="button" className="attachment-remove" onClick={() => onRemove(attachment.id)}>
               Remove
             </button>
+          ) : attachment.downloadUrl ? (
+            <div className="attachment-actions">
+              <a
+                className="attachment-action"
+                href={attachment.downloadUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                View
+              </a>
+              <a
+                className="attachment-action attachment-action-download"
+                href={attachment.downloadUrl}
+                download={attachment.filename}
+                rel="noreferrer"
+              >
+                Download
+              </a>
+            </div>
           ) : null}
         </div>
       ))}
@@ -258,17 +211,18 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
   const [editAttachments, setEditAttachments] = useState<EditableAttachment[]>([]);
   const [editAttachmentsBusy, setEditAttachmentsBusy] = useState(false);
   const [editAttachmentError, setEditAttachmentError] = useState<string | null>(null);
+  const [createSubmitBusy, setCreateSubmitBusy] = useState(false);
+  const [editSubmitBusy, setEditSubmitBusy] = useState(false);
+  const [createSubmitError, setCreateSubmitError] = useState<string | null>(null);
+  const [editSubmitError, setEditSubmitError] = useState<string | null>(null);
+  const [toggleBusyId, setToggleBusyId] = useState<number | null>(null);
   const [highlightedTaskId, setHighlightedTaskId] = useState<number | null>(null);
   const handledTaskTargetRef = useRef<string | null>(null);
+  const createAttachmentInputRef = useRef<HTMLInputElement | null>(null);
+  const editAttachmentInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    const syncTasks = () => {
-      setTaskList(mergeTaskCache(tasks, readCachedTasks()));
-    };
-
-    syncTasks();
-    window.addEventListener(getTaskCacheEvent(), syncTasks);
-    return () => window.removeEventListener(getTaskCacheEvent(), syncTasks);
+    setTaskList(tasks);
   }, [tasks]);
 
   useEffect(() => {
@@ -314,6 +268,7 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
 
     setEditAttachments(editingTask.attachments ?? []);
     setEditAttachmentError(null);
+    setEditSubmitError(null);
   }, [editingTask]);
 
   useEffect(() => {
@@ -381,12 +336,58 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
 
   const recentItems = taskList.slice(0, 5);
 
-  const toggleTask = (taskId: number) => {
-    setTaskList((current) => {
-      const next = toggleTaskCompletion(current, taskId);
-      writeCachedTasks(next);
-      return next;
-    });
+  const buildTaskPayload = (source: FormData, attachments: EditableAttachment[]) => {
+    const payload = new FormData();
+    const fields = ["title", "description", "status", "priority", "dueDate", "dueTime"];
+
+    for (const field of fields) {
+      const value = source.get(field);
+      if (typeof value === "string") {
+        payload.set(field, value);
+      }
+    }
+
+    for (const attachment of attachments) {
+      if (attachment.localFile) {
+        payload.append("attachments", attachment.localFile);
+        continue;
+      }
+
+      payload.append("keepAttachmentIds", attachment.id);
+    }
+
+    return payload;
+  };
+
+  const submitTaskRequest = async (input: RequestInfo | URL, init: RequestInit) => {
+    const response = await fetch(input, init);
+    const result = (await response.json().catch(() => null)) as { error?: string } | null;
+
+    if (!response.ok) {
+      throw new Error(result?.error || "Task request failed.");
+    }
+  };
+
+  const toggleTask = async (taskId: number) => {
+    if (toggleBusyId === taskId) {
+      return;
+    }
+
+    setToggleBusyId(taskId);
+    const nextTaskList = toggleTaskCompletion(taskList, taskId);
+    setTaskList(nextTaskList);
+    if (selectedTask?.id === taskId) {
+      setSelectedTask(nextTaskList.find((task) => task.id === taskId) ?? null);
+    }
+
+    try {
+      await submitTaskRequest(`/api/tasks/${taskId}/toggle`, { method: "POST" });
+      router.refresh();
+    } catch {
+      router.refresh();
+    } finally {
+      setToggleBusyId(null);
+    }
   };
 
   const addCreateFiles = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -397,6 +398,7 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
     }
 
     setCreateAttachmentError(null);
+    setCreateSubmitError(null);
     setCreateAttachmentsBusy(true);
 
     try {
@@ -418,6 +420,7 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
     }
 
     setEditAttachmentError(null);
+    setEditSubmitError(null);
     setEditAttachmentsBusy(true);
 
     try {
@@ -431,70 +434,56 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
     }
   };
 
-  const createTask = (event: FormEvent<HTMLFormElement>) => {
+  const createTask = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (createAttachmentsBusy) return;
-    const formData = new FormData(event.currentTarget);
+    if (createAttachmentsBusy || createSubmitBusy) return;
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const title = String(formData.get("title") || "").trim();
     if (!title) return;
 
-    const description = String(formData.get("description") || "").trim();
-    const status = String(formData.get("status") || "assigned") as TaskStatus;
-    const priority = String(formData.get("priority") || "normal") as TaskPriority;
-    const deadline = combineDueDate(String(formData.get("dueDate") || ""), String(formData.get("dueTime") || ""));
-    const now = new Date().toISOString();
+    setCreateSubmitBusy(true);
+    setCreateSubmitError(null);
 
-    const created = normalizeTask(
-      { id: Date.now(), createdAt: now, activityAt: now, assignees: [], previousStatus: null, attachments: createAttachments },
-      { title, description, status, priority, deadline },
-    );
-
-    setTaskList((current) => {
-      const next = mergeTaskCache(current, [created]);
-      writeCachedTasks(next);
-      return next;
-    });
-    setDrawerOpen(false);
-    setTaskModalOpen(true);
-    event.currentTarget.reset();
-    setCreateAttachments([]);
-    setCreateAttachmentError(null);
+    try {
+      await submitTaskRequest("/api/tasks", {
+        method: "POST",
+        body: buildTaskPayload(formData, createAttachments),
+      });
+      setDrawerOpen(false);
+      setTaskModalOpen(true);
+      form.reset();
+      setCreateAttachments([]);
+      setCreateAttachmentError(null);
+      router.refresh();
+    } catch (error) {
+      setCreateSubmitError(error instanceof Error ? error.message : "Could not save the task.");
+    } finally {
+      setCreateSubmitBusy(false);
+    }
   };
 
-  const saveEdit = (event: FormEvent<HTMLFormElement>) => {
+  const saveEdit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!editingTask || editAttachmentsBusy) return;
+    if (!editingTask || editAttachmentsBusy || editSubmitBusy) return;
 
     const formData = new FormData(event.currentTarget);
-    const title = String(formData.get("title") || "").trim() || editingTask.title;
-    const description = String(formData.get("description") || "").trim();
-    const status = String(formData.get("status") || editingTask.status) as TaskStatus;
-    const priority = String(formData.get("priority") || editingTask.priority) as TaskPriority;
-    const deadline = combineDueDate(String(formData.get("dueDate") || ""), String(formData.get("dueTime") || ""));
+    setEditSubmitBusy(true);
+    setEditSubmitError(null);
 
-    const updated = normalizeTask(
-      {
-        id: editingTask.id,
-        createdAt: editingTask.createdAt,
-        activityAt: new Date().toISOString(),
-        assignees: editingTask.assignees,
-        attachments: editAttachments,
-        previousStatus:
-          status === "completed"
-            ? editingTask.status === "completed"
-              ? editingTask.previousStatus ?? null
-              : editingTask.status
-            : status,
-      },
-      { title, description, status, priority, deadline },
-    );
-
-    setTaskList((current) => {
-      const next = current.map((task) => (task.id === editingTask.id ? updated : task));
-      writeCachedTasks(next);
-      return next;
-    });
-    setEditingTask(null);
+    try {
+      await submitTaskRequest(`/api/tasks/${editingTask.id}`, {
+        method: "PATCH",
+        body: buildTaskPayload(formData, editAttachments),
+      });
+      setEditingTask(null);
+      setSelectedTask(null);
+      router.refresh();
+    } catch (error) {
+      setEditSubmitError(error instanceof Error ? error.message : "Could not update the task.");
+    } finally {
+      setEditSubmitBusy(false);
+    }
   };
 
   return (
@@ -599,19 +588,35 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
                     <input className="field-input" type="time" name="dueTime" defaultValue={inputs.dueTime} />
                     <div className="drawer-field task-attachment-field">
                       <div className="drawer-label">ATTACHMENTS</div>
-                      <label className="attachment-picker" htmlFor="edit-task-attachments">
-                        <span className="attachment-picker-title">Add or replace files</span>
-                        <span className="attachment-picker-subtitle">Select multiple files. Remove any file before saving.</span>
-                      </label>
-                      <input
-                        id="edit-task-attachments"
-                        className="attachment-input"
-                        type="file"
-                        multiple
-                        onChange={addEditFiles}
-                      />
-                      {editAttachmentsBusy ? <div className="attachment-note">Adding attachments...</div> : null}
+                      <div className="attachment-picker">
+                        <div className="attachment-picker-copy">
+                          <span className="attachment-picker-title">Add or replace files</span>
+                          <span className="attachment-picker-subtitle">Select multiple files. Remove any file before saving.</span>
+                        </div>
+                        <div className="attachment-picker-actions">
+                          <button
+                            type="button"
+                            className="attachment-picker-button"
+                            onClick={() => editAttachmentInputRef.current?.click()}
+                            disabled={editAttachmentsBusy || editSubmitBusy}
+                          >
+                            Choose files
+                          </button>
+                          <span className="attachment-picker-status">
+                            {attachmentStatusLabel(editAttachments.length, editAttachmentsBusy)}
+                          </span>
+                        </div>
+                        <input
+                          id="edit-task-attachments"
+                          ref={editAttachmentInputRef}
+                          className="attachment-input"
+                          type="file"
+                          multiple
+                          onChange={addEditFiles}
+                        />
+                      </div>
                       {editAttachmentError ? <div className="attachment-note attachment-error">{editAttachmentError}</div> : null}
+                      {editSubmitError ? <div className="attachment-note attachment-error">{editSubmitError}</div> : null}
                       <AttachmentList
                         attachments={editAttachments}
                         onRemove={(attachmentId) =>
@@ -623,8 +628,8 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
                       <button type="button" className="btn-mini drawer-cancel" onClick={() => setEditingTask(null)}>
                         Cancel
                       </button>
-                      <button type="submit" className="primary-btn drawer-publish" disabled={editAttachmentsBusy}>
-                        Save
+                      <button type="submit" className="primary-btn drawer-publish" disabled={editAttachmentsBusy || editSubmitBusy}>
+                        {editSubmitBusy ? "Saving..." : "Save"}
                       </button>
                     </div>
                   </>
@@ -877,19 +882,35 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
 
           <div className="drawer-field task-attachment-field">
             <div className="drawer-label">ATTACHMENTS</div>
-            <label className="attachment-picker" htmlFor="new-task-attachments">
-              <span className="attachment-picker-title">Add attachments</span>
-              <span className="attachment-picker-subtitle">Select multiple files, then remove any file before publishing.</span>
-            </label>
-            <input
-              id="new-task-attachments"
-              className="attachment-input"
-              type="file"
-              multiple
-              onChange={addCreateFiles}
-            />
-            {createAttachmentsBusy ? <div className="attachment-note">Adding attachments...</div> : null}
+            <div className="attachment-picker">
+              <div className="attachment-picker-copy">
+                <span className="attachment-picker-title">Add attachments</span>
+                <span className="attachment-picker-subtitle">Select multiple files, then remove any file before publishing.</span>
+              </div>
+              <div className="attachment-picker-actions">
+                <button
+                  type="button"
+                  className="attachment-picker-button"
+                  onClick={() => createAttachmentInputRef.current?.click()}
+                  disabled={createAttachmentsBusy || createSubmitBusy}
+                >
+                  Choose files
+                </button>
+                <span className="attachment-picker-status">
+                  {attachmentStatusLabel(createAttachments.length, createAttachmentsBusy)}
+                </span>
+              </div>
+              <input
+                id="new-task-attachments"
+                ref={createAttachmentInputRef}
+                className="attachment-input"
+                type="file"
+                multiple
+                onChange={addCreateFiles}
+              />
+            </div>
             {createAttachmentError ? <div className="attachment-note attachment-error">{createAttachmentError}</div> : null}
+            {createSubmitError ? <div className="attachment-note attachment-error">{createSubmitError}</div> : null}
             <AttachmentList
               attachments={createAttachments}
               onRemove={(attachmentId) =>
@@ -902,8 +923,8 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
             <button type="button" className="btn-mini drawer-cancel" onClick={() => setDrawerOpen(false)}>
               Cancel
             </button>
-            <button type="submit" className="primary-btn drawer-publish" disabled={createAttachmentsBusy}>
-              Publish
+            <button type="submit" className="primary-btn drawer-publish" disabled={createAttachmentsBusy || createSubmitBusy}>
+              {createSubmitBusy ? "Publishing..." : "Publish"}
             </button>
           </div>
         </form>

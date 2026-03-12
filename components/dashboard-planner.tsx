@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import type { MeetingItem, TaskItem } from "@/lib/ttcs-data";
 import { buildDashboardDays } from "@/lib/planner-utils";
-import { getTaskCacheEvent, mergeTaskCache, readCachedTasks, toggleTaskCompletion, writeCachedTasks } from "@/lib/task-cache";
+import { toggleTaskCompletion } from "@/lib/task-cache";
 
 type ViewMode = "list" | "cards";
 type AccentTone = "blue" | "red" | "yellow";
@@ -169,13 +169,7 @@ export function DashboardPlanner({
   const todayRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const syncTasks = () => {
-      setTaskList(mergeTaskCache(tasks, readCachedTasks()));
-    };
-
-    syncTasks();
-    window.addEventListener(getTaskCacheEvent(), syncTasks);
-    return () => window.removeEventListener(getTaskCacheEvent(), syncTasks);
+    setTaskList(tasks);
   }, [tasks]);
 
   useEffect(() => {
@@ -202,12 +196,18 @@ export function DashboardPlanner({
 
   const plannedDays = buildDashboardDays(taskList, meetings);
 
-  const handleToggleTask = (taskId: number) => {
-    setTaskList((current) => {
-      const next = toggleTaskCompletion(current, taskId);
-      writeCachedTasks(next);
-      return next;
-    });
+  const handleToggleTask = async (taskId: number) => {
+    setTaskList((current) => toggleTaskCompletion(current, taskId));
+
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/toggle`, { method: "POST" });
+      if (!response.ok) {
+        throw new Error("Could not update task status.");
+      }
+      router.refresh();
+    } catch {
+      router.refresh();
+    }
   };
 
   const openTaskDashboard = (taskId: number, shouldOpen = false) => {

@@ -1,0 +1,321 @@
+import { createAdminClient } from "@/app/utils/utils/supabase/admin";
+import type { TaskPriority, TaskStatus } from "@/lib/ttcs-data";
+
+const ATTACHMENTS_BUCKET = "task-attachments";
+
+type AttachmentRow = {
+  id: number;
+  storage_path: string;
+};
+
+const VALID_STATUS = new Set<TaskStatus>(["assigned", "in_progress", "for_revision", "completed"]);
+const VALID_PRIORITY = new Set<TaskPriority>(["low", "normal", "high"]);
+
+export class TaskMutationError extends Error {
+  status: number;
+
+  constructor(message: string, status = 400) {
+    super(message);
+    this.status = status;
+  }
+}
+
+function readText(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function combineDueDate(date: string, time: string) {
+  if (!date) {
+    return null;
+  }
+
+  return new Date(`${date}T${time || "09:00"}`).toISOString();
+}
+
+function parseTaskValues(formData: FormData) {
+  const title = readText(formData, "title");
+  const description = readText(formData, "description");
+  const status = readText(formData, "status") as TaskStatus;
+  const priority = readText(formData, "priority") as TaskPriority;
+  const deadline = combineDueDate(readText(formData, "dueDate"), readText(formData, "dueTime"));
+
+  if (!title) {
+    throw new TaskMutationError("Task title is required.");
+  }
+
+  if (!VALID_STATUS.has(status)) {
+    throw new TaskMutationError("Invalid task status.");
+  }
+
+  if (!VALID_PRIORITY.has(priority)) {
+    throw new TaskMutationError("Invalid task priority.");
+  }
+
+  return { title, description, status, priority, deadline };
+}
+
+function parseStorageLocation(storagePath: string) {
+  const normalized = storagePath.replace(/^\/+/, "");
+  const slashIndex = normalized.indexOf("/");
+
+  if (slashIndex <= 0 || slashIndex === normalized.length - 1) {
+    return null;
+  }
+
+  return {
+    bucket: normalized.slice(0, slashIndex),
+    path: normalized.slice(slashIndex + 1),
+  };
+}
+
+function sanitizeFileName(filename: string) {
+  return filename.replace(/[^a-zA-Z0-9._-]+/g, "-");
+}
+
+async function ensureAttachmentBucket() {
+  const admin = createAdminClient();
+  const { error } = await admin.storage.getBucket(ATTACHMENTS_BUCKET);
+
+  if (!error) {
+    return admin;
+  }
+
+  const createResult = await admin.storage.createBucket(ATTACHMENTS_BUCKET, {
+    public: false,
+    fileSizeLimit: 104857600,
+  });
+
+  if (createResult.error && !/already exists/i.test(createResult.error.message)) {
+    throw new TaskMutationError(createResult.error.message, 500);
+  }
+
+  return admin;
+}
+
+async function loadWriterContext(userId: string) {
+  const admin = createAdminClient();
+  const { data: profile, error: profileError } = await admin
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", userId)
+    .single();
+
+  if (profileError) {
+    throw new TaskMutationError(profileError.message, 500);
+  }
+
+  return {
+    admin,
+    isAdmin: Boolean(profile?.is_admin),
+  };
+}
+
+async function assertTaskWriteAccess(userId: string, taskId: number) {
+  const { admin, isAdmin } = await loadWriterContext(userId);
+
+  if (isAdmin) {
+    return admin;
+  }
+
+  const { data: assignment, error } = await admin
+    .from("task_assignments")
+    .select("task_id")
+    .eq("task_id", taskId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new TaskMutationError(error.message, 500);
+  }
+
+  if (!assignment) {
+    throw new TaskMutationError("You do not have permission to modify this task.", 403);
+  }
+
+  return admin;
+}
+
+function getFiles(formData: FormData) {
+  return formData
+    .getAll("attachments")
+    .filter((value): value is File => value instanceof File && value.size > 0);
+}
+
+async function uploadAttachmentFiles(taskId: number, files: File[]) {
+  if (!files.length) {
+    return;
+  }
+
+  const admin = await ensureAttachmentBucket();
+  const attachmentRows: Array<{ task_id: number; filename: string; mimetype: string | null; storage_path: string }> = [];
+
+  for (const file of files) {
+    const objectPath = `${taskId}/${Date.now()}-${crypto.randomUUID()}-${sanitizeFileName(file.name)}`;
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const uploadResult = await admin.storage.from(ATTACHMENTS_BUCKET).upload(objectPath, buffer, {
+      contentType: file.type || "application/octet-stream",
+      upsert: false,
+    });
+
+    if (uploadResult.error) {
+      throw new TaskMutationError(uploadResult.error.message, 500);
+    }
+
+    attachmentRows.push({
+      task_id: taskId,
+      filename: file.name,
+      mimetype: file.type || null,
+      storage_path: `${ATTACHMENTS_BUCKET}/${objectPath}`,
+    });
+  }
+
+  const insertResult = await admin.from("task_attachments").insert(attachmentRows);
+  if (insertResult.error) {
+    throw new TaskMutationError(insertResult.error.message, 500);
+  }
+}
+
+async function deleteAttachmentRows(admin: ReturnType<typeof createAdminClient>, rows: AttachmentRow[]) {
+  if (!rows.length) {
+    return;
+  }
+
+  const ids = rows.map((row) => row.id);
+  const deleteResult = await admin.from("task_attachments").delete().in("id", ids);
+  if (deleteResult.error) {
+    throw new TaskMutationError(deleteResult.error.message, 500);
+  }
+
+  const pathsByBucket = new Map<string, string[]>();
+  for (const row of rows) {
+    const location = parseStorageLocation(row.storage_path);
+    if (!location) {
+      continue;
+    }
+
+    const existing = pathsByBucket.get(location.bucket) ?? [];
+    existing.push(location.path);
+    pathsByBucket.set(location.bucket, existing);
+  }
+
+  for (const [bucket, paths] of pathsByBucket) {
+    const storageResult = await admin.storage.from(bucket).remove(paths);
+    if (storageResult.error) {
+      throw new TaskMutationError(storageResult.error.message, 500);
+    }
+  }
+}
+
+export async function createTaskForUser(userId: string, formData: FormData) {
+  const { admin } = await loadWriterContext(userId);
+  const values = parseTaskValues(formData);
+  const now = new Date().toISOString();
+
+  const insertResult = await admin
+    .from("tasks")
+    .insert({
+      title: values.title,
+      description: values.description || null,
+      status: values.status,
+      priority: values.priority,
+      deadline: values.deadline,
+      last_edited_by: userId,
+      last_edited_at: now,
+    })
+    .select("id")
+    .single();
+
+  if (insertResult.error || !insertResult.data) {
+    throw new TaskMutationError(insertResult.error?.message || "Could not create task.", 500);
+  }
+
+  const taskId = insertResult.data.id;
+  const assignmentResult = await admin.from("task_assignments").insert({
+    task_id: taskId,
+    user_id: userId,
+  });
+
+  if (assignmentResult.error) {
+    throw new TaskMutationError(assignmentResult.error.message, 500);
+  }
+
+  await uploadAttachmentFiles(taskId, getFiles(formData));
+
+  return { taskId };
+}
+
+export async function updateTaskForUser(userId: string, taskId: number, formData: FormData) {
+  const admin = await assertTaskWriteAccess(userId, taskId);
+  const values = parseTaskValues(formData);
+  const now = new Date().toISOString();
+
+  const updateResult = await admin
+    .from("tasks")
+    .update({
+      title: values.title,
+      description: values.description || null,
+      status: values.status,
+      priority: values.priority,
+      deadline: values.deadline,
+      last_edited_by: userId,
+      last_edited_at: now,
+    })
+    .eq("id", taskId);
+
+  if (updateResult.error) {
+    throw new TaskMutationError(updateResult.error.message, 500);
+  }
+
+  const existingResult = await admin
+    .from("task_attachments")
+    .select("id,storage_path")
+    .eq("task_id", taskId);
+
+  if (existingResult.error) {
+    throw new TaskMutationError(existingResult.error.message, 500);
+  }
+
+  const keepAttachmentIds = new Set(
+    formData
+      .getAll("keepAttachmentIds")
+      .map((value) => (typeof value === "string" ? value : ""))
+      .filter(Boolean),
+  );
+  const existingRows = (existingResult.data as AttachmentRow[] | null) ?? [];
+  const removedRows = existingRows.filter((row) => !keepAttachmentIds.has(String(row.id)));
+
+  await deleteAttachmentRows(admin, removedRows);
+  await uploadAttachmentFiles(taskId, getFiles(formData));
+
+  return { taskId };
+}
+
+export async function toggleTaskForUser(userId: string, taskId: number) {
+  const admin = await assertTaskWriteAccess(userId, taskId);
+  const taskResult = await admin
+    .from("tasks")
+    .select("status")
+    .eq("id", taskId)
+    .single();
+
+  if (taskResult.error || !taskResult.data) {
+    throw new TaskMutationError(taskResult.error?.message || "Could not load task.", 500);
+  }
+
+  const nextStatus: TaskStatus = taskResult.data.status === "completed" ? "in_progress" : "completed";
+  const updateResult = await admin
+    .from("tasks")
+    .update({
+      status: nextStatus,
+      last_edited_by: userId,
+      last_edited_at: new Date().toISOString(),
+    })
+    .eq("id", taskId);
+
+  if (updateResult.error) {
+    throw new TaskMutationError(updateResult.error.message, 500);
+  }
+
+  return { taskId, status: nextStatus };
+}

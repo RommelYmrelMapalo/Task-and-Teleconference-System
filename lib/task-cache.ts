@@ -39,13 +39,7 @@ function normalizeCachedTask(task: TaskItem) {
 function toSerializableTask(task: TaskItem): TaskItem {
   return {
     ...task,
-    attachments: (task.attachments ?? []).map((attachment) => ({
-      ...attachment,
-      downloadUrl:
-        attachment.downloadUrl && !attachment.downloadUrl.startsWith("blob:") && !attachment.downloadUrl.startsWith("data:")
-          ? attachment.downloadUrl
-          : null,
-    })),
+    attachments: Array.isArray(task.attachments) ? task.attachments : [],
   };
 }
 
