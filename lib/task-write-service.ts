@@ -23,6 +23,41 @@ export class TaskMutationError extends Error {
   }
 }
 
+function deriveNameFromEmail(email: string) {
+  const localPart = email.split("@")[0]?.trim() ?? "";
+  if (!localPart) {
+    return "TTCS User";
+  }
+
+  return localPart
+    .replace(/[._-]+/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .split(/\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function resolveProfileName(fullName: unknown, email: string | null | undefined) {
+  const trimmedName = typeof fullName === "string" ? fullName.trim() : "";
+  const trimmedEmail = email?.trim() ?? "";
+
+  if (trimmedName && !trimmedName.includes("@")) {
+    return trimmedName;
+  }
+
+  if (trimmedName && trimmedEmail && trimmedName.toLowerCase() !== trimmedEmail.toLowerCase()) {
+    return trimmedName;
+  }
+
+  if (trimmedEmail) {
+    return deriveNameFromEmail(trimmedEmail);
+  }
+
+  return "TTCS User";
+}
+
 function readText(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
@@ -148,10 +183,7 @@ async function loadWriterContext(userId: string) {
     }
 
     const authUser = authResult.data.user;
-    const fullName =
-      typeof authUser.user_metadata?.full_name === "string" && authUser.user_metadata.full_name.trim()
-        ? authUser.user_metadata.full_name.trim()
-        : authUser.email || "TTCS User";
+    const fullName = resolveProfileName(authUser.user_metadata?.full_name, authUser.email);
 
     const insertResult = await admin.from("profiles").insert({
       id: userId,
@@ -469,7 +501,7 @@ export async function toggleTaskForUser(userId: string, taskId: number) {
       actorUserId: userId,
       taskId,
       action: "unassigned_task_restore",
-      details: "Task restored from completed by a user who was not assigned to it.",
+      details: "Task marked as uncomplete by a user who was not assigned to it.",
     });
   }
 

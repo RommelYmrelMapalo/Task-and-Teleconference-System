@@ -22,7 +22,6 @@ const navGroups = [
       { href: "/admin/users", label: "Manage Users", icon: "users" as const },
       { href: "/admin/reports", label: "Reports", icon: "reports" as const },
       { href: "/admin/inbox", label: "Inbox", icon: "inbox" as const, badge: "6" },
-      { href: "/admin/profile", label: "Profile", icon: "profile" as const },
     ],
   },
 ];
@@ -39,12 +38,14 @@ function formatDisplayName(fullName: string) {
 export function AdminShell({
   title,
   subtitle,
+  actions,
   user,
   unreadCount = 0,
   children,
 }: {
   title: string;
   subtitle?: string;
+  actions?: ReactNode;
   user: ShellUser;
   unreadCount?: number;
   children: ReactNode;
@@ -154,12 +155,13 @@ export function AdminShell({
 
         <section className="main-area">
           <div className="content-wrap">
-            <div className="main-inner">
+            <div className="main-inner admin-main-inner">
               <div className="dashboard-head">
                 <div className="dashboard-head-left">
                   <div className="td-title">{title}</div>
                   {subtitle ? <div className="td-sub">{subtitle}</div> : null}
                 </div>
+                {actions ? <div className="planner-actions-top">{actions}</div> : null}
               </div>
               {children}
             </div>

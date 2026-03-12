@@ -974,7 +974,7 @@ export function UserTasksBoard({
         <div className="drawer-head">
           <div>
             <div className="drawer-title">New Task</div>
-            <div className="drawer-sub">Create a task card from the dashboard again</div>
+            <div className="drawer-sub">Create a task card from the dashboard</div>
           </div>
           <button type="button" className="drawer-x drawer-x-danger" onClick={() => setDrawerOpen(false)}>
             {"\u00D7"}
@@ -982,6 +982,9 @@ export function UserTasksBoard({
         </div>
 
         <form className="drawer-body" onSubmit={createTask}>
+          <div className="drawer-banner">
+            When creating a task it will be automatically assigned to you only, but others can still edit it.
+          </div>
           <div className="drawer-field">
             <div className="drawer-label">TITLE</div>
             <input className="drawer-input" name="title" placeholder="Task title..." />

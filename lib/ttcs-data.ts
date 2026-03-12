@@ -308,8 +308,41 @@ function formatDisplayName(fullName: string) {
     .join(" ");
 }
 
+function deriveNameFromEmail(email: string) {
+  const localPart = email.split("@")[0]?.trim() ?? "";
+  if (!localPart) {
+    return "TTCS User";
+  }
+
+  const normalized = localPart
+    .replace(/[._-]+/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .trim();
+
+  return formatDisplayName(normalized || localPart);
+}
+
+function resolveProfileName(fullName: string | null | undefined, email: string) {
+  const trimmedName = fullName?.trim() ?? "";
+  const trimmedEmail = email.trim();
+
+  if (trimmedName && !trimmedName.includes("@")) {
+    return formatDisplayName(trimmedName);
+  }
+
+  if (trimmedName && trimmedEmail && trimmedName.toLowerCase() !== trimmedEmail.toLowerCase()) {
+    return formatDisplayName(trimmedName);
+  }
+
+  if (trimmedEmail) {
+    return deriveNameFromEmail(trimmedEmail);
+  }
+
+  return "TTCS User";
+}
+
 function buildShellUser(profile: ProfileRecord): ShellUser {
-  const normalizedName = formatDisplayName(profile.full_name || profile.email);
+  const normalizedName = resolveProfileName(profile.full_name, profile.email);
 
   return {
     id: profile.id,
@@ -323,10 +356,10 @@ function buildShellUser(profile: ProfileRecord): ShellUser {
 }
 
 function fallbackProfile(user: { id: string; email?: string | null; user_metadata?: Record<string, unknown> }) {
-  const fullName =
-    typeof user.user_metadata?.full_name === "string" && user.user_metadata.full_name.trim()
-      ? user.user_metadata.full_name.trim()
-      : user.email || "TTCS User";
+  const fullName = resolveProfileName(
+    typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : null,
+    user.email || "",
+  );
 
   return {
     id: user.id,
