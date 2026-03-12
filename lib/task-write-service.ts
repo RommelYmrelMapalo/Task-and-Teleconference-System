@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/app/utils/utils/supabase/admin";
 import type { TaskPriority, TaskStatus } from "@/lib/ttcs-data";
+import { isMissingSupabaseTable } from "@/lib/supabase-errors";
 
 const ATTACHMENTS_BUCKET = "task-attachments";
 
@@ -99,9 +100,15 @@ async function loadWriterContext(userId: string) {
     .from("profiles")
     .select("is_admin")
     .eq("id", userId)
-    .single();
+    .maybeSingle();
 
   if (profileError) {
+    if (isMissingSupabaseTable(profileError)) {
+      return {
+        admin,
+        isAdmin: false,
+      };
+    }
     throw new TaskMutationError(profileError.message, 500);
   }
 
