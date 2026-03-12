@@ -62,6 +62,16 @@ export type MeetingItem = {
   timeLabel: string;
 };
 
+export type TaskAuditLogItem = {
+  id: number;
+  actorName: string;
+  taskTitle: string;
+  action: string;
+  details: string;
+  createdAt: string;
+  createdLabel: string;
+};
+
 export type TaskItem = {
   id: number;
   title: string;
@@ -124,6 +134,15 @@ type AttachmentRow = {
   filename: string;
   mimetype: string | null;
   storage_path: string;
+  created_at: string;
+};
+
+type TaskAuditLogRow = {
+  id: number;
+  actor_user_id: string;
+  task_id: number;
+  action: string;
+  details: string | null;
   created_at: string;
 };
 
@@ -424,6 +443,26 @@ function mapNotificationRow(row: NotificationRow): NotificationItem {
   };
 }
 
+function formatAuditAction(action: string) {
+  if (action === "unassigned_task_edit") {
+    return "Unassigned task edit";
+  }
+
+  if (action === "unassigned_task_completion") {
+    return "Unassigned task completion";
+  }
+
+  if (action === "unassigned_task_restore") {
+    return "Unassigned task restore";
+  }
+
+  return action
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 function mapAttachmentRow(row: AttachmentRow, downloadUrl: string | null, size: number | null): TaskAttachment {
   return {
     id: String(row.id),
@@ -583,6 +622,82 @@ export async function getAllNotifications(
   }
 
   return ((data as NotificationRow[] | null) ?? []).map(mapNotificationRow);
+}
+
+export async function getAdminTaskAuditLogs(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  limit = 50,
+) {
+  let query = supabase
+    .from("task_audit_logs")
+    .select("id,actor_user_id,task_id,action,details,created_at")
+    .order("created_at", { ascending: false });
+
+  if (limit) {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    if (isMissingSupabaseTable(error)) {
+      return [];
+    }
+    throw new Error(`Failed to load task audit logs: ${error.message}`);
+  }
+
+  const rows = (data as TaskAuditLogRow[] | null) ?? [];
+  if (!rows.length) {
+    return [];
+  }
+
+  const actorIds = unique(rows.map((row) => row.actor_user_id));
+  const taskIds = unique(rows.map((row) => row.task_id));
+  const actorMap = new Map<string, ShellUser>();
+  const taskTitleMap = new Map<number, string>();
+
+  if (actorIds.length) {
+    const { data: profiles, error: profileError } = await supabase
+      .from("profiles")
+      .select("id,email,full_name,is_admin,role,last_login,created_at")
+      .in("id", actorIds);
+
+    if (profileError && !isMissingSupabaseTable(profileError)) {
+      throw new Error(`Failed to load task audit actors: ${profileError.message}`);
+    }
+
+    for (const profile of (profiles as ProfileRecord[] | null) ?? []) {
+      actorMap.set(profile.id, buildShellUser(profile));
+    }
+  }
+
+  if (taskIds.length) {
+    const { data: tasks, error: taskError } = await supabase.from("tasks").select("id,title").in("id", taskIds);
+
+    if (taskError && !isMissingSupabaseTable(taskError)) {
+      throw new Error(`Failed to load task audit tasks: ${taskError.message}`);
+    }
+
+    for (const task of ((tasks as Array<{ id: number; title: string }> | null) ?? [])) {
+      taskTitleMap.set(task.id, task.title);
+    }
+  }
+
+  return rows.map((row) => ({
+    id: row.id,
+    actorName: actorMap.get(row.actor_user_id)?.fullName ?? "Unknown user",
+    taskTitle: taskTitleMap.get(row.task_id) ?? `Task #${row.task_id}`,
+    action: formatAuditAction(row.action),
+    details: row.details ?? "No additional details.",
+    createdAt: row.created_at,
+    createdLabel: formatWithTz(row.created_at, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }),
+  }));
 }
 
 export function getMeetingItems(notifications: NotificationItem[]) {
@@ -783,6 +898,11 @@ export async function getAdminTasks(
       task.last_edited_by ? profileMap.get(task.last_edited_by) ?? null : null,
     ),
   );
+}
+
+export async function getVisibleTasks() {
+  const admin = createAdminClient() as unknown as Awaited<ReturnType<typeof createClient>>;
+  return getAdminTasks(admin);
 }
 
 export async function getAllProfiles(

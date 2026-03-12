@@ -177,11 +177,29 @@ async function loadWriterContext(userId: string) {
   };
 }
 
-async function assertTaskWriteAccess(userId: string, taskId: number) {
+async function getTaskAccessContext(userId: string, taskId: number) {
   const { admin, isAdmin } = await loadWriterContext(userId);
 
+  const { data: task, error: taskError } = await admin
+    .from("tasks")
+    .select("id")
+    .eq("id", taskId)
+    .maybeSingle();
+
+  if (taskError) {
+    throw new TaskMutationError(taskError.message, 500);
+  }
+
+  if (!task) {
+    throw new TaskMutationError("Task not found.", 404);
+  }
+
   if (isAdmin) {
-    return admin;
+    return {
+      admin,
+      isAdmin,
+      isAssigned: true,
+    };
   }
 
   const { data: assignment, error } = await admin
@@ -195,11 +213,37 @@ async function assertTaskWriteAccess(userId: string, taskId: number) {
     throw new TaskMutationError(error.message, 500);
   }
 
-  if (!assignment) {
-    throw new TaskMutationError("You do not have permission to modify this task.", 403);
-  }
+  return {
+    admin,
+    isAdmin,
+    isAssigned: Boolean(assignment),
+  };
+}
 
-  return admin;
+async function writeTaskAuditLog(
+  admin: ReturnType<typeof createAdminClient>,
+  {
+    actorUserId,
+    taskId,
+    action,
+    details,
+  }: {
+    actorUserId: string;
+    taskId: number;
+    action: string;
+    details: string;
+  },
+) {
+  const insertResult = await admin.from("task_audit_logs").insert({
+    actor_user_id: actorUserId,
+    task_id: taskId,
+    action,
+    details,
+  });
+
+  if (insertResult.error && !isMissingSupabaseTable(insertResult.error)) {
+    throw new TaskMutationError(insertResult.error.message, 500);
+  }
 }
 
 function getFiles(formData: FormData) {
@@ -329,7 +373,8 @@ export async function createTaskForUser(userId: string, formData: FormData) {
 }
 
 export async function updateTaskForUser(userId: string, taskId: number, formData: FormData) {
-  const admin = await assertTaskWriteAccess(userId, taskId);
+  const access = await getTaskAccessContext(userId, taskId);
+  const admin = access.admin;
   const values = parseTaskValues(formData);
   const now = new Date().toISOString();
 
@@ -371,11 +416,21 @@ export async function updateTaskForUser(userId: string, taskId: number, formData
   await deleteAttachmentRows(admin, removedRows);
   await uploadAttachmentFiles(taskId, getFiles(formData));
 
+  if (!access.isAdmin && !access.isAssigned) {
+    await writeTaskAuditLog(admin, {
+      actorUserId: userId,
+      taskId,
+      action: "unassigned_task_edit",
+      details: "Task updated by a user who was not assigned to it.",
+    });
+  }
+
   return { taskId };
 }
 
 export async function toggleTaskForUser(userId: string, taskId: number) {
-  const admin = await assertTaskWriteAccess(userId, taskId);
+  const access = await getTaskAccessContext(userId, taskId);
+  const admin = access.admin;
   const taskResult = await admin
     .from("tasks")
     .select("status")
@@ -398,6 +453,24 @@ export async function toggleTaskForUser(userId: string, taskId: number) {
 
   if (updateResult.error) {
     throw new TaskMutationError(updateResult.error.message, 500);
+  }
+
+  if (!access.isAdmin && !access.isAssigned && nextStatus === "completed") {
+    await writeTaskAuditLog(admin, {
+      actorUserId: userId,
+      taskId,
+      action: "unassigned_task_completion",
+      details: "Task marked as completed by a user who was not assigned to it.",
+    });
+  }
+
+  if (!access.isAdmin && !access.isAssigned && nextStatus === "in_progress") {
+    await writeTaskAuditLog(admin, {
+      actorUserId: userId,
+      taskId,
+      action: "unassigned_task_restore",
+      details: "Task restored from completed by a user who was not assigned to it.",
+    });
   }
 
   return { taskId, status: nextStatus };

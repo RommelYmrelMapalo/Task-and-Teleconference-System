@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import type { MeetingItem, TaskItem } from "@/lib/ttcs-data";
 import { buildDashboardDays } from "@/lib/planner-utils";
-import { toggleTaskCompletion } from "@/lib/task-cache";
+import { applyTaskStatus, toggleTaskCompletion } from "@/lib/task-cache";
 
 type ViewMode = "list" | "cards";
 type AccentTone = "blue" | "red" | "yellow";
@@ -154,9 +154,13 @@ export function DashboardPlannerActions() {
 export function DashboardPlanner({
   tasks,
   meetings,
+  viewerId,
+  viewerCanManageAll = false,
 }: {
   tasks: TaskItem[];
   meetings: MeetingItem[];
+  viewerId: string;
+  viewerCanManageAll?: boolean;
 }) {
   const router = useRouter();
   const viewMode = useSyncExternalStore(
@@ -165,12 +169,18 @@ export function DashboardPlanner({
     getViewModeServerSnapshot,
   );
   const [taskList, setTaskList] = useState(() => tasks);
+  const [pendingToggleWarningTask, setPendingToggleWarningTask] = useState<TaskItem | null>(null);
   const plannerRef = useRef<HTMLDivElement | null>(null);
   const todayRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setTaskList(tasks);
   }, [tasks]);
+
+  const canModifyTask = (task: TaskItem) =>
+    viewerCanManageAll || task.assignees.some((assignee) => assignee.id === viewerId);
+  const canToggleTaskWithoutWarning = (task: TaskItem) => canModifyTask(task);
+  const canToggleTask = () => true;
 
   useEffect(() => {
     const scrollPlannerToToday = () => {
@@ -201,13 +211,26 @@ export function DashboardPlanner({
 
     try {
       const response = await fetch(`/api/tasks/${taskId}/toggle`, { method: "POST" });
-      if (!response.ok) {
-        throw new Error("Could not update task status.");
+      const result = (await response.json().catch(() => null)) as { error?: string; status?: TaskItem["status"] } | null;
+
+      if (!response.ok || !result?.status) {
+        throw new Error(result?.error || "Could not update task status.");
       }
+
+      setTaskList((current) => applyTaskStatus(current, taskId, result.status as TaskItem["status"]));
       router.refresh();
     } catch {
       router.refresh();
     }
+  };
+
+  const requestToggleTask = (task: TaskItem) => {
+    if (canToggleTaskWithoutWarning(task)) {
+      void handleToggleTask(task.id);
+      return;
+    }
+
+    setPendingToggleWarningTask(task);
   };
 
   const openTaskDashboard = (taskId: number, shouldOpen = false) => {
@@ -221,6 +244,46 @@ export function DashboardPlanner({
 
   return (
     <div className={`planner-wrap${viewMode === "cards" ? " card-view" : ""}`} ref={plannerRef}>
+      {pendingToggleWarningTask ? (
+        <div className="modal-overlay show" onClick={() => setPendingToggleWarningTask(null)}>
+          <div className="modal-popup modern-popup warning-popup" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-icon-wrap">
+              <div className="modal-icon" aria-hidden="true">
+                !
+              </div>
+            </div>
+            <div className="modal-text">
+              {pendingToggleWarningTask.status === "completed"
+                ? "This task is not assigned to you, unmark as complete?"
+                : "This task is not assigned to you, mark as complete?"}
+            </div>
+            <div className="modal-subtext">
+              {pendingToggleWarningTask.status === "completed"
+                ? "If you continue, the task will be restored and the override will be logged in the admin reports page."
+                : "If you continue, the task will be marked complete and the override will be logged in the admin reports page."}
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="btn-mini" onClick={() => setPendingToggleWarningTask(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="primary-btn"
+                onClick={() => {
+                  const task = pendingToggleWarningTask;
+                  setPendingToggleWarningTask(null);
+                  if (task) {
+                    void handleToggleTask(task.id);
+                  }
+                }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {plannedDays.length ? (
         plannedDays.map((day) => {
           const hasTasks = day.tasks.length > 0;
@@ -263,13 +326,27 @@ export function DashboardPlanner({
                             >
                               <button
                                 type="button"
-                                className={`plan-check${task.status === "completed" ? " is-done" : ""}`}
+                                className={`plan-check${task.status === "completed" ? " is-done" : ""}${!canToggleTask(task) ? " is-disabled" : ""}`}
                                 onClick={(event) => {
                                   event.stopPropagation();
-                                  handleToggleTask(task.id);
+                                  requestToggleTask(task);
                                 }}
+                                disabled={!canToggleTask(task)}
                                 aria-label={
-                                  task.status === "completed" ? `Restore ${task.title} to previous status` : `Mark ${task.title} complete`
+                                  canToggleTaskWithoutWarning(task)
+                                    ? task.status === "completed"
+                                      ? `Restore ${task.title} to previous status`
+                                      : `Mark ${task.title} complete`
+                                    : task.status === "completed"
+                                      ? "This task is not assigned to you, unmark as complete?"
+                                      : `This task is not assigned to you, mark as complete?`
+                                }
+                                title={
+                                  canToggleTaskWithoutWarning(task)
+                                    ? undefined
+                                    : task.status === "completed"
+                                      ? "This task is not assigned to you, unmark as complete?"
+                                      : "This task is not assigned to you, mark as complete?"
                                 }
                               >
                                 {"\u2713"}
@@ -353,13 +430,27 @@ export function DashboardPlanner({
                                   <div className="gcard-actions">
                                     <button
                                       type="button"
-                                      className={`gcheck${task.status === "completed" ? " is-done" : ""}`}
+                                      className={`gcheck${task.status === "completed" ? " is-done" : ""}${!canToggleTask(task) ? " is-disabled" : ""}`}
                                       onClick={(event) => {
                                         event.stopPropagation();
-                                        handleToggleTask(task.id);
+                                        requestToggleTask(task);
                                       }}
+                                      disabled={!canToggleTask(task)}
                                       aria-label={
-                                        task.status === "completed" ? `Restore ${task.title} to previous status` : `Mark ${task.title} complete`
+                                        canToggleTaskWithoutWarning(task)
+                                          ? task.status === "completed"
+                                            ? `Restore ${task.title} to previous status`
+                                            : `Mark ${task.title} complete`
+                                          : task.status === "completed"
+                                            ? "This task is not assigned to you, unmark as complete?"
+                                            : `This task is not assigned to you, mark as complete?`
+                                      }
+                                      title={
+                                        canToggleTaskWithoutWarning(task)
+                                          ? undefined
+                                          : task.status === "completed"
+                                            ? "This task is not assigned to you, unmark as complete?"
+                                            : "This task is not assigned to you, mark as complete?"
                                       }
                                     >
                                       {"\u2713"}

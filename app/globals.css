@@ -1235,6 +1235,10 @@ html[data-theme="light"] .gcard-menu:hover {
   background: linear-gradient(135deg, #dc2626, #f97316);
 }
 
+.warning-popup .modal-icon {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+}
+
 .modal-text {
   font-size: 1.15rem;
   font-weight: 900;
@@ -1411,6 +1415,16 @@ html[data-theme="light"] .gcard-menu:hover {
   margin-top: 18px;
   border-radius: 999px;
   background: linear-gradient(90deg, #2563eb, #22c55e);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.modal-actions > * {
+  flex: 1 1 0;
 }
 
 .page-stack,

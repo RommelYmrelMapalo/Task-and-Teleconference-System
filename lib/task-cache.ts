@@ -139,3 +139,35 @@ export function toggleTaskCompletion(tasks: TaskItem[], taskId: number) {
     }),
   );
 }
+
+export function applyTaskStatus(tasks: TaskItem[], taskId: number, nextStatus: TaskItem["status"]) {
+  const now = new Date().toISOString();
+
+  return sortTasks(
+    tasks.map((task) => {
+      if (task.id !== taskId) {
+        return task;
+      }
+
+      if (nextStatus === "completed") {
+        return {
+          ...task,
+          status: "completed",
+          previousStatus: task.status === "completed" ? task.previousStatus ?? "in_progress" : task.status,
+          isDelayed: false,
+          activityAt: now,
+          activityLabel: formatDateTime(now),
+        };
+      }
+
+      return {
+        ...task,
+        status: nextStatus,
+        previousStatus: nextStatus,
+        isDelayed: isTaskDelayed(task.deadline, nextStatus),
+        activityAt: now,
+        activityLabel: formatDateTime(now),
+      };
+    }),
+  );
+}

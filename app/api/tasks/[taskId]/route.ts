@@ -56,7 +56,8 @@ export async function GET(request: Request, context: { params: Promise<{ taskId:
     const taskId = parseTaskId(rawTaskId);
     const url = new URL(request.url);
     const attachmentId = parseAttachmentId(url.searchParams.get("attachmentId"));
-    const attachmentResult = await supabase
+    const admin = createAdminClient();
+    const attachmentResult = await admin
       .from("task_attachments")
       .select("id,task_id,filename,mimetype,storage_path")
       .eq("id", attachmentId)
@@ -76,7 +77,6 @@ export async function GET(request: Request, context: { params: Promise<{ taskId:
       return NextResponse.json({ error: "Invalid attachment path." }, { status: 400 });
     }
 
-    const admin = createAdminClient();
     const downloadResult = await admin.storage.from(location.bucket).download(location.path);
     if (downloadResult.error || !downloadResult.data) {
       return NextResponse.json(

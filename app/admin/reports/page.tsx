@@ -1,12 +1,19 @@
 import { AdminShell } from "@/components/admin-shell";
-import { getAdminTasks, getAllNotifications, getAllProfiles, requireSessionContext } from "@/lib/ttcs-data";
+import {
+  getAdminTaskAuditLogs,
+  getAdminTasks,
+  getAllNotifications,
+  getAllProfiles,
+  requireSessionContext,
+} from "@/lib/ttcs-data";
 
 export default async function ReportsPage() {
   const { supabase, shellUser, unreadCount } = await requireSessionContext({ admin: true });
-  const [tasks, profiles, notifications] = await Promise.all([
+  const [tasks, profiles, notifications, auditLogs] = await Promise.all([
     getAdminTasks(supabase),
     getAllProfiles(supabase),
     getAllNotifications(supabase, 500),
+    getAdminTaskAuditLogs(supabase, 20),
   ]);
 
   return (
@@ -35,6 +42,30 @@ export default async function ReportsPage() {
           <p>Users: {profiles.filter((profile) => !profile.isAdmin).length}</p>
         </section>
       </div>
+
+      <section className="page-card">
+        <div className="card-headline">
+          <h3>Task Override Logs</h3>
+          <span className="soft-badge">{auditLogs.length}</span>
+        </div>
+        <div className="list-stack">
+          {auditLogs.length ? (
+            auditLogs.map((log) => (
+              <article className="table-row" key={log.id}>
+                <div>
+                  <h3>{log.action}</h3>
+                  <p>User: {log.actorName}</p>
+                  <p>Task: {log.taskTitle}</p>
+                  <p>{log.details}</p>
+                </div>
+                <span className="soft-badge">{log.createdLabel}</span>
+              </article>
+            ))
+          ) : (
+            <p>No override edits have been logged.</p>
+          )}
+        </div>
+      </section>
     </AdminShell>
   );
 }

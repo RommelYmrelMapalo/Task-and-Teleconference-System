@@ -71,6 +71,15 @@ create table public.task_attachments (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.task_audit_logs (
+  id bigint generated always as identity primary key,
+  actor_user_id uuid not null references public.profiles(id) on delete cascade,
+  task_id bigint not null references public.tasks(id) on delete cascade,
+  action text not null,
+  details text,
+  created_at timestamptz not null default now()
+);
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -113,6 +122,7 @@ alter table public.notifications enable row level security;
 alter table public.tasks enable row level security;
 alter table public.task_assignments enable row level security;
 alter table public.task_attachments enable row level security;
+alter table public.task_audit_logs enable row level security;
 
 create policy "profiles_select_self_or_admin"
 on public.profiles
@@ -136,18 +146,10 @@ for all
 using (user_id = auth.uid() or public.is_admin())
 with check (user_id = auth.uid() or public.is_admin());
 
-create policy "tasks_assignee_or_admin_select"
+create policy "tasks_authenticated_select"
 on public.tasks
 for select
-using (
-  public.is_admin()
-  or exists (
-    select 1
-    from public.task_assignments
-    where task_id = tasks.id
-      and user_id = auth.uid()
-  )
-);
+using (auth.uid() is not null);
 
 create policy "tasks_admin_write"
 on public.tasks
@@ -155,10 +157,10 @@ for all
 using (public.is_admin())
 with check (public.is_admin());
 
-create policy "task_assignments_assignee_or_admin_select"
+create policy "task_assignments_authenticated_select"
 on public.task_assignments
 for select
-using (user_id = auth.uid() or public.is_admin());
+using (auth.uid() is not null);
 
 create policy "task_assignments_admin_write"
 on public.task_assignments
@@ -166,21 +168,18 @@ for all
 using (public.is_admin())
 with check (public.is_admin());
 
-create policy "task_attachments_assignee_or_admin_select"
+create policy "task_attachments_authenticated_select"
 on public.task_attachments
 for select
-using (
-  public.is_admin()
-  or exists (
-    select 1
-    from public.task_assignments
-    where task_assignments.task_id = task_attachments.task_id
-      and task_assignments.user_id = auth.uid()
-  )
-);
+using (auth.uid() is not null);
 
 create policy "task_attachments_admin_write"
 on public.task_attachments
 for all
 using (public.is_admin())
 with check (public.is_admin());
+
+create policy "task_audit_logs_admin_select"
+on public.task_audit_logs
+for select
+using (public.is_admin());

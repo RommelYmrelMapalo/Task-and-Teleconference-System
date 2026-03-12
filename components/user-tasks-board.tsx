@@ -14,7 +14,7 @@ import {
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { TaskAttachment, TaskItem } from "@/lib/ttcs-data";
-import { toggleTaskCompletion } from "@/lib/task-cache";
+import { applyTaskStatus, toggleTaskCompletion } from "@/lib/task-cache";
 
 type TaskFilter = "all" | "active" | "revision" | "completed" | "delayed";
 type EditableTask = TaskItem;
@@ -196,7 +196,15 @@ function AttachmentList({
   );
 }
 
-export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
+export function UserTasksBoard({
+  tasks,
+  viewerId,
+  viewerCanManageAll = false,
+}: {
+  tasks: TaskItem[];
+  viewerId: string;
+  viewerCanManageAll?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -208,6 +216,8 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<EditableTask | null>(null);
   const [editingTask, setEditingTask] = useState<EditableTask | null>(null);
+  const [pendingEditWarningTask, setPendingEditWarningTask] = useState<EditableTask | null>(null);
+  const [pendingToggleWarningTask, setPendingToggleWarningTask] = useState<EditableTask | null>(null);
   const [createAttachments, setCreateAttachments] = useState<EditableAttachment[]>([]);
   const [createAttachmentsBusy, setCreateAttachmentsBusy] = useState(false);
   const [createAttachmentError, setCreateAttachmentError] = useState<string | null>(null);
@@ -338,6 +348,28 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
   }, [activeFilter, priorityFilter, search, taskList]);
 
   const recentItems = taskList.slice(0, 3);
+  const canModifyTask = (task: EditableTask) =>
+    viewerCanManageAll || task.assignees.some((assignee) => assignee.id === viewerId);
+  const canToggleTaskWithoutWarning = (task: EditableTask) => canModifyTask(task);
+  const canToggleTask = () => true;
+  const requestEditTask = (task: EditableTask) => {
+    if (canModifyTask(task)) {
+      setEditingTask(task);
+      setSelectedTask(null);
+      setPendingEditWarningTask(null);
+      return;
+    }
+
+    setPendingEditWarningTask(task);
+  };
+  const requestToggleTask = (task: EditableTask) => {
+    if (canToggleTaskWithoutWarning(task)) {
+      void toggleTask(task.id);
+      return;
+    }
+
+    setPendingToggleWarningTask(task);
+  };
 
   const buildTaskPayload = (source: FormData, attachments: EditableAttachment[]) => {
     const payload = new FormData();
@@ -384,7 +416,18 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
     }
 
     try {
-      await submitTaskRequest(`/api/tasks/${taskId}/toggle`, { method: "POST" });
+      const response = await fetch(`/api/tasks/${taskId}/toggle`, { method: "POST" });
+      const result = (await response.json().catch(() => null)) as { error?: string; status?: TaskItem["status"] } | null;
+
+      if (!response.ok || !result?.status) {
+        throw new Error(result?.error || "Could not update task status.");
+      }
+
+      const syncedTaskList = applyTaskStatus(nextTaskList, taskId, result.status);
+      setTaskList(syncedTaskList);
+      if (selectedTask?.id === taskId) {
+        setSelectedTask(syncedTaskList.find((task) => task.id === taskId) ?? null);
+      }
       router.refresh();
     } catch {
       router.refresh();
@@ -540,20 +583,85 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
                 </div>
               ) : null}
               <div className="task-detail-actions">
-                <button
-                  type="button"
-                  className="btn-mini task-detail-edit"
-                  onClick={() => {
-                    setEditingTask(selectedTask);
-                    setSelectedTask(null);
-                  }}
-                >
+                <button type="button" className="btn-mini task-detail-edit" onClick={() => requestEditTask(selectedTask)}>
                   Edit
                 </button>
                 <button type="button" className="primary-btn task-detail-close" onClick={() => setSelectedTask(null)}>
                   Close
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {pendingEditWarningTask ? (
+        <div className="modal-overlay show" onClick={() => setPendingEditWarningTask(null)}>
+          <div className="modal-popup modern-popup warning-popup" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-icon-wrap">
+              <div className="modal-icon" aria-hidden="true">
+                !
+              </div>
+            </div>
+            <div className="modal-text">This task is not assigned to you. Continue?</div>
+            <div className="modal-subtext">
+              If you continue, you can edit the task and the change will be logged in the admin reports page.
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="btn-mini" onClick={() => setPendingEditWarningTask(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="primary-btn"
+                onClick={() => {
+                  setEditingTask(pendingEditWarningTask);
+                  setSelectedTask(null);
+                  setPendingEditWarningTask(null);
+                }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {pendingToggleWarningTask ? (
+        <div className="modal-overlay show" onClick={() => setPendingToggleWarningTask(null)}>
+          <div className="modal-popup modern-popup warning-popup" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-icon-wrap">
+              <div className="modal-icon" aria-hidden="true">
+                !
+              </div>
+            </div>
+            <div className="modal-text">
+              {pendingToggleWarningTask.status === "completed"
+                ? "This task is not assigned to you, unmark as complete?"
+                : "This task is not assigned to you, mark as complete?"}
+            </div>
+            <div className="modal-subtext">
+              {pendingToggleWarningTask.status === "completed"
+                ? "If you continue, the task will be restored and the override will be logged in the admin reports page."
+                : "If you continue, the task will be marked complete and the override will be logged in the admin reports page."}
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="btn-mini" onClick={() => setPendingToggleWarningTask(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="primary-btn"
+                onClick={() => {
+                  const task = pendingToggleWarningTask;
+                  setPendingToggleWarningTask(null);
+                  if (task) {
+                    void toggleTask(task.id);
+                  }
+                }}
+              >
+                Continue
+              </button>
             </div>
           </div>
         </div>
@@ -788,10 +896,24 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
                     className={`task-check${task.status === "completed" ? " is-done" : ""}`}
                     onClick={(event) => {
                       event.stopPropagation();
-                      toggleTask(task.id);
+                      requestToggleTask(task);
                     }}
+                    disabled={!canToggleTask(task)}
                     aria-label={
-                      task.status === "completed" ? `Restore ${task.title} to previous status` : `Mark ${task.title} complete`
+                      canToggleTaskWithoutWarning(task)
+                        ? task.status === "completed"
+                          ? `Restore ${task.title} to previous status`
+                          : `Mark ${task.title} complete`
+                        : task.status === "completed"
+                          ? "This task is not assigned to you, unmark as complete?"
+                          : "This task is not assigned to you, mark as complete?"
+                    }
+                    title={
+                      canToggleTaskWithoutWarning(task)
+                        ? undefined
+                        : task.status === "completed"
+                          ? "This task is not assigned to you, unmark as complete?"
+                          : "This task is not assigned to you, mark as complete?"
                     }
                   >
                     {"\u2713"}
@@ -827,7 +949,7 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
                       className="btn-mini ghost"
                       onClick={(event) => {
                         event.stopPropagation();
-                        setEditingTask(task);
+                        requestEditTask(task);
                       }}
                     >
                       Edit
