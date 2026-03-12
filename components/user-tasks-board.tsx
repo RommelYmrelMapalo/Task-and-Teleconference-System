@@ -29,8 +29,8 @@ function generateAttachmentId() {
 }
 
 function formatAttachmentSize(size: number | null) {
-  if (!size || Number.isNaN(size)) {
-    return "Stored attachment";
+  if (size === null || Number.isNaN(size) || size < 0) {
+    return null;
   }
 
   if (size < 1024) {
@@ -42,6 +42,10 @@ function formatAttachmentSize(size: number | null) {
   }
 
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getAttachmentMetaParts(attachment: EditableAttachment) {
+  return [formatAttachmentSize(attachment.size)].filter((value): value is string => Boolean(value));
 }
 
 function buildAttachmentsFromFiles(files: FileList) {
@@ -143,9 +147,11 @@ function attachmentStatusLabel(count: number, busy: boolean) {
 function AttachmentList({
   attachments,
   onRemove,
+  taskId,
 }: {
   attachments: EditableAttachment[];
   onRemove?: (attachmentId: string) => void;
+  taskId?: number;
 }) {
   if (!attachments.length) {
     return null;
@@ -159,9 +165,7 @@ function AttachmentList({
             <span className={`attachment-name${attachment.downloadUrl ? "" : " attachment-name-static"}`}>
               {attachment.filename}
             </span>
-            <span className="attachment-meta">
-              {attachment.mimetype || "File"} | {formatAttachmentSize(attachment.size)}
-            </span>
+            <span className="attachment-meta">{getAttachmentMetaParts(attachment).join(" | ")}</span>
           </div>
           {onRemove ? (
             <button type="button" className="attachment-remove" onClick={() => onRemove(attachment.id)}>
@@ -179,8 +183,7 @@ function AttachmentList({
               </a>
               <a
                 className="attachment-action attachment-action-download"
-                href={attachment.downloadUrl}
-                download={attachment.filename}
+                href={taskId ? `/api/tasks/${taskId}?attachmentId=${attachment.id}` : attachment.downloadUrl}
                 rel="noreferrer"
               >
                 Download
@@ -334,7 +337,7 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
     });
   }, [activeFilter, priorityFilter, search, taskList]);
 
-  const recentItems = taskList.slice(0, 5);
+  const recentItems = taskList.slice(0, 3);
 
   const buildTaskPayload = (source: FormData, attachments: EditableAttachment[]) => {
     const payload = new FormData();
@@ -506,16 +509,34 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
       {selectedTask ? (
         <div className="modal-overlay show" onClick={() => setSelectedTask(null)}>
           <div className="modal-popup modern-popup task-detail-modal" onClick={(event) => event.stopPropagation()}>
-            <div className="modal-text">{selectedTask.title}</div>
-            <div className="modal-subtext">{selectedTask.description}</div>
+            <div className="modal-text">Task Details</div>
             <div className="form-stack task-detail-body">
-              <div className="task-meta">Status: {statusLabel(selectedTask)}</div>
-              <div className="task-meta">Priority: {selectedTask.priority.toUpperCase()}</div>
-              <div className="task-meta">Deadline: {selectedTask.dueLabel}</div>
+              <div className="drawer-field task-detail-section-center">
+                <div className="drawer-label">TITLE</div>
+                <div className="field-input task-detail-value">{selectedTask.title}</div>
+              </div>
+              <div className="drawer-field task-detail-section-center">
+                <div className="drawer-label">DESCRIPTION</div>
+                <div className="drawer-textarea task-detail-value task-detail-description">{selectedTask.description}</div>
+              </div>
+              <div className="drawer-grid3 two-up task-detail-grid">
+                <div className="drawer-field task-detail-section-center">
+                  <div className="drawer-label">STATUS</div>
+                  <div className="field-input task-detail-value">{statusLabel(selectedTask)}</div>
+                </div>
+                <div className="drawer-field task-detail-section-center">
+                  <div className="drawer-label">PRIORITY</div>
+                  <div className="field-input task-detail-value">{selectedTask.priority.toUpperCase()}</div>
+                </div>
+              </div>
+              <div className="drawer-field task-detail-section-center">
+                <div className="drawer-label">DEADLINE</div>
+                <div className="field-input task-detail-value">{selectedTask.dueLabel}</div>
+              </div>
               {selectedTask.attachments.length ? (
-                <div className="task-detail-attachments">
-                  <div className="task-meta">Attachments</div>
-                  <AttachmentList attachments={selectedTask.attachments} />
+                <div className="drawer-field task-detail-attachments task-detail-section-center">
+                  <div className="drawer-label">ATTACHMENTS</div>
+                  <AttachmentList attachments={selectedTask.attachments} taskId={selectedTask.id} />
                 </div>
               ) : null}
               <div className="task-detail-actions">
@@ -547,45 +568,67 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
                 const inputs = toInputDateTime(editingTask.deadline);
                 return (
                   <>
-                    <input className="field-input" name="title" defaultValue={editingTask.title} />
-                    <textarea className="drawer-textarea" name="description" defaultValue={editingTask.description} rows={4} />
-                    <div className="select-shell">
-                      <select
-                        className="field-input field-select"
-                        name="status"
-                        defaultValue={editingTask.status}
-                        onPointerDown={markSelectOpen}
-                        onFocus={markSelectOpen}
-                        onBlur={clearSelectOpen}
-                        onChange={clearSelectOpen}
-                        onKeyDown={handleSelectKeyDown}
-                      >
-                        <option value="assigned">Assigned</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="for_revision">For Revision</option>
-                        <option value="completed">Completed</option>
-                      </select>
-                      <SelectChevron />
+                    <div className="drawer-field">
+                      <div className="drawer-label">TITLE</div>
+                      <input className="field-input" name="title" defaultValue={editingTask.title} />
                     </div>
-                    <div className="select-shell">
-                      <select
-                        className="field-input field-select"
-                        name="priority"
-                        defaultValue={editingTask.priority}
-                        onPointerDown={markSelectOpen}
-                        onFocus={markSelectOpen}
-                        onBlur={clearSelectOpen}
-                        onChange={clearSelectOpen}
-                        onKeyDown={handleSelectKeyDown}
-                      >
-                        <option value="low">Low</option>
-                        <option value="normal">Normal</option>
-                        <option value="high">High</option>
-                      </select>
-                      <SelectChevron />
+                    <div className="drawer-field">
+                      <div className="drawer-label">DESCRIPTION</div>
+                      <textarea className="drawer-textarea" name="description" defaultValue={editingTask.description} rows={4} />
                     </div>
-                    <input className="field-input" type="date" name="dueDate" defaultValue={inputs.dueDate} />
-                    <input className="field-input" type="time" name="dueTime" defaultValue={inputs.dueTime} />
+                    <div className="drawer-grid3 two-up task-detail-grid">
+                      <div className="drawer-field">
+                        <div className="drawer-label">STATUS</div>
+                        <div className="select-shell">
+                          <select
+                            className="field-input field-select"
+                            name="status"
+                            defaultValue={editingTask.status}
+                            onPointerDown={markSelectOpen}
+                            onFocus={markSelectOpen}
+                            onBlur={clearSelectOpen}
+                            onChange={clearSelectOpen}
+                            onKeyDown={handleSelectKeyDown}
+                          >
+                            <option value="assigned">Assigned</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="for_revision">For Revision</option>
+                            <option value="completed">Completed</option>
+                          </select>
+                          <SelectChevron />
+                        </div>
+                      </div>
+                      <div className="drawer-field">
+                        <div className="drawer-label">PRIORITY</div>
+                        <div className="select-shell">
+                          <select
+                            className="field-input field-select"
+                            name="priority"
+                            defaultValue={editingTask.priority}
+                            onPointerDown={markSelectOpen}
+                            onFocus={markSelectOpen}
+                            onBlur={clearSelectOpen}
+                            onChange={clearSelectOpen}
+                            onKeyDown={handleSelectKeyDown}
+                          >
+                            <option value="low">Low</option>
+                            <option value="normal">Normal</option>
+                            <option value="high">High</option>
+                          </select>
+                          <SelectChevron />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="drawer-grid3 two-up task-detail-grid">
+                      <div className="drawer-field">
+                        <div className="drawer-label">DUE DATE</div>
+                        <input className="field-input" type="date" name="dueDate" defaultValue={inputs.dueDate} />
+                      </div>
+                      <div className="drawer-field">
+                        <div className="drawer-label">DUE TIME</div>
+                        <input className="field-input" type="time" name="dueTime" defaultValue={inputs.dueTime} />
+                      </div>
+                    </div>
                     <div className="drawer-field task-attachment-field">
                       <div className="drawer-label">ATTACHMENTS</div>
                       <div className="attachment-picker">
@@ -691,7 +734,7 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
 
       <div className="scroll">
         <div className="recent-wrap">
-          <div className="recent-title">Recent Task Activity</div>
+          <div className="recent-title">Recently created/edited tasks</div>
           {recentItems.length ? (
             <div className="recent-list">
               {recentItems.map((item) => (
@@ -709,17 +752,20 @@ export function UserTasksBoard({ tasks }: { tasks: TaskItem[] }) {
                   tabIndex={0}
                 >
                   <div className="recent-main">
-                    <span className={`recent-action ${statusClass(item).replace("st-", "")}`}>{statusLabel(item)}</span>
-                    <div className="recent-text">
-                      <span className="recent-task-name">{item.title}</span>
-                      <div className="recent-meta">
-                        <span>Created: {item.createdLabel}</span>
-                        <span>Priority: {item.priority.toUpperCase()}</span>
-                        <span className={`recent-deadline${item.isDelayed ? " delayed" : ""}`}>Deadline: {item.dueLabel}</span>
+                      <span className={`recent-action ${statusClass(item).replace("st-", "")}`}>{statusLabel(item)}</span>
+                      <div className="recent-text">
+                        <span className="recent-task-name">{item.title}</span>
+                        <div className="recent-meta">
+                          <span>Created: {item.createdLabel}</span>
+                          <span>Priority: {item.priority.toUpperCase()}</span>
+                          <span className={`recent-deadline${item.isDelayed ? " delayed" : ""}`}>Deadline: {item.dueLabel}</span>
+                        </div>
                       </div>
-                    </div>
                   </div>
-                  <span className="recent-time">{item.activityLabel}</span>
+                  <div className="recent-side">
+                    <span className="recent-time">Last edited by: {item.lastEditedByLabel} at {item.activityLabel}</span>
+                    <span className="recent-time">Created by: {item.createdByLabel} at {item.createdLabel}</span>
+                  </div>
                 </article>
               ))}
             </div>

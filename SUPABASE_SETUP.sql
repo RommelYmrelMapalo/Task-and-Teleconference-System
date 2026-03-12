@@ -33,10 +33,28 @@ create table public.tasks (
   priority text not null default 'normal'
     check (priority in ('low', 'normal', 'high')),
   deadline timestamptz,
+  created_by uuid not null references public.profiles(id),
   last_edited_by uuid references public.profiles(id),
   last_edited_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
+
+alter table public.tasks
+add column if not exists created_by uuid references public.profiles(id);
+
+update public.tasks
+set created_by = coalesce(
+  created_by,
+  last_edited_by,
+  (
+    select task_assignments.user_id
+    from public.task_assignments
+    where task_assignments.task_id = tasks.id
+    order by task_assignments.user_id
+    limit 1
+  )
+)
+where created_by is null;
 
 create table public.task_assignments (
   task_id bigint not null references public.tasks(id) on delete cascade,

@@ -32,6 +32,8 @@ function isTaskDelayed(deadline: string | null, status: TaskItem["status"]) {
 function normalizeCachedTask(task: TaskItem) {
   return {
     ...task,
+    createdByLabel: task.createdByLabel || "Not tracked",
+    lastEditedByLabel: task.lastEditedByLabel || "Unknown user",
     attachments: Array.isArray(task.attachments) ? task.attachments : [],
   };
 }

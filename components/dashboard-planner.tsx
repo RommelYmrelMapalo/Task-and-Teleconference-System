@@ -361,7 +361,9 @@ export function DashboardPlanner({
                                       aria-label={
                                         task.status === "completed" ? `Restore ${task.title} to previous status` : `Mark ${task.title} complete`
                                       }
-                                    />
+                                    >
+                                      {"\u2713"}
+                                    </button>
                                     <span className={`task-status-pill ${statusClass(task)}`}>{statusLabel(task)}</span>
                                     <span className="pill task">Task</span>
                                   </div>
@@ -391,7 +393,9 @@ export function DashboardPlanner({
 
                                 <div className="gcard-footer">
                                   <div className="gcard-actions">
-                                    <button type="button" className="gcheck is-disabled" disabled />
+                                    <button type="button" className="gcheck is-disabled" disabled>
+                                      {"\u2713"}
+                                    </button>
                                     <span className="gcard-pill">Meeting</span>
                                   </div>
                                 </div>

@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/app/utils/utils/supabase/admin";
 import type { TaskPriority, TaskStatus } from "@/lib/ttcs-data";
-import { isMissingSupabaseTable } from "@/lib/supabase-errors";
+import { isMissingSupabaseColumn, isMissingSupabaseTable } from "@/lib/supabase-errors";
 
 const ATTACHMENTS_BUCKET = "task-attachments";
 const MANILA_OFFSET_HOURS = 8;
@@ -278,7 +278,7 @@ export async function createTaskForUser(userId: string, formData: FormData) {
   const values = parseTaskValues(formData);
   const now = new Date().toISOString();
 
-  const insertResult = await admin
+  let insertResult = await admin
     .from("tasks")
     .insert({
       title: values.title,
@@ -286,11 +286,28 @@ export async function createTaskForUser(userId: string, formData: FormData) {
       status: values.status,
       priority: values.priority,
       deadline: values.deadline,
+      created_by: userId,
       last_edited_by: userId,
       last_edited_at: now,
     })
     .select("id")
     .single();
+
+  if (insertResult.error && isMissingSupabaseColumn(insertResult.error, "created_by")) {
+    insertResult = await admin
+      .from("tasks")
+      .insert({
+        title: values.title,
+        description: values.description || null,
+        status: values.status,
+        priority: values.priority,
+        deadline: values.deadline,
+        last_edited_by: userId,
+        last_edited_at: now,
+      })
+      .select("id")
+      .single();
+  }
 
   if (insertResult.error || !insertResult.data) {
     throw new TaskMutationError(insertResult.error?.message || "Could not create task.", 500);

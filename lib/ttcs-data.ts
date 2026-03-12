@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createAdminClient } from "@/app/utils/utils/supabase/admin";
 import { createClient } from "@/app/utils/utils/supabase/server";
 import { hasSupabaseEnv } from "@/app/utils/utils/supabase/env";
-import { isMissingSupabaseTable } from "@/lib/supabase-errors";
+import { isMissingSupabaseColumn, isMissingSupabaseTable } from "@/lib/supabase-errors";
 
 const MANILA_TZ = "Asia/Manila";
 
@@ -76,6 +76,8 @@ export type TaskItem = {
   dueTimeLabel: string;
   createdLabel: string;
   activityLabel: string;
+  createdByLabel: string;
+  lastEditedByLabel: string;
   isDelayed: boolean;
   assignees: ShellUser[];
   attachments: TaskAttachment[];
@@ -108,6 +110,8 @@ type TaskRow = {
   status: TaskStatus;
   priority: TaskPriority;
   deadline: string | null;
+  created_by: string | null;
+  last_edited_by: string | null;
   created_at: string;
   last_edited_at: string;
 };
@@ -119,6 +123,13 @@ type AttachmentRow = {
   mimetype: string | null;
   storage_path: string;
   created_at: string;
+};
+
+type AttachmentStorageInfo = {
+  size?: number | string | null;
+  metadata?: {
+    size?: number | string | null;
+  } | null;
 };
 
 type NotificationRow = {
@@ -147,27 +158,59 @@ function parseStorageLocation(storagePath: string) {
   };
 }
 
-async function resolveAttachmentUrl(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+function parseAttachmentSize(value: number | string | null | undefined) {
+  const numericValue = typeof value === "string" ? Number(value) : value;
+  return typeof numericValue === "number" && Number.isFinite(numericValue) && numericValue >= 0 ? numericValue : null;
+}
+
+async function resolveStoredAttachment(
   storagePath: string,
 ) {
   if (/^(https?:|data:|blob:)/i.test(storagePath)) {
-    return storagePath;
+    return {
+      downloadUrl: storagePath,
+      size: null,
+    };
   }
 
   const location = parseStorageLocation(storagePath);
   if (!location) {
-    return null;
+    return {
+      downloadUrl: null,
+      size: null,
+    };
   }
 
   const signingClient = createAdminClient();
+  const storageBucket = signingClient.storage.from(location.bucket) as typeof signingClient.storage.from extends (
+    bucket: string,
+  ) => infer T
+    ? T & {
+        info?: (path: string) => Promise<{ data: AttachmentStorageInfo | null; error: { message: string } | null }>;
+      }
+    : never;
   const signedResult = await signingClient.storage.from(location.bucket).createSignedUrl(location.path, 60 * 60);
+  let size: number | null = null;
+
+  if (typeof storageBucket.info === "function") {
+    const infoResult = await storageBucket.info(location.path);
+    if (!infoResult.error) {
+      size = parseAttachmentSize(infoResult.data?.metadata?.size ?? infoResult.data?.size);
+    }
+  }
+
   if (!signedResult.error && signedResult.data?.signedUrl) {
-    return signedResult.data.signedUrl;
+    return {
+      downloadUrl: signedResult.data.signedUrl,
+      size,
+    };
   }
 
   const publicResult = signingClient.storage.from(location.bucket).getPublicUrl(location.path);
-  return publicResult.data.publicUrl || null;
+  return {
+    downloadUrl: publicResult.data.publicUrl || null,
+    size,
+  };
 }
 
 function formatWithTz(value: string | null | undefined, options: Intl.DateTimeFormatOptions) {
@@ -224,12 +267,23 @@ function initialsFromName(fullName: string) {
   return parts.map((part) => part[0]?.toUpperCase() ?? "").join("");
 }
 
+function formatDisplayName(fullName: string) {
+  return fullName
+    .split(/\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
 function buildShellUser(profile: ProfileRecord): ShellUser {
+  const normalizedName = formatDisplayName(profile.full_name || profile.email);
+
   return {
     id: profile.id,
     email: profile.email,
-    fullName: profile.full_name || profile.email,
-    initials: initialsFromName(profile.full_name || profile.email),
+    fullName: normalizedName,
+    initials: initialsFromName(normalizedName),
     isAdmin: profile.is_admin,
     role: profile.role,
     roleLabel: profile.is_admin ? "Admin" : "User",
@@ -357,21 +411,29 @@ function mapNotificationRow(row: NotificationRow): NotificationItem {
   };
 }
 
-function mapAttachmentRow(row: AttachmentRow, downloadUrl: string | null): TaskAttachment {
+function mapAttachmentRow(row: AttachmentRow, downloadUrl: string | null, size: number | null): TaskAttachment {
   return {
     id: String(row.id),
     filename: row.filename,
     mimetype: row.mimetype,
     storagePath: row.storage_path,
     createdAt: row.created_at,
-    size: null,
+    size,
     downloadUrl,
   };
 }
 
-function mapTaskRow(row: TaskRow, assignees: ShellUser[] = [], attachments: TaskAttachment[] = []): TaskItem {
+function mapTaskRow(
+  row: TaskRow,
+  assignees: ShellUser[] = [],
+  attachments: TaskAttachment[] = [],
+  createdBy?: ShellUser | null,
+  lastEditedBy?: ShellUser | null,
+): TaskItem {
   const deadlineDate = row.deadline ? new Date(row.deadline) : null;
   const isDelayed = Boolean(deadlineDate && row.status !== "completed" && deadlineDate.getTime() < Date.now());
+  const lastEditedByLabel = lastEditedBy?.fullName ?? "Unknown user";
+  const createdByLabel = createdBy?.fullName ?? "Unknown user";
 
   return {
     id: row.id,
@@ -411,6 +473,8 @@ function mapTaskRow(row: TaskRow, assignees: ShellUser[] = [], attachments: Task
       hour: "numeric",
       minute: "2-digit",
     }),
+    createdByLabel,
+    lastEditedByLabel,
     isDelayed,
     assignees,
     attachments,
@@ -439,17 +503,17 @@ async function getTaskAttachmentsByTaskId(
   }
 
   const rows = (data as AttachmentRow[] | null) ?? [];
-  const rowsWithUrls = await Promise.all(
+  const rowsWithAttachments = await Promise.all(
     rows.map(async (row) => ({
       row,
-      downloadUrl: await resolveAttachmentUrl(supabase, row.storage_path),
+      ...(await resolveStoredAttachment(row.storage_path)),
     })),
   );
   const attachmentsByTask = new Map<number, TaskAttachment[]>();
 
-  for (const { row, downloadUrl } of rowsWithUrls) {
+  for (const { row, downloadUrl, size } of rowsWithAttachments) {
     const existing = attachmentsByTask.get(row.task_id) ?? [];
-    existing.push(mapAttachmentRow(row, downloadUrl));
+    existing.push(mapAttachmentRow(row, downloadUrl, size));
     attachmentsByTask.set(row.task_id, existing);
   }
 
@@ -551,11 +615,22 @@ export async function getUserTasks(
     return [];
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("tasks")
-    .select("id,title,description,status,priority,deadline,created_at,last_edited_at")
+    .select("id,title,description,status,priority,deadline,created_by,last_edited_by,created_at,last_edited_at")
     .in("id", taskIds)
     .order("created_at", { ascending: false });
+
+  if (error && isMissingSupabaseColumn(error, "created_by")) {
+    const fallbackResult = await supabase
+      .from("tasks")
+      .select("id,title,description,status,priority,deadline,last_edited_by,created_at,last_edited_at")
+      .in("id", taskIds)
+      .order("created_at", { ascending: false });
+
+    data = fallbackResult.data;
+    error = fallbackResult.error;
+  }
 
   if (error) {
     if (isMissingSupabaseTable(error)) {
@@ -566,17 +641,61 @@ export async function getUserTasks(
 
   const taskRows = (data as TaskRow[] | null) ?? [];
   const attachmentsByTask = await getTaskAttachmentsByTaskId(supabase, taskRows.map((task) => task.id));
+  const profileIds = unique(
+    [
+      userId,
+      ...taskRows.map((task) => task.created_by).filter((value): value is string => Boolean(value)),
+      ...taskRows.map((task) => task.last_edited_by).filter((value): value is string => Boolean(value)),
+    ],
+  );
+  const profileMap = new Map<string, ShellUser>();
 
-  return taskRows.map((item) => mapTaskRow(item, [], attachmentsByTask.get(item.id) ?? []));
+  if (profileIds.length) {
+    const { data: profiles, error: profileError } = await supabase
+      .from("profiles")
+      .select("id,email,full_name,is_admin,role,last_login,created_at")
+      .in("id", profileIds);
+
+    if (profileError) {
+      if (isMissingSupabaseTable(profileError)) {
+        return taskRows.map((item) => mapTaskRow(item, [], attachmentsByTask.get(item.id) ?? []));
+      }
+      throw new Error(`Failed to load task profiles: ${profileError.message}`);
+    }
+
+    for (const profile of (profiles as ProfileRecord[] | null) ?? []) {
+      profileMap.set(profile.id, buildShellUser(profile));
+    }
+  }
+
+  return taskRows.map((item) =>
+    mapTaskRow(
+      item,
+      [],
+      attachmentsByTask.get(item.id) ?? [],
+      item.created_by ? profileMap.get(item.created_by) ?? null : null,
+      item.last_edited_by ? profileMap.get(item.last_edited_by) ?? null : null,
+    ),
+  );
 }
 
 export async function getAdminTasks(
   supabase: Awaited<ReturnType<typeof createClient>>,
 ) {
-  const { data: taskRows, error: taskError } = await supabase
+  let { data: taskRows, error: taskError } = await supabase
     .from("tasks")
-    .select("id,title,description,status,priority,deadline,created_at,last_edited_at")
+    .select("id,title,description,status,priority,deadline,created_by,last_edited_by,created_at,last_edited_at")
     .order("created_at", { ascending: false });
+
+  if (taskError && isMissingSupabaseColumn(taskError, "created_by")) {
+    const fallbackResult = await supabase
+      .from("tasks")
+      .select("id,title,description,status,priority,deadline,last_edited_by,created_at,last_edited_at")
+      .order("created_at", { ascending: false });
+
+    taskRows = fallbackResult.data;
+    taskError = fallbackResult.error;
+  }
 
   if (taskError) {
     if (isMissingSupabaseTable(taskError)) {
@@ -606,7 +725,11 @@ export async function getAdminTasks(
     assignmentRows = (data as AssignmentRow[] | null) ?? [];
   }
 
-  const userIds = unique(assignmentRows.map((item) => item.user_id));
+  const userIds = unique([
+    ...assignmentRows.map((item) => item.user_id),
+    ...tasks.map((task) => task.created_by).filter((value): value is string => Boolean(value)),
+    ...tasks.map((task) => task.last_edited_by).filter((value): value is string => Boolean(value)),
+  ]);
   let profiles: ProfileRecord[] = [];
   if (userIds.length) {
     const { data, error } = await supabase
@@ -639,7 +762,13 @@ export async function getAdminTasks(
   }
 
   return tasks.map((task) =>
-    mapTaskRow(task, assignmentsByTask.get(task.id) ?? [], attachmentsByTask.get(task.id) ?? []),
+    mapTaskRow(
+      task,
+      assignmentsByTask.get(task.id) ?? [],
+      attachmentsByTask.get(task.id) ?? [],
+      task.created_by ? profileMap.get(task.created_by) ?? null : null,
+      task.last_edited_by ? profileMap.get(task.last_edited_by) ?? null : null,
+    ),
   );
 }
 

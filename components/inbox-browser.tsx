@@ -54,15 +54,15 @@ export function InboxBrowser({
   return (
     <div className="inbox-shell inbox-page">
       <div className="inbox-toolbar inbox-page-toolbar">
+        <div className="inbox-toolbar-badge">
+          Showing {filteredItems.length} of {notifications.length}
+        </div>
         <input
           className="inbox-search"
           placeholder="Search notifications..."
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
-        <div className="inbox-toolbar-badge">
-          Showing {filteredItems.length} of {notifications.length}
-        </div>
       </div>
 
       <div className="inbox-layout inbox-page-layout">
