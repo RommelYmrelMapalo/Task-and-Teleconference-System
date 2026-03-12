@@ -98,7 +98,7 @@ async function loadWriterContext(userId: string) {
   const admin = createAdminClient();
   const { data: profile, error: profileError } = await admin
     .from("profiles")
-    .select("is_admin")
+    .select("id,is_admin")
     .eq("id", userId)
     .maybeSingle();
 
@@ -110,6 +110,36 @@ async function loadWriterContext(userId: string) {
       };
     }
     throw new TaskMutationError(profileError.message, 500);
+  }
+
+  if (!profile) {
+    const authResult = await admin.auth.admin.getUserById(userId);
+    if (authResult.error || !authResult.data.user) {
+      throw new TaskMutationError(authResult.error?.message || "Could not load auth user.", 500);
+    }
+
+    const authUser = authResult.data.user;
+    const fullName =
+      typeof authUser.user_metadata?.full_name === "string" && authUser.user_metadata.full_name.trim()
+        ? authUser.user_metadata.full_name.trim()
+        : authUser.email || "TTCS User";
+
+    const insertResult = await admin.from("profiles").insert({
+      id: userId,
+      email: authUser.email || `${userId}@local.invalid`,
+      full_name: fullName,
+      is_admin: false,
+      role: "user",
+    });
+
+    if (insertResult.error) {
+      throw new TaskMutationError(insertResult.error.message, 500);
+    }
+
+    return {
+      admin,
+      isAdmin: false,
+    };
   }
 
   return {
