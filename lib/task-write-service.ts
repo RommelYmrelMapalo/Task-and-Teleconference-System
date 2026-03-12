@@ -3,6 +3,8 @@ import type { TaskPriority, TaskStatus } from "@/lib/ttcs-data";
 import { isMissingSupabaseTable } from "@/lib/supabase-errors";
 
 const ATTACHMENTS_BUCKET = "task-attachments";
+const MANILA_OFFSET_HOURS = 8;
+const ATTACHMENT_FILE_LIMIT_BYTES = 50 * 1024 * 1024;
 
 type AttachmentRow = {
   id: number;
@@ -31,7 +33,25 @@ function combineDueDate(date: string, time: string) {
     return null;
   }
 
-  return new Date(`${date}T${time || "09:00"}`).toISOString();
+  const [yearText, monthText, dayText] = date.split("-");
+  const [hourText, minuteText] = (time || "09:00").split(":");
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day) ||
+    !Number.isFinite(hour) ||
+    !Number.isFinite(minute)
+  ) {
+    throw new TaskMutationError("Invalid due date or time.");
+  }
+
+  return new Date(Date.UTC(year, month - 1, day, hour - MANILA_OFFSET_HOURS, minute)).toISOString();
 }
 
 function parseTaskValues(formData: FormData) {
@@ -76,15 +96,24 @@ function sanitizeFileName(filename: string) {
 
 async function ensureAttachmentBucket() {
   const admin = createAdminClient();
-  const { error } = await admin.storage.getBucket(ATTACHMENTS_BUCKET);
+  const bucketResult = await admin.storage.getBucket(ATTACHMENTS_BUCKET);
 
-  if (!error) {
+  if (!bucketResult.error) {
+    const updateResult = await admin.storage.updateBucket(ATTACHMENTS_BUCKET, {
+      public: false,
+      fileSizeLimit: ATTACHMENT_FILE_LIMIT_BYTES,
+    });
+
+    if (updateResult.error) {
+      throw new TaskMutationError(updateResult.error.message, 500);
+    }
+
     return admin;
   }
 
   const createResult = await admin.storage.createBucket(ATTACHMENTS_BUCKET, {
     public: false,
-    fileSizeLimit: 104857600,
+    fileSizeLimit: ATTACHMENT_FILE_LIMIT_BYTES,
   });
 
   if (createResult.error && !/already exists/i.test(createResult.error.message)) {

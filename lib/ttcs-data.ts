@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { createAdminClient } from "@/app/utils/utils/supabase/admin";
 import { createClient } from "@/app/utils/utils/supabase/server";
 import { hasSupabaseEnv } from "@/app/utils/utils/supabase/env";
 import { isMissingSupabaseTable } from "@/lib/supabase-errors";
@@ -159,12 +160,13 @@ async function resolveAttachmentUrl(
     return null;
   }
 
-  const signedResult = await supabase.storage.from(location.bucket).createSignedUrl(location.path, 60 * 60);
+  const signingClient = createAdminClient();
+  const signedResult = await signingClient.storage.from(location.bucket).createSignedUrl(location.path, 60 * 60);
   if (!signedResult.error && signedResult.data?.signedUrl) {
     return signedResult.data.signedUrl;
   }
 
-  const publicResult = supabase.storage.from(location.bucket).getPublicUrl(location.path);
+  const publicResult = signingClient.storage.from(location.bucket).getPublicUrl(location.path);
   return publicResult.data.publicUrl || null;
 }
 

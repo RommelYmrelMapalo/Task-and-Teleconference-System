@@ -11,6 +11,18 @@
   --border-strong: rgba(255, 255, 255, 0.2);
   --text-muted: #a1a1aa;
   --hover-glow: rgba(255, 255, 255, 0.08);
+  --sidebar-link-hover-bg:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.07), transparent 80%),
+    rgba(22, 22, 25, 0.95);
+  --sidebar-link-hover-border: var(--border-strong);
+  --sidebar-link-hover-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 10px 22px rgba(0, 0, 0, 0.28);
+  --sidebar-link-hover-color: #f4f4f5;
+  --sidebar-link-active-bg:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 80%),
+    linear-gradient(180deg, rgba(28, 28, 31, 0.98), rgba(16, 16, 18, 0.98));
+  --sidebar-link-active-border: var(--border-strong);
+  --sidebar-link-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 12px 24px rgba(0, 0, 0, 0.3);
+  --sidebar-link-active-color: #fff;
   --select-arrow-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Cpath d='M3 5.25 7 9l4-3.75' stroke='%23cbd5e1' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   --select-arrow-up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Cpath d='M3 8.75 7 5l4 3.75' stroke='%23cbd5e1' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   --font-geist-sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
@@ -34,6 +46,20 @@ html {
 
 html[data-theme="light"] {
   color-scheme: light;
+  --sidebar-link-hover-bg:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.78), transparent 80%),
+    linear-gradient(180deg, rgba(236, 242, 249, 0.98), rgba(227, 234, 244, 0.98));
+  --sidebar-link-hover-border: rgba(148, 163, 184, 0.18);
+  --sidebar-link-hover-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+  --sidebar-link-hover-color: #0f172a;
+  --sidebar-link-active-bg:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.92), transparent 80%),
+    linear-gradient(180deg, rgba(227, 237, 249, 0.98), rgba(212, 224, 240, 0.98));
+  --sidebar-link-active-border: rgba(148, 163, 184, 0.2);
+  --sidebar-link-active-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 14px 26px rgba(15, 23, 42, 0.1);
+  --sidebar-link-active-color: #0f172a;
 }
 
 body {
@@ -298,20 +324,17 @@ a {
 
 .sidebar-link:hover {
   transform: translateX(2px);
-  background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.07), transparent 80%),
-    rgba(22, 22, 25, 0.95);
-  border-color: var(--border-strong);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 10px 22px rgba(0, 0, 0, 0.28);
+  background: var(--sidebar-link-hover-bg);
+  border-color: var(--sidebar-link-hover-border);
+  box-shadow: var(--sidebar-link-hover-shadow);
+  color: var(--sidebar-link-hover-color);
 }
 
 .sidebar-link.active {
-  background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 80%),
-    linear-gradient(180deg, rgba(28, 28, 31, 0.98), rgba(16, 16, 18, 0.98));
-  border-color: var(--border-strong);
-  color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 12px 24px rgba(0, 0, 0, 0.3);
+  background: var(--sidebar-link-active-bg);
+  border-color: var(--sidebar-link-active-border);
+  color: var(--sidebar-link-active-color);
+  box-shadow: var(--sidebar-link-active-shadow);
 }
 
 .sidebar-icon {
@@ -407,17 +430,31 @@ a {
 }
 
 .user-action-link {
+  display: block;
+  width: 100%;
   padding: 10px 12px;
+  border: 1px solid transparent;
   border-radius: 10px;
+  background: transparent;
   color: #f3f6fb;
   text-decoration: none;
+  text-align: center;
   font-weight: 700;
-  transition: background 180ms ease, color 180ms ease;
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
 }
 
 .user-action-link:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
+  transform: translateX(2px);
+  background: var(--sidebar-link-hover-bg);
+  border-color: var(--sidebar-link-hover-border);
+  box-shadow: var(--sidebar-link-hover-shadow);
+  color: var(--sidebar-link-hover-color);
 }
 
 .user-trigger {
@@ -1860,13 +1897,6 @@ html[data-theme="light"] .user-action-link {
   color: #334155;
 }
 
-html[data-theme="light"] .user-action-link:hover {
-  background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.88), transparent 80%),
-    linear-gradient(180deg, rgba(245, 249, 255, 0.98), rgba(229, 237, 247, 0.98));
-  color: #0f172a;
-}
-
 html[data-theme="light"] .sidebar-brand,
 html[data-theme="light"] .sidebar-brand-copy,
 html[data-theme="light"] .sidebar-link,
@@ -1918,22 +1948,6 @@ html[data-theme="light"] .day-title.today-title {
 
 html[data-theme="light"] .day-sub {
   color: #64748b;
-}
-
-html[data-theme="light"] .sidebar-link:hover,
-html[data-theme="light"] .sidebar-link.active {
-  background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.92), transparent 80%),
-    linear-gradient(180deg, rgba(227, 237, 249, 0.98), rgba(212, 224, 240, 0.98));
-  border-color: rgba(148, 163, 184, 0.2);
-  color: #0f172a;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.09);
-}
-
-html[data-theme="light"] .sidebar-link.active {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.85),
-    0 14px 26px rgba(15, 23, 42, 0.1);
 }
 
 html[data-theme="light"] .user-box,
