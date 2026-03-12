@@ -116,6 +116,8 @@ type TaskRow = {
   last_edited_at: string;
 };
 
+type LegacyTaskRow = Omit<TaskRow, "created_by">;
+
 type AttachmentRow = {
   id: number;
   task_id: number;
@@ -142,6 +144,17 @@ type NotificationRow = {
 
 function unique<T>(values: T[]) {
   return Array.from(new Set(values));
+}
+
+function hasCreatedBy(row: TaskRow | LegacyTaskRow): row is TaskRow {
+  return "created_by" in row && (typeof row.created_by === "string" || row.created_by === null);
+}
+
+function normalizeTaskRows(rows: TaskRow[] | LegacyTaskRow[] | null | undefined): TaskRow[] {
+  return (rows ?? []).map((row) => ({
+    ...row,
+    created_by: hasCreatedBy(row) ? row.created_by : null,
+  }));
 }
 
 function parseStorageLocation(storagePath: string) {
@@ -628,7 +641,7 @@ export async function getUserTasks(
       .in("id", taskIds)
       .order("created_at", { ascending: false });
 
-    data = fallbackResult.data;
+    data = normalizeTaskRows(fallbackResult.data as LegacyTaskRow[] | null);
     error = fallbackResult.error;
   }
 
@@ -639,7 +652,7 @@ export async function getUserTasks(
     throw new Error(`Failed to load tasks: ${error.message}`);
   }
 
-  const taskRows = (data as TaskRow[] | null) ?? [];
+  const taskRows = normalizeTaskRows(data as TaskRow[] | LegacyTaskRow[] | null);
   const attachmentsByTask = await getTaskAttachmentsByTaskId(supabase, taskRows.map((task) => task.id));
   const profileIds = unique(
     [
@@ -693,7 +706,7 @@ export async function getAdminTasks(
       .select("id,title,description,status,priority,deadline,last_edited_by,created_at,last_edited_at")
       .order("created_at", { ascending: false });
 
-    taskRows = fallbackResult.data;
+    taskRows = normalizeTaskRows(fallbackResult.data as LegacyTaskRow[] | null);
     taskError = fallbackResult.error;
   }
 
@@ -704,7 +717,7 @@ export async function getAdminTasks(
     throw new Error(`Failed to load admin tasks: ${taskError.message}`);
   }
 
-  const tasks = (taskRows as TaskRow[] | null) ?? [];
+  const tasks = normalizeTaskRows(taskRows as TaskRow[] | LegacyTaskRow[] | null);
   const taskIds = tasks.map((task) => task.id);
   const attachmentsByTask = await getTaskAttachmentsByTaskId(supabase, taskIds);
 
