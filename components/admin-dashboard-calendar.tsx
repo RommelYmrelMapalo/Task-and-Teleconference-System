@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { MeetingItem, TaskItem } from "@/lib/ttcs-data";
 
@@ -83,6 +84,7 @@ export function AdminDashboardCalendar({
   tasks: TaskItem[];
   meetings: MeetingItem[];
 }) {
+  const router = useRouter();
   const overviewScrollStyle = {
     width: "100%",
     maxWidth: "100%",
@@ -158,9 +160,11 @@ export function AdminDashboardCalendar({
     Array<{
       id: string;
       tone: "meeting" | "pending" | "delayed" | "completed";
+      kind: "meeting" | "task";
       timeLabel: string;
       title: string;
       sortValue: number;
+      taskId?: number;
     }>
   >();
 
@@ -170,6 +174,7 @@ export function AdminDashboardCalendar({
     existing.push({
       id: `meeting-${meeting.id}`,
       tone: "meeting",
+      kind: "meeting",
       timeLabel: getChipTime(meeting.dateTime),
       title: meeting.title,
       sortValue: new Date(meeting.dateTime).getTime(),
@@ -187,9 +192,11 @@ export function AdminDashboardCalendar({
     existing.push({
       id: `task-${task.id}`,
       tone: task.status === "completed" ? "completed" : task.isDelayed ? "delayed" : "pending",
+      kind: "task",
       timeLabel: getChipTime(task.deadline),
       title: task.title,
       sortValue: new Date(task.deadline).getTime(),
+      taskId: task.id,
     });
     eventMap.set(key, existing);
   }
@@ -239,7 +246,22 @@ export function AdminDashboardCalendar({
     });
   };
 
-  const renderTaskCard = (title: string, tone: "delays" | "pending" | "completed", items: TaskItem[], emptyText: string) => {
+  const openTaskDashboard = (taskId: number, shouldOpen = false) => {
+    const params = new URLSearchParams({ task: String(taskId) });
+    if (shouldOpen) {
+      params.set("open", "1");
+    }
+
+    router.push(`/admin/tasks?${params.toString()}`);
+  };
+
+  const renderTaskCard = (
+    title: string,
+    tone: "delays" | "pending" | "completed",
+    items: TaskItem[],
+    emptyText: string,
+    totalCount = items.length,
+  ) => {
     const labelStyles: Record<typeof tone, React.CSSProperties> = {
       delays: {
         color: "#991b1b",
@@ -274,8 +296,17 @@ export function AdminDashboardCalendar({
           <div className="admin-status-list" style={{ display: "grid", gap: 0, marginTop: "14px" }}>
             {items.map((task) => (
               <article
-                className="admin-status-item"
+                className="admin-status-item is-clickable"
                 key={task.id}
+                onClick={() => openTaskDashboard(task.id, true)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    openTaskDashboard(task.id, true);
+                  }
+                }}
+                role="link"
+                tabIndex={0}
                 style={{ display: "grid", gap: "4px", padding: "12px 0", borderBottom: "1px solid rgba(148, 163, 184, 0.16)" }}
               >
                 <strong style={{ color: "#0f172a", fontSize: "1rem", fontWeight: 800 }}>{task.title}</strong>
@@ -291,7 +322,7 @@ export function AdminDashboardCalendar({
           </div>
         )}
 
-        {tone === "completed" ? (
+        {tone === "completed" && totalCount > 3 ? (
           <Link
             className="admin-view-link"
             href="/admin/tasks"
@@ -373,34 +404,49 @@ export function AdminDashboardCalendar({
                   </div>
                   <div className="admin-calendar-events" style={{ display: "grid", gap: "6px" }}>
                     {cell.items.slice(0, 2).map((item) => (
-                      <span
+                      <button
+                        type="button"
                         className={`admin-calendar-chip admin-calendar-chip-${item.tone}`}
                         key={item.id}
                         title={item.title}
+                        onClick={() => {
+                          if (item.kind === "task" && typeof item.taskId === "number") {
+                            openTaskDashboard(item.taskId, true);
+                          }
+                        }}
+                        disabled={item.kind !== "task"}
                         style={{
-                          display: "inline-flex",
+                          display: "grid",
                           width: "100%",
                           padding: "4px 8px",
                           borderRadius: "8px",
                           fontSize: "0.72rem",
                           fontWeight: 800,
                           lineHeight: 1.2,
+                          textAlign: "left",
+                          border: "0",
+                          cursor: item.kind === "task" ? "pointer" : "default",
                           color:
-                            item.tone === "delayed"
+                            item.tone === "meeting"
+                              ? "#7c2d12"
+                              : item.tone === "delayed"
                               ? "#b91c1c"
                               : item.tone === "completed"
-                                ? "#1d4ed8"
-                                : "#166534",
+                                ? "#166534"
+                                : "#92400e",
                           background:
-                            item.tone === "delayed"
+                            item.tone === "meeting"
+                              ? "rgba(254, 215, 170, 0.96)"
+                              : item.tone === "delayed"
                               ? "rgba(254, 202, 202, 0.95)"
                               : item.tone === "completed"
-                                ? "rgba(191, 219, 254, 0.95)"
-                                : "rgba(187, 247, 208, 0.95)",
+                                ? "rgba(187, 247, 208, 0.95)"
+                                : "rgba(254, 240, 138, 0.95)",
                         }}
                       >
-                        {item.timeLabel} ...
-                      </span>
+                        <span className="admin-calendar-chip-time">{item.timeLabel}</span>
+                        <span className="admin-calendar-chip-title">{item.title}</span>
+                      </button>
                     ))}
                     {cell.items.length > 2 ? (
                       <span className="admin-calendar-more" style={{ color: "#64748b", fontSize: "0.76rem", fontWeight: 700 }}>
@@ -426,11 +472,9 @@ export function AdminDashboardCalendar({
         </section>
 
         <div className="admin-side-stack" style={sideStackStyle}>
-          {renderTaskCard("Delays", "delays", delayedTasks, "No delayed tasks right now.")}
-          {renderTaskCard("Pending Tasks", "pending", pendingTasks, "No pending tasks right now.")}
-          <div style={{ marginTop: "auto" }}>
-            {renderTaskCard("Completed", "completed", completedTasks, "No completed tasks yet.")}
-          </div>
+          {renderTaskCard("Delays", "delays", delayedTasks, "No delayed tasks right now.", delayedTasks.length)}
+          {renderTaskCard("Pending Tasks", "pending", pendingTasks, "No pending tasks right now.", pendingTasks.length)}
+          {renderTaskCard("Completed", "completed", completedTasks, "No completed tasks yet.", tasks.filter((task) => task.status === "completed").length)}
         </div>
       </div>
     </div>

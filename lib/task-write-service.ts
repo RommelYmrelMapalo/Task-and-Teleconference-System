@@ -111,6 +111,18 @@ function parseTaskValues(formData: FormData) {
   return { title, description, status, priority, deadline };
 }
 
+function parseAssigneeIds(formData: FormData) {
+  return Array.from(
+    new Set(
+      formData
+        .getAll("assigneeIds")
+        .filter((value): value is string => typeof value === "string")
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ),
+  );
+}
+
 function parseStorageLocation(storagePath: string) {
   const normalized = storagePath.replace(/^\/+/, "");
   const slashIndex = normalized.indexOf("/");
@@ -162,7 +174,7 @@ async function loadWriterContext(userId: string) {
   const admin = createAdminClient();
   const { data: profile, error: profileError } = await admin
     .from("profiles")
-    .select("id,is_admin")
+    .select("id,full_name,email,is_admin")
     .eq("id", userId)
     .maybeSingle();
 
@@ -170,6 +182,7 @@ async function loadWriterContext(userId: string) {
     if (isMissingSupabaseTable(profileError)) {
       return {
         admin,
+        actorName: "TTCS User",
         isAdmin: false,
       };
     }
@@ -199,14 +212,45 @@ async function loadWriterContext(userId: string) {
 
     return {
       admin,
+      actorName: fullName,
       isAdmin: false,
     };
   }
 
   return {
     admin,
+    actorName: resolveProfileName(profile?.full_name, profile?.email),
     isAdmin: Boolean(profile?.is_admin),
   };
+}
+
+async function createAssignmentNotifications(
+  admin: ReturnType<typeof createAdminClient>,
+  {
+    actorName,
+    taskTitle,
+    assigneeIds,
+  }: {
+    actorName: string;
+    taskTitle: string;
+    assigneeIds: string[];
+  },
+) {
+  if (!assigneeIds.length) {
+    return;
+  }
+
+  const notificationResult = await admin.from("notifications").insert(
+    assigneeIds.map((assigneeId) => ({
+      user_id: assigneeId,
+      title: "Task Assigned",
+      message: `${actorName} assigned you a task: ${taskTitle}`,
+    })),
+  );
+
+  if (notificationResult.error && !isMissingSupabaseTable(notificationResult.error)) {
+    throw new TaskMutationError(notificationResult.error.message, 500);
+  }
 }
 
 async function getTaskAccessContext(userId: string, taskId: number) {
@@ -350,8 +394,9 @@ async function deleteAttachmentRows(admin: ReturnType<typeof createAdminClient>,
 }
 
 export async function createTaskForUser(userId: string, formData: FormData) {
-  const { admin } = await loadWriterContext(userId);
+  const { admin, actorName, isAdmin } = await loadWriterContext(userId);
   const values = parseTaskValues(formData);
+  const requestedAssigneeIds = parseAssigneeIds(formData).filter((assigneeId) => assigneeId !== userId);
   const now = new Date().toISOString();
 
   let insertResult = await admin
@@ -390,14 +435,44 @@ export async function createTaskForUser(userId: string, formData: FormData) {
   }
 
   const taskId = insertResult.data.id;
-  const assignmentResult = await admin.from("task_assignments").insert({
-    task_id: taskId,
-    user_id: userId,
-  });
+  let assigneeIds = isAdmin ? [] : [userId];
 
-  if (assignmentResult.error) {
-    throw new TaskMutationError(assignmentResult.error.message, 500);
+  if (isAdmin && requestedAssigneeIds.length) {
+    const { data: profiles, error: profileError } = await admin
+      .from("profiles")
+      .select("id")
+      .in("id", requestedAssigneeIds);
+
+    if (profileError) {
+      throw new TaskMutationError(profileError.message, 500);
+    }
+
+    const validAssigneeIds = ((profiles as Array<{ id: string }> | null) ?? []).map((profile) => profile.id);
+    if (validAssigneeIds.length !== requestedAssigneeIds.length) {
+      throw new TaskMutationError("One or more selected assignees are no longer available.", 400);
+    }
+
+    assigneeIds = validAssigneeIds;
   }
+
+  if (assigneeIds.length) {
+    const assignmentResult = await admin.from("task_assignments").insert(
+      assigneeIds.map((assigneeId) => ({
+        task_id: taskId,
+        user_id: assigneeId,
+      })),
+    );
+
+    if (assignmentResult.error) {
+      throw new TaskMutationError(assignmentResult.error.message, 500);
+    }
+  }
+
+  await createAssignmentNotifications(admin, {
+    actorName,
+    taskTitle: values.title,
+    assigneeIds: assigneeIds.filter((assigneeId) => assigneeId !== userId),
+  });
 
   await uploadAttachmentFiles(taskId, getFiles(formData));
 

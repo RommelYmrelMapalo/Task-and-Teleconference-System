@@ -200,10 +200,19 @@ export function UserTasksBoard({
   tasks,
   viewerId,
   viewerCanManageAll = false,
+  variant = "user",
+  assignableUsers = [],
 }: {
   tasks: TaskItem[];
   viewerId: string;
   viewerCanManageAll?: boolean;
+  variant?: "user" | "admin";
+  assignableUsers?: Array<{
+    id: string;
+    fullName: string;
+    email: string;
+    roleLabel: string;
+  }>;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -233,6 +242,10 @@ export function UserTasksBoard({
   const handledTaskTargetRef = useRef<string | null>(null);
   const createAttachmentInputRef = useRef<HTMLInputElement | null>(null);
   const editAttachmentInputRef = useRef<HTMLInputElement | null>(null);
+  const isAdminVariant = variant === "admin";
+  const visibleAssignableUsers = isAdminVariant
+    ? assignableUsers.filter((user) => user.id !== viewerId)
+    : assignableUsers;
 
   useEffect(() => {
     setTaskList(tasks);
@@ -391,6 +404,16 @@ export function UserTasksBoard({
       payload.append("keepAttachmentIds", attachment.id);
     }
 
+    if (isAdminVariant) {
+      const assigneeIds = source
+        .getAll("assigneeIds")
+        .filter((value): value is string => typeof value === "string" && value.trim().length > 0);
+
+      for (const assigneeId of assigneeIds) {
+        payload.append("assigneeIds", assigneeId);
+      }
+    }
+
     return payload;
   };
 
@@ -533,7 +556,7 @@ export function UserTasksBoard({
   };
 
   return (
-    <div className="taskdash-wrap">
+    <div className={`taskdash-wrap${isAdminVariant ? " admin-taskdash-wrap" : ""}`}>
       {taskModalOpen ? (
         <div className="modal-overlay show autoModal">
           <div className="modal-popup success modern-popup" role="status" aria-live="polite">
@@ -605,7 +628,7 @@ export function UserTasksBoard({
             </div>
             <div className="modal-text">This task is not assigned to you. Continue?</div>
             <div className="modal-subtext">
-              If you continue, you can edit the task and the change will be logged in the admin reports page.
+              If you continue, you can edit the task and the change will be logged in the admin monitoring panel.
             </div>
             <div className="modal-actions">
               <button type="button" className="btn-mini" onClick={() => setPendingEditWarningTask(null)}>
@@ -642,8 +665,8 @@ export function UserTasksBoard({
             </div>
             <div className="modal-subtext">
               {pendingToggleWarningTask.status === "completed"
-                ? "If you continue, the task will be restored and the override will be logged in the admin reports page."
-                : "If you continue, the task will be marked complete and the override will be logged in the admin reports page."}
+                ? "If you continue, the task will be restored and the override will be logged in the admin monitoring panel."
+                : "If you continue, the task will be marked complete and the override will be logged in the admin monitoring panel."}
             </div>
             <div className="modal-actions">
               <button type="button" className="btn-mini" onClick={() => setPendingToggleWarningTask(null)}>
@@ -971,11 +994,13 @@ export function UserTasksBoard({
       <div className={`drawer-backdrop${drawerOpen ? " open" : ""}`} onClick={() => setDrawerOpen(false)} />
 
       <aside className={`task-drawer${drawerOpen ? " open" : ""}`} aria-hidden={!drawerOpen}>
-        <div className="drawer-head">
-          <div>
-            <div className="drawer-title">New Task</div>
-            <div className="drawer-sub">Create a task card from the dashboard</div>
-          </div>
+          <div className="drawer-head">
+            <div>
+            <div className="drawer-title">{isAdminVariant ? "Admin Task Control" : "New Task"}</div>
+            <div className="drawer-sub">
+              {isAdminVariant ? "Create and manage tasks across the whole system" : "Create a task card from the dashboard"}
+            </div>
+            </div>
           <button type="button" className="drawer-x drawer-x-danger" onClick={() => setDrawerOpen(false)}>
             {"\u00D7"}
           </button>
@@ -983,7 +1008,9 @@ export function UserTasksBoard({
 
         <form className="drawer-body" onSubmit={createTask}>
           <div className="drawer-banner">
-            When creating a task it will be automatically assigned to you only, but others can still edit it.
+            {isAdminVariant
+              ? "Admins can access every task by default. Assign this task only to the users who should work on it."
+              : "When creating a task it will be automatically assigned to you only, but others can still edit it."}
           </div>
           <div className="drawer-field">
             <div className="drawer-label">TITLE</div>
@@ -1050,6 +1077,38 @@ export function UserTasksBoard({
             <div className="drawer-label">DESCRIPTION</div>
             <textarea className="drawer-textarea" name="description" rows={5} placeholder="Write details..." />
           </div>
+
+          {isAdminVariant ? (
+            <div className="drawer-field">
+              <div className="drawer-label">ASSIGNEES</div>
+              <div className="assignee-picker" role="group" aria-label="Assign users to this task">
+                <div className="assignee-picker-copy">
+                  <span className="assignee-picker-title">Assign users now</span>
+                  <span className="assignee-picker-subtitle">Select one or more users who should receive this task. Leave empty to keep it unassigned.</span>
+                </div>
+
+                <div className="assignee-list">
+                  {visibleAssignableUsers.map((user) => (
+                    <label className="assignee-option" key={user.id}>
+                      <input
+                        className="assignee-checkbox"
+                        name="assigneeIds"
+                        type="checkbox"
+                        value={user.id}
+                      />
+                      <span className="assignee-option-body">
+                        <span className="assignee-option-name">{user.fullName}</span>
+                        <span className="assignee-option-meta">{user.roleLabel}</span>
+                      </span>
+                    </label>
+                  ))}
+                  {!visibleAssignableUsers.length ? (
+                    <div className="assignee-empty">No assignable users available.</div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <div className="drawer-field task-attachment-field">
             <div className="drawer-label">ATTACHMENTS</div>

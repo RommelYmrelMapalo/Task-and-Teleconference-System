@@ -20,7 +20,6 @@ const navGroups = [
       { href: "/admin/meetings", label: "Manage Meetings", icon: "meetings" as const },
       { href: "/admin/monitoring", label: "Monitoring Panel", icon: "monitoring" as const },
       { href: "/admin/users", label: "Manage Users", icon: "users" as const },
-      { href: "/admin/reports", label: "Reports", icon: "reports" as const },
       { href: "/admin/inbox", label: "Inbox", icon: "inbox" as const, badge: "6" },
     ],
   },

@@ -1649,6 +1649,43 @@ select.drawer-input::-ms-expand {
   border-bottom: 0;
 }
 
+.users-table-shell {
+  overflow-x: auto;
+}
+
+.table-row.users-table-row {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1.3fr)
+    minmax(220px, 1.6fr)
+    minmax(140px, 1fr)
+    minmax(120px, 0.8fr)
+    minmax(160px, 1.1fr);
+  align-items: center;
+}
+
+.table-row.users-table-head {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.users-table-cell {
+  min-width: 0;
+}
+
+.users-table-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #f8fafc;
+  font-weight: 700;
+}
+
 .row-end {
   display: flex;
   gap: 8px;
@@ -1884,12 +1921,45 @@ select.drawer-input::-ms-expand {
   font-size: 0.72rem;
   font-weight: 800;
   line-height: 1.2;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    filter 160ms ease;
+}
+
+.admin-calendar-chip:disabled {
+  opacity: 1;
+}
+
+.admin-calendar-chip:not(:disabled):hover,
+.admin-calendar-chip:not(:disabled):focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.14);
+  filter: saturate(1.08) brightness(0.97);
+  outline: none;
+}
+
+.admin-calendar-chip-time,
+.admin-calendar-chip-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-calendar-chip-time {
+  font-size: 0.68rem;
+  opacity: 0.78;
+}
+
+.admin-calendar-chip-title {
+  max-width: 100%;
 }
 
 .admin-calendar-chip-meeting,
 .admin-calendar-chip-pending {
-  color: #166534;
-  background: rgba(187, 247, 208, 0.95);
+  color: #92400e;
+  background: rgba(254, 240, 138, 0.95);
 }
 
 .admin-calendar-chip-delayed {
@@ -1898,8 +1968,8 @@ select.drawer-input::-ms-expand {
 }
 
 .admin-calendar-chip-completed {
-  color: #1d4ed8;
-  background: rgba(191, 219, 254, 0.95);
+  color: #166534;
+  background: rgba(187, 247, 208, 0.95);
 }
 
 .admin-calendar-more {
@@ -1911,6 +1981,28 @@ select.drawer-input::-ms-expand {
 .admin-side-stack {
   display: grid;
   gap: 16px;
+}
+
+.admin-status-item.is-clickable,
+.admin-task-row.is-clickable {
+  cursor: pointer;
+}
+
+.admin-status-item.is-clickable {
+  border-radius: 12px;
+  padding-inline: 6px;
+  margin-inline: -6px;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.admin-status-item.is-clickable:hover,
+.admin-status-item.is-clickable:focus-visible {
+  background: rgba(59, 130, 246, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.16);
+  outline: none;
 }
 
 .admin-status-card {
@@ -1988,6 +2080,64 @@ select.drawer-input::-ms-expand {
   color: #60a5fa;
   font-weight: 800;
   text-decoration: none;
+}
+
+.admin-task-row {
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.admin-task-row:hover,
+.admin-task-row:focus-visible {
+  background: rgba(59, 130, 246, 0.08);
+  box-shadow: 0 14px 26px rgba(37, 99, 235, 0.12);
+  outline: none;
+}
+
+.admin-task-row.is-highlighted {
+  border-color: rgba(59, 130, 246, 0.3);
+  background:
+    radial-gradient(circle at left, rgba(96, 165, 250, 0.18), transparent 22%),
+    rgba(59, 130, 246, 0.08);
+  box-shadow:
+    inset 0 0 0 1px rgba(96, 165, 250, 0.18),
+    0 14px 26px rgba(37, 99, 235, 0.14);
+}
+
+.admin-task-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-task-tags {
+  align-items: flex-start;
+}
+
+.admin-task-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-task-assignees,
+.admin-task-attachments {
+  align-items: flex-start;
+}
+
+.admin-task-attachment-list {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-task-attachment-link {
+  color: #93c5fd;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-task-attachment-link:hover {
+  text-decoration: underline;
 }
 
 .inbox-shell {
@@ -2505,6 +2655,32 @@ html[data-theme="light"] .admin-calendar-cell {
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.07);
 }
 
+html[data-theme="light"] .admin-status-item.is-clickable:hover,
+html[data-theme="light"] .admin-status-item.is-clickable:focus-visible {
+  background: rgba(59, 130, 246, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.12);
+}
+
+html[data-theme="light"] .admin-task-row:hover,
+html[data-theme="light"] .admin-task-row:focus-visible {
+  background: rgba(241, 245, 249, 0.82);
+  box-shadow: 0 14px 26px rgba(37, 99, 235, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+html[data-theme="light"] .admin-task-row.is-highlighted {
+  border-color: rgba(59, 130, 246, 0.3);
+  background:
+    radial-gradient(circle at left, rgba(96, 165, 250, 0.18), transparent 22%),
+    rgba(255, 255, 255, 0.88);
+  box-shadow:
+    inset 0 0 0 1px rgba(96, 165, 250, 0.18),
+    0 14px 26px rgba(37, 99, 235, 0.14);
+}
+
+html[data-theme="light"] .admin-task-attachment-link {
+  color: #2563eb;
+}
+
 html[data-theme="light"] .view-menu {
   border-color: rgba(148, 163, 184, 0.22);
   background:
@@ -2560,6 +2736,10 @@ html[data-theme="light"] .task-row.is-clickable:hover {
   background: rgba(241, 245, 249, 0.82);
 }
 
+html[data-theme="light"] .admin-taskdash-wrap .task-row.is-clickable:hover {
+  background: rgba(239, 246, 255, 0.88);
+}
+
 html[data-theme="light"] .task-row.is-highlighted {
   border-color: rgba(59, 130, 246, 0.3);
   background:
@@ -2568,6 +2748,12 @@ html[data-theme="light"] .task-row.is-highlighted {
   box-shadow:
     inset 0 0 0 1px rgba(96, 165, 250, 0.18),
     0 14px 26px rgba(37, 99, 235, 0.14);
+}
+
+html[data-theme="light"] .admin-taskdash-wrap .task-row.is-highlighted {
+  background:
+    radial-gradient(circle at left, rgba(96, 165, 250, 0.22), transparent 22%),
+    rgba(255, 255, 255, 0.92);
 }
 
 html[data-theme="light"] .plan-check.is-disabled,
@@ -2640,12 +2826,65 @@ html[data-theme="light"] .pill-tab.active .pill-count {
   color: #ffffff;
 }
 
+html[data-theme="light"] .admin-taskdash-wrap .pill-tab {
+  border-color: rgba(96, 165, 250, 0.2);
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.96), transparent 80%),
+    linear-gradient(180deg, rgba(239, 246, 255, 0.99), rgba(221, 234, 248, 0.99));
+  color: #0f172a;
+}
+
+html[data-theme="light"] .admin-taskdash-wrap .pill-tab:hover {
+  border-color: rgba(59, 130, 246, 0.26);
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 1), transparent 80%),
+    linear-gradient(180deg, rgba(232, 244, 255, 0.99), rgba(214, 230, 247, 0.99));
+}
+
+html[data-theme="light"] .admin-taskdash-wrap .pill-tab.active {
+  color: #ffffff;
+}
+
 html[data-theme="light"] .recent-wrap {
   border-color: rgba(148, 163, 184, 0.2);
   background:
     radial-gradient(circle at top, rgba(255, 255, 255, 0.96), transparent 78%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(239, 244, 250, 0.99));
   box-shadow: 0 14px 26px rgba(15, 23, 42, 0.08);
+}
+
+html[data-theme="light"] .admin-taskdash-wrap .scroll {
+  border-color: rgba(148, 163, 184, 0.18);
+  background:
+    radial-gradient(960px 420px at 50% -120px, rgba(96, 165, 250, 0.12), transparent 58%),
+    linear-gradient(180deg, rgba(248, 251, 255, 0.99), rgba(236, 243, 251, 0.99));
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.08);
+}
+
+html[data-theme="light"] .admin-taskdash-wrap .recent-wrap {
+  border-color: rgba(148, 163, 184, 0.2);
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.98), transparent 78%),
+    linear-gradient(180deg, rgba(241, 247, 255, 0.99), rgba(229, 238, 249, 0.99));
+}
+
+html[data-theme="light"] .admin-taskdash-wrap .recent-title,
+html[data-theme="light"] .admin-taskdash-wrap .recent-task-name {
+  color: #0f172a;
+}
+
+html[data-theme="light"] .admin-taskdash-wrap .recent-item {
+  border-color: rgba(148, 163, 184, 0.18);
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.92), transparent 82%),
+    linear-gradient(180deg, rgba(252, 253, 255, 0.98), rgba(237, 243, 249, 0.98));
+}
+
+html[data-theme="light"] .admin-taskdash-wrap .recent-item:hover {
+  border-color: rgba(96, 165, 250, 0.24);
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.98), transparent 82%),
+    linear-gradient(180deg, rgba(245, 249, 255, 0.99), rgba(232, 240, 249, 0.99));
 }
 
 html[data-theme="light"] .recent-item {
@@ -2916,6 +3155,14 @@ html[data-theme="light"] .fab-task {
     0 18px 30px rgba(37, 99, 235, 0.22);
 }
 
+html[data-theme="light"] .admin-taskdash-wrap .fab-task {
+  border-color: rgba(59, 130, 246, 0.26);
+  background:
+    radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.32), transparent 30%),
+    radial-gradient(circle at 50% 0%, rgba(125, 211, 252, 0.28), transparent 56%),
+    linear-gradient(180deg, rgba(37, 99, 235, 0.98), rgba(30, 64, 175, 0.96));
+}
+
 html[data-theme="light"] .fab-task:hover {
   border-color: rgba(37, 99, 235, 0.32);
   background:
@@ -2925,6 +3172,10 @@ html[data-theme="light"] .fab-task:hover {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.2),
     0 22px 36px rgba(37, 99, 235, 0.24);
+}
+
+html[data-theme="light"] .admin-taskdash-wrap .fab-task:hover {
+  border-color: rgba(37, 99, 235, 0.34);
 }
 
 html[data-theme="light"] .task-drawer,
@@ -3029,6 +3280,13 @@ html[data-theme="light"] .task-drawer {
     linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(238, 243, 249, 0.99));
   border-left-color: rgba(148, 163, 184, 0.18);
   box-shadow: -18px 0 40px rgba(15, 23, 42, 0.12);
+}
+
+html[data-theme="light"] .admin-taskdash-wrap .task-drawer {
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.96), transparent 80%),
+    linear-gradient(180deg, rgba(243, 248, 255, 0.99), rgba(229, 238, 248, 0.99));
+  border-left-color: rgba(148, 163, 184, 0.18);
 }
 
 html[data-theme="light"] .auth-container {
@@ -3158,6 +3416,10 @@ html[data-theme="light"] .auth-box .primary-btn:hover {
   min-height: 0;
 }
 
+.admin-taskdash-wrap {
+  gap: 16px;
+}
+
 .td-pills {
   display: flex;
   flex-wrap: wrap;
@@ -3221,6 +3483,32 @@ html[data-theme="light"] .auth-box .primary-btn:hover {
     radial-gradient(circle at top, rgba(255, 255, 255, 0.18), transparent 80%),
     rgba(255, 255, 255, 0.16);
   color: #eff6ff;
+}
+
+.admin-taskdash-wrap .pill-tab {
+  border-color: rgba(96, 165, 250, 0.18);
+  background:
+    radial-gradient(circle at top, rgba(191, 219, 254, 0.12), transparent 72%),
+    linear-gradient(180deg, rgba(20, 31, 55, 0.98), rgba(9, 17, 34, 0.98));
+  color: #dbeafe;
+  box-shadow: 0 14px 26px rgba(2, 6, 23, 0.24);
+}
+
+.admin-taskdash-wrap .pill-tab:hover {
+  border-color: rgba(96, 165, 250, 0.28);
+  background:
+    radial-gradient(circle at top, rgba(191, 219, 254, 0.18), transparent 74%),
+    linear-gradient(180deg, rgba(28, 43, 77, 0.99), rgba(12, 21, 41, 0.99));
+}
+
+.admin-taskdash-wrap .pill-tab.active {
+  border-color: rgba(147, 197, 253, 0.4);
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.22), transparent 74%),
+    linear-gradient(180deg, rgba(37, 99, 235, 0.96), rgba(30, 64, 175, 0.94));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 14px 24px rgba(30, 64, 175, 0.3);
 }
 
 .taskdash-toolbar {
@@ -3301,6 +3589,14 @@ html[data-theme="light"] .pill-tab.active .pill-count {
     linear-gradient(180deg, rgba(6, 6, 7, 0.98) 0%, rgba(10, 10, 12, 0.98) 100%);
 }
 
+.admin-taskdash-wrap .scroll {
+  border-color: rgba(96, 165, 250, 0.14);
+  background:
+    radial-gradient(960px 420px at 50% -120px, rgba(96, 165, 250, 0.12), transparent 58%),
+    linear-gradient(180deg, rgba(5, 11, 24, 0.98) 0%, rgba(8, 16, 32, 0.98) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 20px 36px rgba(2, 6, 23, 0.26);
+}
+
 .recent-wrap {
   margin: 2px 0 16px;
   padding: 12px;
@@ -3310,6 +3606,13 @@ html[data-theme="light"] .pill-tab.active .pill-count {
     radial-gradient(circle at top, rgba(255, 255, 255, 0.04), transparent 75%),
     linear-gradient(180deg, rgba(18, 18, 20, 0.97), rgba(9, 9, 11, 0.97));
   box-shadow: 0 18px 34px rgba(0, 0, 0, 0.28);
+}
+
+.admin-taskdash-wrap .recent-wrap {
+  border-color: rgba(96, 165, 250, 0.16);
+  background:
+    radial-gradient(circle at top, rgba(191, 219, 254, 0.1), transparent 74%),
+    linear-gradient(180deg, rgba(16, 27, 48, 0.98), rgba(7, 14, 29, 0.98));
 }
 
 .gcard.is-clickable {
@@ -3328,6 +3631,10 @@ html[data-theme="light"] .pill-tab.active .pill-count {
   color: #f8fafc;
   font-size: 13px;
   font-weight: 900;
+}
+
+.admin-taskdash-wrap .recent-title {
+  color: #dbeafe;
 }
 
 .recent-list {
@@ -3357,6 +3664,13 @@ html[data-theme="light"] .pill-tab.active .pill-count {
     box-shadow 180ms ease;
 }
 
+.admin-taskdash-wrap .recent-item {
+  border-color: rgba(96, 165, 250, 0.12);
+  background:
+    radial-gradient(circle at top, rgba(191, 219, 254, 0.05), transparent 85%),
+    rgba(10, 20, 37, 0.94);
+}
+
 .recent-item:hover {
   transform: translateY(-1px);
   border-color: var(--border-strong);
@@ -3364,6 +3678,13 @@ html[data-theme="light"] .pill-tab.active .pill-count {
     radial-gradient(circle at top, rgba(255, 255, 255, 0.06), transparent 85%),
     rgba(24, 24, 27, 0.96);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 14px 24px rgba(0, 0, 0, 0.24);
+}
+
+.admin-taskdash-wrap .recent-item:hover {
+  border-color: rgba(96, 165, 250, 0.22);
+  background:
+    radial-gradient(circle at top, rgba(191, 219, 254, 0.08), transparent 85%),
+    rgba(14, 27, 49, 0.96);
 }
 
 .recent-main {
@@ -3547,6 +3868,10 @@ html[data-theme="light"] .pill-tab.active .pill-count {
     box-shadow 180ms ease;
 }
 
+.admin-taskdash-wrap .task-row {
+  border-top-color: rgba(96, 165, 250, 0.1);
+}
+
 .task-row.is-highlighted {
   border-color: rgba(96, 165, 250, 0.34);
   background:
@@ -3555,6 +3880,15 @@ html[data-theme="light"] .pill-tab.active .pill-count {
   box-shadow:
     inset 0 0 0 1px rgba(96, 165, 250, 0.18),
     0 16px 28px rgba(30, 64, 175, 0.18);
+}
+
+.admin-taskdash-wrap .task-row.is-highlighted {
+  background:
+    radial-gradient(circle at left, rgba(59, 130, 246, 0.22), transparent 22%),
+    rgba(11, 26, 49, 0.9);
+  box-shadow:
+    inset 0 0 0 1px rgba(96, 165, 250, 0.24),
+    0 18px 30px rgba(30, 64, 175, 0.2);
 }
 
 .task-left {
@@ -3607,6 +3941,10 @@ html[data-theme="light"] .pill-tab.active .pill-count {
 
 .task-row.is-clickable:hover {
   background: rgba(255, 255, 255, 0.025);
+}
+
+.admin-taskdash-wrap .task-row.is-clickable:hover {
+  background: rgba(59, 130, 246, 0.08);
 }
 
 .task-meta {
@@ -3772,6 +4110,14 @@ html[data-theme="light"] .prio {
     box-shadow 180ms ease;
 }
 
+.admin-taskdash-wrap .fab-task {
+  border-color: rgba(96, 165, 250, 0.24);
+  background:
+    radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.18), transparent 30%),
+    radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.22), transparent 56%),
+    linear-gradient(180deg, rgba(30, 64, 175, 0.98), rgba(15, 23, 42, 0.98));
+}
+
 .fab-task:hover {
   transform: translateY(-2px);
   border-color: rgba(255, 255, 255, 0.3);
@@ -3783,6 +4129,14 @@ html[data-theme="light"] .prio {
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     0 24px 42px rgba(0, 0, 0, 0.38),
     0 0 0 1px rgba(147, 197, 253, 0.12);
+}
+
+.admin-taskdash-wrap .fab-task:hover {
+  border-color: rgba(147, 197, 253, 0.32);
+  background:
+    radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.24), transparent 30%),
+    radial-gradient(circle at 50% 0%, rgba(125, 211, 252, 0.28), transparent 56%),
+    linear-gradient(180deg, rgba(37, 99, 235, 0.98), rgba(30, 41, 59, 0.98));
 }
 
 .fab-hidden {
@@ -3829,6 +4183,13 @@ html[data-theme="light"] .prio {
   box-shadow: -18px 0 40px rgba(2, 6, 23, 0.42);
 }
 
+.admin-taskdash-wrap .task-drawer {
+  border-left-color: rgba(96, 165, 250, 0.16);
+  background:
+    radial-gradient(circle at top, rgba(191, 219, 254, 0.12), transparent 74%),
+    linear-gradient(180deg, rgba(8, 18, 34, 0.99), rgba(5, 10, 22, 0.99));
+}
+
 .task-drawer.open {
   transform: translateX(0);
 }
@@ -3864,6 +4225,14 @@ html[data-theme="light"] .prio {
   color: #dbeafe;
   font-size: 13px;
   line-height: 1.5;
+}
+
+.admin-taskdash-wrap .drawer-banner {
+  border-color: rgba(96, 165, 250, 0.24);
+  background:
+    radial-gradient(circle at top, rgba(191, 219, 254, 0.16), transparent 78%),
+    linear-gradient(180deg, rgba(18, 52, 99, 0.68), rgba(12, 33, 63, 0.58));
+  color: #dbeafe;
 }
 
 .drawer-x {
@@ -3972,6 +4341,92 @@ html[data-theme="light"] .prio {
   background:
     radial-gradient(circle at top left, rgba(255, 255, 255, 0.06), transparent 58%),
     linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(2, 6, 23, 0.94));
+}
+
+.assignee-picker {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(96, 165, 250, 0.18);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.06), transparent 58%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(2, 6, 23, 0.94));
+}
+
+.assignee-picker-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.assignee-picker-title,
+.assignee-picker-subtitle {
+  display: block;
+}
+
+.assignee-picker-title {
+  color: #f8fafc;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.assignee-picker-subtitle {
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.assignee-list {
+  display: grid;
+  gap: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.assignee-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.5);
+  cursor: pointer;
+}
+
+.assignee-checkbox {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: #3b82f6;
+}
+
+.assignee-option-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.assignee-option-name {
+  color: #f8fafc;
+  font-size: 14px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.assignee-option-meta {
+  color: #94a3b8;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.assignee-empty {
+  padding: 12px 14px;
+  border: 1px dashed rgba(148, 163, 184, 0.24);
+  border-radius: 14px;
+  color: #94a3b8;
+  font-size: 13px;
 }
 
 .attachment-picker-copy {
@@ -4298,12 +4753,47 @@ html[data-theme="light"] .attachment-picker {
     linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96));
 }
 
+html[data-theme="light"] .assignee-picker {
+  border-color: rgba(96, 165, 250, 0.22);
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.78), transparent 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96));
+}
+
 html[data-theme="light"] .attachment-picker-title {
   color: #0f172a;
 }
 
 html[data-theme="light"] .attachment-picker-subtitle {
   color: #475569;
+}
+
+html[data-theme="light"] .assignee-picker-title {
+  color: #0f172a;
+}
+
+html[data-theme="light"] .assignee-picker-subtitle {
+  color: #475569;
+}
+
+html[data-theme="light"] .assignee-option {
+  border-color: rgba(148, 163, 184, 0.18);
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.92), transparent 82%),
+    linear-gradient(180deg, rgba(252, 253, 255, 0.98), rgba(237, 243, 249, 0.98));
+}
+
+html[data-theme="light"] .assignee-option-name {
+  color: #0f172a;
+}
+
+html[data-theme="light"] .assignee-option-meta {
+  color: #64748b;
+}
+
+html[data-theme="light"] .assignee-empty {
+  border-color: rgba(148, 163, 184, 0.28);
+  color: #64748b;
 }
 
 html[data-theme="light"] .attachment-input {
@@ -4333,6 +4823,14 @@ html[data-theme="light"] .drawer-banner {
     linear-gradient(180deg, rgba(239, 246, 255, 0.98), rgba(219, 234, 254, 0.94));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
   color: #1d4ed8;
+}
+
+html[data-theme="light"] .admin-taskdash-wrap .drawer-banner {
+  border-color: rgba(59, 130, 246, 0.22);
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.68), transparent 58%),
+    linear-gradient(180deg, rgba(219, 234, 254, 0.96), rgba(191, 219, 254, 0.9));
+  color: #1e3a8a;
 }
 
 html[data-theme="light"] .attachment-note.attachment-error {
@@ -4530,5 +5028,9 @@ html[data-theme="light"] .attachment-remove {
 
   .admin-calendar-chip {
     font-size: 0.68rem;
+  }
+
+  .admin-task-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

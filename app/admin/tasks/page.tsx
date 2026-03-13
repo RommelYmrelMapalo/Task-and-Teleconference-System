@@ -1,25 +1,10 @@
 import { AdminShell } from "@/components/admin-shell";
-import { getAdminTasks, requireSessionContext } from "@/lib/ttcs-data";
-
-function statusLabel(task: { status: string; isDelayed: boolean }) {
-  if (task.status === "completed") {
-    return "Completed";
-  }
-
-  if (task.isDelayed) {
-    return "Delayed";
-  }
-
-  if (task.status === "for_revision") {
-    return "For Revision";
-  }
-
-  return task.status === "assigned" ? "Assigned" : "In Progress";
-}
+import { UserTasksBoard } from "@/components/user-tasks-board";
+import { getAdminTasks, getAllProfiles, requireSessionContext } from "@/lib/ttcs-data";
 
 export default async function AdminTasksPage() {
-  const { supabase, shellUser, unreadCount } = await requireSessionContext({ admin: true });
-  const tasks = await getAdminTasks(supabase);
+  const { supabase, profile, shellUser, unreadCount } = await requireSessionContext({ admin: true });
+  const [tasks, users] = await Promise.all([getAdminTasks(supabase), getAllProfiles(supabase)]);
 
   return (
     <AdminShell
@@ -28,25 +13,13 @@ export default async function AdminTasksPage() {
       user={shellUser}
       unreadCount={unreadCount}
     >
-      <div className="table-shell">
-        {tasks.length ? (
-          tasks.map((task) => (
-            <article className="table-row" key={task.id}>
-              <div>
-                <h3>{task.title}</h3>
-                <p>{task.description}</p>
-                <p>Assignees: {task.assignees.length ? task.assignees.map((assignee) => assignee.fullName).join(", ") : "Unassigned"}</p>
-              </div>
-              <div className="row-end">
-                <span className="soft-badge">{statusLabel(task)}</span>
-                <span className="soft-badge">{task.priority.toUpperCase()}</span>
-              </div>
-            </article>
-          ))
-        ) : (
-          <div className="task-empty">No tasks found.</div>
-        )}
-      </div>
+      <UserTasksBoard
+        tasks={tasks}
+        viewerId={profile.id}
+        viewerCanManageAll
+        variant="admin"
+        assignableUsers={users}
+      />
     </AdminShell>
   );
 }

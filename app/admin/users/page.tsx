@@ -12,17 +12,40 @@ export default async function AdminUsersPage() {
       user={shellUser}
       unreadCount={unreadCount}
     >
-      <div className="table-shell">
+      <div className="table-shell users-table-shell">
+        <div className="table-row users-table-row users-table-head" role="row">
+          <div className="users-table-cell" role="columnheader">
+            Name
+          </div>
+          <div className="users-table-cell" role="columnheader">
+            Email
+          </div>
+          <div className="users-table-cell" role="columnheader">
+            Created At
+          </div>
+          <div className="users-table-cell" role="columnheader">
+            Role
+          </div>
+          <div className="users-table-cell" role="columnheader">
+            Last Login
+          </div>
+        </div>
         {users.map((user) => (
-          <article className="table-row" key={user.id}>
-            <div>
-              <h3>{user.fullName}</h3>
-              <p>{user.email}</p>
-              <p>Created {user.createdLabel}</p>
+          <article className="table-row users-table-row" key={user.id} role="row">
+            <div className="users-table-cell users-table-value" role="cell">
+              {user.fullName}
             </div>
-            <div className="row-end">
+            <div className="users-table-cell users-table-value" role="cell">
+              {user.email}
+            </div>
+            <div className="users-table-cell users-table-value" role="cell">
+              {user.createdLabel}
+            </div>
+            <div className="users-table-cell" role="cell">
               <span className="soft-badge">{user.roleLabel}</span>
-              <span className="soft-badge">Last login: {user.lastLoginLabel}</span>
+            </div>
+            <div className="users-table-cell" role="cell">
+              <span className="soft-badge">{user.lastLoginLabel}</span>
             </div>
           </article>
         ))}

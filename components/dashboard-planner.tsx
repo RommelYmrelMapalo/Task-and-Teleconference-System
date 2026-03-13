@@ -259,8 +259,8 @@ export function DashboardPlanner({
             </div>
             <div className="modal-subtext">
               {pendingToggleWarningTask.status === "completed"
-                ? "If you continue, the task will be restored and the override will be logged in the admin reports page."
-                : "If you continue, the task will be marked complete and the override will be logged in the admin reports page."}
+                ? "If you continue, the task will be restored and the override will be logged in the admin monitoring panel."
+                : "If you continue, the task will be marked complete and the override will be logged in the admin monitoring panel."}
             </div>
             <div className="modal-actions">
               <button type="button" className="btn-mini" onClick={() => setPendingToggleWarningTask(null)}>
