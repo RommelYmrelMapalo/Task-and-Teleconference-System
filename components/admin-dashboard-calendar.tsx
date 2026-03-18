@@ -14,15 +14,24 @@ import type { MeetingItem, TaskItem } from "@/lib/ttcs-data";
 const MANILA_TZ = "Asia/Manila";
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-type CalendarItem = {
+type CalendarItemBase = {
   id: string;
-  kind: "meeting" | "task";
   title: string;
   timeLabel: string;
   sortValue: number;
   tone: "meeting" | "pending" | "delayed" | "completed";
-  taskId?: number;
 };
+
+type MeetingCalendarItem = CalendarItemBase & {
+  kind: "meeting";
+};
+
+type TaskCalendarItem = CalendarItemBase & {
+  kind: "task";
+  taskId: number;
+};
+
+type CalendarItem = MeetingCalendarItem | TaskCalendarItem;
 
 function getManilaParts(value: string | Date) {
   const date = value instanceof Date ? value : new Date(value);
