@@ -5,6 +5,10 @@ type SupabaseLikeError = {
   hint?: string | null;
 };
 
+export function normalizeEmailAddress(value: string) {
+  return value.trim().toLowerCase();
+}
+
 export function isMissingSupabaseTable(error: SupabaseLikeError | null | undefined) {
   if (!error) {
     return false;
@@ -42,4 +46,36 @@ export function isMissingSupabaseColumn(
   }
 
   return message.includes(column);
+}
+
+export function isDuplicateEmailError(error: SupabaseLikeError | null | undefined) {
+  if (!error) {
+    return false;
+  }
+
+  const code = (error.code || "").toUpperCase();
+  const message = (error.message || "").toLowerCase();
+  const details = (error.details || "").toLowerCase();
+  const hint = (error.hint || "").toLowerCase();
+
+  return (
+    code === "23505" ||
+    message.includes("already registered") ||
+    message.includes("already exists") ||
+    message.includes("duplicate key value") ||
+    message.includes("email address is invalid") && message.includes("already") ||
+    details.includes("profiles_email_lower_unique") ||
+    hint.includes("profiles_email_lower_unique")
+  );
+}
+
+export function getEmailConflictMessage(
+  error: SupabaseLikeError | null | undefined,
+  fallbackMessage = "Unable to process the email address.",
+) {
+  if (isDuplicateEmailError(error)) {
+    return "Email address is already in use.";
+  }
+
+  return error?.message || fallbackMessage;
 }

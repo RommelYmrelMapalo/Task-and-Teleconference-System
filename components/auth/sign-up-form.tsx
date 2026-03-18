@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { createClient } from "@/app/utils/utils/supabase/client";
 import { hasSupabaseEnv, SUPABASE_ENV_HINT } from "@/app/utils/utils/supabase/env";
+import { getEmailConflictMessage, normalizeEmailAddress } from "@/lib/supabase-errors";
 
 const isConfigured = hasSupabaseEnv();
 
@@ -23,7 +24,7 @@ export function SignUpForm() {
     }
 
     const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") || "").trim();
+    const email = normalizeEmailAddress(String(formData.get("email") || ""));
     const firstName = String(formData.get("firstName") || "").trim();
     const lastName = String(formData.get("lastName") || "").trim();
     const password = String(formData.get("password") || "");
@@ -37,6 +38,11 @@ export function SignUpForm() {
 
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
+      return;
+    }
+
+    if (password.length < 7) {
+      setError("Password must be at least 7 characters long.");
       return;
     }
 
@@ -62,7 +68,7 @@ export function SignUpForm() {
     setPending(false);
 
     if (signUpError) {
-      setError(signUpError.message);
+      setError(getEmailConflictMessage(signUpError, "Unable to create the account."));
       return;
     }
 

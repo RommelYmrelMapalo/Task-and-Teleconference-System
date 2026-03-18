@@ -54,6 +54,7 @@ export function UserShell({
   title,
   subtitle,
   actions,
+  sidebarContent,
   flashes,
   user,
   unreadCount = 0,
@@ -62,6 +63,7 @@ export function UserShell({
   title: string;
   subtitle?: string;
   actions?: ReactNode;
+  sidebarContent?: ReactNode;
   flashes?: FlashMessage[];
   user: ShellUser;
   unreadCount?: number;
@@ -142,6 +144,8 @@ export function UserShell({
                 })}
               </div>
             ))}
+
+            {sidebarContent ? <div className="sidebar-extra">{sidebarContent}</div> : null}
           </div>
 
           <div className="sidebar-footer">

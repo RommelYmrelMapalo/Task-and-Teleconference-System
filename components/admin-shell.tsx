@@ -38,6 +38,7 @@ export function AdminShell({
   title,
   subtitle,
   actions,
+  sidebarContent,
   user,
   unreadCount = 0,
   children,
@@ -45,6 +46,7 @@ export function AdminShell({
   title: string;
   subtitle?: string;
   actions?: ReactNode;
+  sidebarContent?: ReactNode;
   user: ShellUser;
   unreadCount?: number;
   children: ReactNode;
@@ -120,6 +122,8 @@ export function AdminShell({
                 ))}
               </div>
             ))}
+
+            {sidebarContent ? <div className="sidebar-extra">{sidebarContent}</div> : null}
           </div>
 
           <div className="sidebar-footer">

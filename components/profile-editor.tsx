@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/app/utils/utils/supabase/client";
+import { getEmailConflictMessage, normalizeEmailAddress } from "@/lib/supabase-errors";
 import type { ShellUser } from "@/lib/ttcs-data";
 
 function splitName(fullName: string) {
@@ -70,11 +71,17 @@ export function ProfileEditor({
     setError(null);
 
     const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") || "").trim();
+    const email = normalizeEmailAddress(String(formData.get("email") || ""));
 
     if (!email) {
       setPendingSection(null);
       setError("Email is required.");
+      return;
+    }
+
+    if (email === normalizeEmailAddress(user.email)) {
+      setPendingSection(null);
+      setMessage("Email address is already up to date.");
       return;
     }
 
@@ -84,7 +91,7 @@ export function ProfileEditor({
     setPendingSection(null);
 
     if (updateError) {
-      setError(updateError.message);
+      setError(getEmailConflictMessage(updateError, "Unable to update the email address."));
       return;
     }
 
@@ -99,8 +106,15 @@ export function ProfileEditor({
     setError(null);
 
     const formData = new FormData(event.currentTarget);
+    const currentPassword = String(formData.get("currentPassword") || "");
     const password = String(formData.get("password") || "");
     const confirmPassword = String(formData.get("confirmPassword") || "");
+
+    if (!currentPassword) {
+      setPendingSection(null);
+      setError("Current password is required.");
+      return;
+    }
 
     if (password.length < 7) {
       setPendingSection(null);
@@ -115,6 +129,17 @@ export function ProfileEditor({
     }
 
     const supabase = createClient();
+    const { error: reauthError } = await supabase.auth.signInWithPassword({
+      email: normalizeEmailAddress(user.email),
+      password: currentPassword,
+    });
+
+    if (reauthError) {
+      setPendingSection(null);
+      setError("Current password is incorrect.");
+      return;
+    }
+
     const { error: updateError } = await supabase.auth.updateUser({ password });
 
     setPendingSection(null);
@@ -154,8 +179,15 @@ export function ProfileEditor({
       <section className="page-card">
         <h3>Password</h3>
         <form className="form-stack" onSubmit={savePassword}>
-          <input className="field-input" type="password" name="password" placeholder="New password" />
-          <input className="field-input" type="password" name="confirmPassword" placeholder="Confirm new password" />
+          <input className="field-input" type="password" name="currentPassword" placeholder="Current password" required />
+          <input className="field-input" type="password" name="password" placeholder="New password" required />
+          <input
+            className="field-input"
+            type="password"
+            name="confirmPassword"
+            placeholder="Confirm new password"
+            required
+          />
           <button className="primary-btn" type="submit" disabled={pendingSection === "password"}>
             {pendingSection === "password" ? "Updating..." : "Change Password"}
           </button>

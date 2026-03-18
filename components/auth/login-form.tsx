@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { createClient } from "@/app/utils/utils/supabase/client";
 import { hasSupabaseEnv, SUPABASE_ENV_HINT } from "@/app/utils/utils/supabase/env";
-import { isMissingSupabaseTable } from "@/lib/supabase-errors";
+import { isMissingSupabaseTable, normalizeEmailAddress } from "@/lib/supabase-errors";
 
 const isConfigured = hasSupabaseEnv();
 
@@ -13,6 +13,7 @@ export function LoginForm({ adminOnly = false }: { adminOnly?: boolean }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -23,7 +24,7 @@ export function LoginForm({ adminOnly = false }: { adminOnly?: boolean }) {
     }
 
     const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") || "").trim();
+    const email = normalizeEmailAddress(String(formData.get("email") || ""));
     const password = String(formData.get("password") || "");
 
     if (!email || !password) {
@@ -115,7 +116,36 @@ export function LoginForm({ adminOnly = false }: { adminOnly?: boolean }) {
   return (
     <form className="form-stack" onSubmit={handleSubmit}>
       <input className="field-input" type="email" name="email" placeholder="Email Address" required />
-      <input className="field-input" type="password" name="password" placeholder="Password" required />
+      <div className="password-field-shell">
+        <input
+          className="field-input password-field-input"
+          type={showPassword ? "text" : "password"}
+          name="password"
+          placeholder="Password"
+          required
+        />
+        <button
+          className="password-visibility-btn"
+          type="button"
+          onClick={() => setShowPassword((current) => !current)}
+          aria-label={showPassword ? "Hide password" : "Show password"}
+          aria-pressed={showPassword}
+        >
+          {showPassword ? (
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M2 12s3.5-8 10-8 10 8 10 8-3.5 8-10 8-10-8-10-8Z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 3l18 18" />
+              <path d="M10.58 10.58a2 2 0 0 0 2.83 2.83" />
+              <path d="M9.88 5.09A10.94 10.94 0 0 1 12 4c5 0 9.27 3.11 11 8-1 2.8-3 5.09-5.62 6.43" />
+              <path d="M6.61 6.61C4.62 8 3.09 9.87 2 12c1.73 4.89 6 8 10 8a10.8 10.8 0 0 0 4-.78" />
+            </svg>
+          )}
+        </button>
+      </div>
       <button className="primary-btn wide" type="submit" disabled={pending}>
         {pending ? "Signing In..." : adminOnly ? "Login as Admin" : "Login"}
       </button>

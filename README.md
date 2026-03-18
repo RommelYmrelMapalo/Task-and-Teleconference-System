@@ -4,6 +4,7 @@ This is a Next.js TTCS app backed by Supabase auth and database queries.
 
 1. Create a Supabase project.
 2. In the Supabase SQL editor, run [`SUPABASE_SETUP.sql`](./SUPABASE_SETUP.sql).
+   Existing projects can apply [`supabase/account-security-upgrade.sql`](./supabase/account-security-upgrade.sql) to add case-insensitive email uniqueness and profile email sync.
 3. Copy [`.env.example`](./.env.example) to `.env.local` and fill in your project values.
 4. Install dependencies:
 
