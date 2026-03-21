@@ -32,6 +32,10 @@ npm run dev
 
 For the Supabase "Confirm signup" email, use [`supabase/email-templates/confirm-signup.html`](./supabase/email-templates/confirm-signup.html) in the Supabase dashboard under Authentication -> Email Templates.
 
+## Inbox threads
+
+Task assignments can be handled directly inside TTCS inbox threads. Apply [`supabase/inbox-thread-upgrade.sql`](./supabase/inbox-thread-upgrade.sql) to let admins and assigned users reply to each other in the inbox while keeping assignment notices grouped by task. Apply [`supabase/inbox-trash-upgrade.sql`](./supabase/inbox-trash-upgrade.sql) to add per-user trash with 31-day retention for inbox threads.
+
 ## Current coverage
 
 - Auth, session redirects, and logout use Supabase.

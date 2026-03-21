@@ -1,4 +1,9 @@
 import { createAdminClient } from "@/app/utils/utils/supabase/admin";
+import {
+  buildTaskAssignmentMessage,
+  buildTaskAssignmentSubject,
+  buildTaskThreadKey,
+} from "@/lib/inbox-service";
 import type { TaskPriority, TaskStatus } from "@/lib/ttcs-data";
 import { isMissingSupabaseColumn, isMissingSupabaseTable } from "@/lib/supabase-errors";
 
@@ -9,6 +14,12 @@ const ATTACHMENT_FILE_LIMIT_BYTES = 50 * 1024 * 1024;
 type AttachmentRow = {
   id: number;
   storage_path: string;
+};
+
+type AssignmentRecipient = {
+  id: string;
+  email: string | null;
+  fullName: string;
 };
 
 const VALID_STATUS = new Set<TaskStatus>(["assigned", "in_progress", "for_revision", "completed"]);
@@ -227,30 +238,111 @@ async function loadWriterContext(userId: string) {
 async function createAssignmentNotifications(
   admin: ReturnType<typeof createAdminClient>,
   {
+    actorUserId,
     actorName,
+    taskId,
     taskTitle,
-    assigneeIds,
+    taskDescription,
+    taskDeadline,
+    taskPriority,
+    taskStatus,
+    assignees,
   }: {
+    actorUserId: string;
     actorName: string;
+    taskId: number;
     taskTitle: string;
-    assigneeIds: string[];
+    taskDescription: string | null;
+    taskDeadline: string | null;
+    taskPriority: TaskPriority;
+    taskStatus: TaskStatus;
+    assignees: AssignmentRecipient[];
   },
 ) {
-  if (!assigneeIds.length) {
+  if (!assignees.length) {
     return;
   }
 
   const notificationResult = await admin.from("notifications").insert(
-    assigneeIds.map((assigneeId) => ({
-      user_id: assigneeId,
-      title: "Task Assigned",
-      message: `${actorName} assigned you a task: ${taskTitle}`,
+    assignees.map((assignee) => ({
+      user_id: assignee.id,
+      sender_user_id: actorUserId,
+      thread_key: buildTaskThreadKey(taskId, actorUserId, assignee.id),
+      task_id: taskId,
+      title: buildTaskAssignmentSubject(taskTitle),
+      message: buildTaskAssignmentMessage({
+        actorName,
+        taskTitle,
+        description: taskDescription,
+        deadline: taskDeadline,
+        priority: taskPriority,
+        status: taskStatus,
+      }),
     })),
   );
 
   if (notificationResult.error && !isMissingSupabaseTable(notificationResult.error)) {
+    if (
+      isMissingSupabaseColumn(notificationResult.error, "sender_user_id") ||
+      isMissingSupabaseColumn(notificationResult.error, "thread_key") ||
+      isMissingSupabaseColumn(notificationResult.error, "task_id")
+    ) {
+      const fallbackResult = await admin.from("notifications").insert(
+        assignees.map((assignee) => ({
+          user_id: assignee.id,
+          title: buildTaskAssignmentSubject(taskTitle),
+          message: buildTaskAssignmentMessage({
+            actorName,
+            taskTitle,
+            description: taskDescription,
+            deadline: taskDeadline,
+            priority: taskPriority,
+            status: taskStatus,
+          }),
+        })),
+      );
+
+      if (fallbackResult.error && !isMissingSupabaseTable(fallbackResult.error)) {
+        throw new TaskMutationError(fallbackResult.error.message, 500);
+      }
+
+      return;
+    }
+
     throw new TaskMutationError(notificationResult.error.message, 500);
   }
+}
+
+async function resolveAssignmentRecipients(
+  admin: ReturnType<typeof createAdminClient>,
+  assigneeIds: string[],
+) {
+  if (!assigneeIds.length) {
+    return [];
+  }
+
+  const { data: profiles, error: profileError } = await admin
+    .from("profiles")
+    .select("id,full_name,email")
+    .in("id", assigneeIds);
+
+  if (profileError) {
+    throw new TaskMutationError(profileError.message, 500);
+  }
+
+  const recipients = ((profiles as Array<{ id: string; full_name: string | null; email: string | null }> | null) ?? []).map(
+    (profile) => ({
+      id: profile.id,
+      email: profile.email,
+      fullName: resolveProfileName(profile.full_name, profile.email),
+    }),
+  );
+
+  if (recipients.length !== assigneeIds.length) {
+    throw new TaskMutationError("One or more selected assignees are no longer available.", 400);
+  }
+
+  return recipients;
 }
 
 async function getTaskAccessContext(userId: string, taskId: number) {
@@ -436,23 +528,11 @@ export async function createTaskForUser(userId: string, formData: FormData) {
 
   const taskId = insertResult.data.id;
   let assigneeIds = isAdmin ? [] : [userId];
+  let assignees: AssignmentRecipient[] = [];
 
   if (isAdmin && requestedAssigneeIds.length) {
-    const { data: profiles, error: profileError } = await admin
-      .from("profiles")
-      .select("id")
-      .in("id", requestedAssigneeIds);
-
-    if (profileError) {
-      throw new TaskMutationError(profileError.message, 500);
-    }
-
-    const validAssigneeIds = ((profiles as Array<{ id: string }> | null) ?? []).map((profile) => profile.id);
-    if (validAssigneeIds.length !== requestedAssigneeIds.length) {
-      throw new TaskMutationError("One or more selected assignees are no longer available.", 400);
-    }
-
-    assigneeIds = validAssigneeIds;
+    assignees = await resolveAssignmentRecipients(admin, requestedAssigneeIds);
+    assigneeIds = assignees.map((assignee) => assignee.id);
   }
 
   if (assigneeIds.length) {
@@ -469,9 +549,15 @@ export async function createTaskForUser(userId: string, formData: FormData) {
   }
 
   await createAssignmentNotifications(admin, {
+    actorUserId: userId,
     actorName,
+    taskId,
     taskTitle: values.title,
-    assigneeIds: assigneeIds.filter((assigneeId) => assigneeId !== userId),
+    taskDescription: values.description || null,
+    taskDeadline: values.deadline,
+    taskPriority: values.priority,
+    taskStatus: values.status,
+    assignees: assignees.filter((assignee) => assignee.id !== userId),
   });
 
   await uploadAttachmentFiles(taskId, getFiles(formData));

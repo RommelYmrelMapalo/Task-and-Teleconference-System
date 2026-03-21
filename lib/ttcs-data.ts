@@ -52,6 +52,37 @@ export type NotificationItem = {
   timeLabel: string;
 };
 
+export type InboxMessageItem = {
+  id: number;
+  subject: string;
+  body: string;
+  createdAt: string;
+  timeLabel: string;
+  isRead: boolean;
+  isOutgoing: boolean;
+  senderLabel: string;
+  senderInitials: string;
+};
+
+export type InboxThreadItem = {
+  id: string;
+  subject: string;
+  preview: string;
+  updatedAt: string;
+  timeLabel: string;
+  unreadCount: number;
+  messages: InboxMessageItem[];
+  counterpartLabel: string;
+  counterpartMeta: string;
+  canReply: boolean;
+  taskId: number | null;
+  creatorLabel: string;
+  threadType: "task_notification" | "meeting" | "conversation";
+  isTrashed: boolean;
+  trashExpiresAt: string | null;
+  trashExpiresLabel: string | null;
+};
+
 export type MeetingItem = {
   id: number;
   title: string;
@@ -160,6 +191,23 @@ type NotificationRow = {
   is_read: boolean;
   created_at: string;
 };
+
+type InboxNotificationRow = NotificationRow & {
+  user_id: string;
+  sender_user_id: string | null;
+  thread_key: string | null;
+  task_id: number | null;
+};
+
+type InboxThreadStateRow = {
+  user_id: string;
+  thread_key: string;
+  trashed_at: string | null;
+  deleted_before: string | null;
+  updated_at: string;
+};
+
+const INBOX_TRASH_RETENTION_DAYS = 31;
 
 function unique<T>(values: T[]) {
   return Array.from(new Set(values));
@@ -476,6 +524,87 @@ function mapNotificationRow(row: NotificationRow): NotificationItem {
   };
 }
 
+function buildInboxThreadPreview(message: string) {
+  const normalized = message.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return "No message content.";
+  }
+
+  return normalized.length > 140 ? `${normalized.slice(0, 137)}...` : normalized;
+}
+
+function inferTaskCreatorFromMessage(message: string) {
+  const match = message.match(/^(.+?) assigned you (?:to )?a task[:\s]/i);
+  return match?.[1]?.trim() || null;
+}
+
+function inferInboxThreadType(subject: string, message: string) {
+  const combined = `${subject} ${message}`.toLowerCase();
+  if (combined.includes("meeting")) {
+    return "meeting";
+  }
+
+  if (combined.includes("task")) {
+    return "task_notification";
+  }
+
+  return "conversation";
+}
+
+function getTrashExpiration(trashedAt: string | null) {
+  if (!trashedAt) {
+    return null;
+  }
+
+  const trashedDate = new Date(trashedAt);
+  if (Number.isNaN(trashedDate.getTime())) {
+    return null;
+  }
+
+  return new Date(trashedDate.getTime() + INBOX_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+}
+
+function buildInboxFallbackThread(item: NotificationItem): InboxThreadItem {
+  const senderLabel = inferTaskCreatorFromMessage(item.message) || item.sender || "TTCS";
+  const threadType = inferInboxThreadType(item.subject, item.message);
+
+  return {
+    id: `notification:${item.id}`,
+    subject: item.subject,
+    preview: item.preview,
+    updatedAt: item.createdAt,
+    timeLabel: item.timeLabel,
+    unreadCount: item.isRead ? 0 : 1,
+    counterpartLabel: senderLabel,
+    counterpartMeta:
+      threadType === "task_notification"
+        ? "Task notification"
+        : threadType === "meeting"
+          ? "Meeting notification"
+          : "System notification",
+    canReply: false,
+    taskId: null,
+    creatorLabel: senderLabel,
+    threadType,
+    isTrashed: false,
+    trashExpiresAt: null,
+    trashExpiresLabel: null,
+    messages: [
+      {
+        id: item.id,
+        subject: item.subject,
+        body: item.message,
+        createdAt: item.createdAt,
+        timeLabel: item.timeLabel,
+        isRead: item.isRead,
+        isOutgoing: false,
+        senderLabel,
+        senderInitials: initialsFromName(senderLabel),
+      },
+    ],
+  };
+}
+
 function formatAuditAction(action: string) {
   if (action === "unassigned_task_edit") {
     return "Unassigned task edit";
@@ -630,6 +759,207 @@ export async function getUserNotifications(
   }
 
   return ((data as NotificationRow[] | null) ?? []).map(mapNotificationRow);
+}
+
+export async function getUserInboxThreads(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+) {
+  const admin = createAdminClient() as unknown as Awaited<ReturnType<typeof createClient>>;
+  const cutoffIso = new Date(Date.now() - INBOX_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const nowIso = new Date().toISOString();
+  const threadStateMap = new Map<string, InboxThreadStateRow>();
+
+  const expiredCleanupResult = await admin
+    .from("inbox_thread_states")
+    .update({
+      trashed_at: null,
+      deleted_before: nowIso,
+      updated_at: nowIso,
+    })
+    .eq("user_id", userId)
+    .not("trashed_at", "is", null)
+    .lte("trashed_at", cutoffIso);
+
+  if (expiredCleanupResult.error && !isMissingSupabaseTable(expiredCleanupResult.error)) {
+    throw new Error(`Failed to clean up inbox trash: ${expiredCleanupResult.error.message}`);
+  }
+
+  const threadStateResult = await admin
+    .from("inbox_thread_states")
+    .select("user_id,thread_key,trashed_at,deleted_before,updated_at")
+    .eq("user_id", userId);
+
+  if (threadStateResult.error && !isMissingSupabaseTable(threadStateResult.error)) {
+    throw new Error(`Failed to load inbox thread states: ${threadStateResult.error.message}`);
+  }
+
+  for (const row of (threadStateResult.data as InboxThreadStateRow[] | null) ?? []) {
+    threadStateMap.set(row.thread_key, row);
+  }
+
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("id,title,message,is_read,created_at,user_id,sender_user_id,thread_key,task_id")
+    .or(`user_id.eq.${userId},sender_user_id.eq.${userId}`)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    if (
+      isMissingSupabaseColumn(error, "sender_user_id") ||
+      isMissingSupabaseColumn(error, "thread_key") ||
+      isMissingSupabaseColumn(error, "task_id")
+    ) {
+      const legacyItems = await getUserNotifications(supabase, userId);
+      return legacyItems.map(buildInboxFallbackThread);
+    }
+
+    if (isMissingSupabaseTable(error)) {
+      return [];
+    }
+
+    throw new Error(`Failed to load inbox threads: ${error.message}`);
+  }
+
+  const rows = (data as InboxNotificationRow[] | null) ?? [];
+  if (!rows.length) {
+    return [];
+  }
+
+  const visibleRows = rows.filter((row) => {
+    const threadKey = row.thread_key || `notification:${row.id}`;
+    const state = threadStateMap.get(threadKey);
+    if (!state?.deleted_before) {
+      return true;
+    }
+
+    return row.created_at > state.deleted_before;
+  });
+
+  if (!visibleRows.length) {
+    return [];
+  }
+
+  const profileIds = unique(
+    visibleRows.flatMap((row) => [row.user_id, row.sender_user_id].filter((value): value is string => Boolean(value))),
+  );
+  const profileMap = new Map<string, ShellUser>();
+
+  if (profileIds.length) {
+    const { data: profiles, error: profileError } = await admin
+      .from("profiles")
+      .select("id,email,full_name,is_admin,role,last_login,created_at")
+      .in("id", profileIds);
+
+    if (profileError && !isMissingSupabaseTable(profileError)) {
+      throw new Error(`Failed to load inbox profiles: ${profileError.message}`);
+    }
+
+    for (const profile of (profiles as ProfileRecord[] | null) ?? []) {
+      profileMap.set(profile.id, buildShellUser(profile));
+    }
+  }
+
+  const grouped = new Map<string, InboxNotificationRow[]>();
+  for (const row of visibleRows) {
+    const threadKey = row.thread_key || `notification:${row.id}`;
+    const existing = grouped.get(threadKey) ?? [];
+    existing.push(row);
+    grouped.set(threadKey, existing);
+  }
+
+  const threads: InboxThreadItem[] = [];
+
+  for (const [threadKey, threadRows] of grouped) {
+    const latestRow = threadRows[threadRows.length - 1];
+    const participantIds = unique(
+      threadRows.flatMap((row) => [row.user_id, row.sender_user_id].filter((value): value is string => Boolean(value))),
+    );
+    const otherParticipantId = participantIds.find((participantId) => participantId !== userId) ?? null;
+    const counterpart = otherParticipantId ? profileMap.get(otherParticipantId) ?? null : null;
+    const canReply = Boolean(otherParticipantId && latestRow.sender_user_id);
+    const threadType = latestRow.task_id !== null ? "task_notification" : inferInboxThreadType(latestRow.title, latestRow.message);
+    const inferredCreatorLabel = threadType === "task_notification" ? inferTaskCreatorFromMessage(latestRow.message) : null;
+    const counterpartLabel =
+      counterpart?.fullName ??
+      inferredCreatorLabel ??
+      (latestRow.sender_user_id ? "TTCS Member" : "System");
+    const counterpartMeta = counterpart
+      ? counterpart.roleLabel
+      : threadType === "task_notification"
+        ? "Task notification"
+        : threadType === "meeting"
+          ? "Meeting notification"
+        : latestRow.sender_user_id
+          ? "Conversation"
+          : "System notification";
+    const creatorProfile = latestRow.sender_user_id ? profileMap.get(latestRow.sender_user_id) ?? null : null;
+    const creatorLabel = creatorProfile?.fullName ?? inferredCreatorLabel ?? counterpartLabel;
+    const threadState = threadStateMap.get(threadKey);
+    const trashExpiration = getTrashExpiration(threadState?.trashed_at ?? null);
+
+    threads.push({
+      id: threadKey,
+      subject: latestRow.title,
+      preview: buildInboxThreadPreview(latestRow.message),
+      updatedAt: latestRow.created_at,
+      timeLabel: formatWithTz(latestRow.created_at, {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      }),
+      unreadCount: threadRows.filter((row) => row.user_id === userId && !row.is_read).length,
+      counterpartLabel,
+      counterpartMeta,
+      canReply,
+      taskId: latestRow.task_id ?? null,
+      creatorLabel,
+      threadType,
+      isTrashed: Boolean(threadState?.trashed_at),
+      trashExpiresAt: trashExpiration?.toISOString() ?? null,
+      trashExpiresLabel:
+        trashExpiration
+          ? formatWithTz(trashExpiration.toISOString(), {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            })
+          : null,
+      messages: threadRows.map((row) => {
+        const sender =
+          row.sender_user_id && row.sender_user_id !== userId
+            ? profileMap.get(row.sender_user_id) ?? null
+            : row.sender_user_id === userId
+              ? profileMap.get(userId) ?? null
+              : null;
+        const fallbackSenderLabel =
+          threadType === "task_notification" ? inferTaskCreatorFromMessage(row.message) ?? "TTCS" : "TTCS";
+        const senderLabel = row.sender_user_id ? sender?.fullName ?? "TTCS Member" : fallbackSenderLabel;
+
+        return {
+          id: row.id,
+          subject: row.title,
+          body: row.message,
+          createdAt: row.created_at,
+          timeLabel: formatWithTz(row.created_at, {
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          }),
+          isRead: row.is_read,
+          isOutgoing: row.sender_user_id === userId,
+          senderLabel,
+          senderInitials: initialsFromName(senderLabel),
+        };
+      }),
+    });
+  }
+
+  return threads.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
 }
 
 export async function getAllNotifications(
@@ -971,6 +1301,25 @@ export async function getAllProfiles(
       year: "numeric",
     }),
   }));
+}
+
+export async function getInboxContacts(currentUserId: string) {
+  const admin = createAdminClient() as unknown as Awaited<ReturnType<typeof createClient>>;
+  const { data, error } = await admin
+    .from("profiles")
+    .select("id,email,full_name,is_admin,role,last_login,created_at")
+    .neq("id", currentUserId)
+    .order("is_admin", { ascending: false })
+    .order("full_name", { ascending: true });
+
+  if (error) {
+    if (isMissingSupabaseTable(error)) {
+      return [];
+    }
+    throw new Error(`Failed to load inbox contacts: ${error.message}`);
+  }
+
+  return ((data as ProfileRecord[] | null) ?? []).map((profile) => buildShellUser(profile));
 }
 
 export function buildDashboardDays(tasks: TaskItem[], meetings: MeetingItem[]) {

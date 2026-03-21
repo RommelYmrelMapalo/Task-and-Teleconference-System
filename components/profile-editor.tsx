@@ -105,7 +105,8 @@ export function ProfileEditor({
     setMessage(null);
     setError(null);
 
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const currentPassword = String(formData.get("currentPassword") || "");
     const password = String(formData.get("password") || "");
     const confirmPassword = String(formData.get("confirmPassword") || "");
@@ -150,7 +151,7 @@ export function ProfileEditor({
     }
 
     setMessage("Password updated.");
-    event.currentTarget.reset();
+    form.reset();
   };
 
   return (

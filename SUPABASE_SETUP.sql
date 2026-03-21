@@ -63,6 +63,23 @@ create table public.notifications (
   user_id uuid not null references public.profiles(id) on delete cascade
 );
 
+alter table public.notifications
+add column if not exists sender_user_id uuid references public.profiles(id) on delete set null;
+
+alter table public.notifications
+add column if not exists thread_key text;
+
+create table if not exists public.inbox_thread_states (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  thread_key text not null,
+  trashed_at timestamptz,
+  deleted_before timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (user_id, thread_key)
+);
+
 create table public.tasks (
   id bigint generated always as identity primary key,
   title text not null,
@@ -77,6 +94,22 @@ create table public.tasks (
   last_edited_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
+
+alter table public.notifications
+add column if not exists task_id bigint references public.tasks(id) on delete set null;
+
+update public.notifications
+set thread_key = concat('notification:', id)
+where thread_key is null;
+
+create index if not exists notifications_user_unread_idx
+on public.notifications (user_id, is_read, created_at desc);
+
+create index if not exists notifications_thread_idx
+on public.notifications (thread_key, created_at);
+
+create index if not exists inbox_thread_states_user_idx
+on public.inbox_thread_states (user_id, thread_key);
 
 alter table public.tasks
 add column if not exists created_by uuid references public.profiles(id);
@@ -178,6 +211,7 @@ $$;
 alter table public.profiles enable row level security;
 alter table public.notes enable row level security;
 alter table public.notifications enable row level security;
+alter table public.inbox_thread_states enable row level security;
 alter table public.tasks enable row level security;
 alter table public.task_assignments enable row level security;
 alter table public.task_attachments enable row level security;
@@ -201,6 +235,17 @@ with check (user_id = auth.uid() or public.is_admin());
 
 create policy "notifications_owner_or_admin"
 on public.notifications
+for all
+using (user_id = auth.uid() or public.is_admin())
+with check (user_id = auth.uid() or public.is_admin());
+
+create policy "notifications_sender_select"
+on public.notifications
+for select
+using (sender_user_id = auth.uid());
+
+create policy "inbox_thread_states_owner_or_admin"
+on public.inbox_thread_states
 for all
 using (user_id = auth.uid() or public.is_admin())
 with check (user_id = auth.uid() or public.is_admin());

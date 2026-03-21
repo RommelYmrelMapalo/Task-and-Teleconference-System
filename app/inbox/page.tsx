@@ -1,19 +1,24 @@
 import { UserShell } from "@/components/user-shell";
 import { InboxBrowser } from "@/components/inbox-browser";
-import { getUserNotifications, requireSessionContext } from "@/lib/ttcs-data";
+import { getInboxContacts, getUserInboxThreads, requireSessionContext } from "@/lib/ttcs-data";
 
 export default async function InboxPage() {
   const { supabase, profile, shellUser, unreadCount } = await requireSessionContext();
-  const notifications = await getUserNotifications(supabase, profile.id);
+  const [threads, contacts] = await Promise.all([getUserInboxThreads(supabase, profile.id), getInboxContacts(profile.id)]);
 
   return (
     <UserShell
       title="Inbox"
-      subtitle="Read updates from administrators and the system"
+      subtitle="Reply to admins and review task conversations in one place"
       user={shellUser}
       unreadCount={unreadCount}
     >
-      <InboxBrowser items={notifications} emptyLabel="No notifications found." />
+      <InboxBrowser
+        items={threads}
+        emptyLabel="No conversations found."
+        viewerLabel={shellUser.fullName}
+        contacts={contacts}
+      />
     </UserShell>
   );
 }

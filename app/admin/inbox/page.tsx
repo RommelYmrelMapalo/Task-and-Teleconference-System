@@ -1,19 +1,24 @@
 import { AdminShell } from "@/components/admin-shell";
 import { InboxBrowser } from "@/components/inbox-browser";
-import { getUserNotifications, requireSessionContext } from "@/lib/ttcs-data";
+import { getInboxContacts, getUserInboxThreads, requireSessionContext } from "@/lib/ttcs-data";
 
 export default async function AdminInboxPage() {
   const { supabase, profile, shellUser, unreadCount } = await requireSessionContext({ admin: true });
-  const notifications = await getUserNotifications(supabase, profile.id);
+  const [threads, contacts] = await Promise.all([getUserInboxThreads(supabase, profile.id), getInboxContacts(profile.id)]);
 
   return (
     <AdminShell
       title="Inbox"
-      subtitle="Review administrative notifications"
+      subtitle="Manage task conversations and reply to assigned users"
       user={shellUser}
       unreadCount={unreadCount}
     >
-      <InboxBrowser items={notifications} emptyLabel="No admin notifications found." />
+      <InboxBrowser
+        items={threads}
+        emptyLabel="No conversations found."
+        viewerLabel={shellUser.fullName}
+        contacts={contacts}
+      />
     </AdminShell>
   );
 }
