@@ -8,6 +8,9 @@ import type { ShellUser } from "@/lib/ttcs-data";
 import { SignOutButton } from "./auth/sign-out-button";
 import { SidebarIcon } from "./sidebar-icons";
 
+const SIDEBAR_COLLAPSE_KEY = "ttcs-sidebar-collapsed";
+const SIDEBAR_DESKTOP_BREAKPOINT = 1100;
+
 const navGroups = [
   {
     section: "MAIN",
@@ -52,9 +55,28 @@ export function AdminShell({
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement | null>(null);
   const displayName = formatDisplayName(user.fullName);
+
+  useEffect(() => {
+    const syncSidebarPreference = () => {
+      if (window.innerWidth <= SIDEBAR_DESKTOP_BREAKPOINT) {
+        setSidebarCollapsed(false);
+        return;
+      }
+
+      setSidebarCollapsed(window.localStorage.getItem(SIDEBAR_COLLAPSE_KEY) === "true");
+    };
+
+    syncSidebarPreference();
+    window.addEventListener("resize", syncSidebarPreference);
+
+    return () => {
+      window.removeEventListener("resize", syncSidebarPreference);
+    };
+  }, []);
 
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
@@ -81,38 +103,78 @@ export function AdminShell({
 
   return (
     <main className="dashboard-page">
-      <div className="app-shell">
-        <aside className="sidebar-dark">
+      <div className={`app-shell${sidebarCollapsed ? " sidebar-collapsed" : ""}`}>
+        <aside className={`sidebar-dark${sidebarCollapsed ? " is-collapsed" : ""}`}>
           <div className="sidebar-brand">
-            <Image
-              src="/PTV_LOGO.png"
-              alt="TTCS logo"
-              width={65}
-              height={65}
-              className="sidebar-brand-logo"
-              priority
-            />
-            <div className="sidebar-brand-copy">
-              <span>TASK AND</span>
-              <span>TELECONFERENCE</span>
-              <span>SYSTEM</span>
+            <div className="sidebar-brand-main">
+              <Image
+                src="/PTV_LOGO.png"
+                alt="TTCS logo"
+                width={65}
+                height={65}
+                className="sidebar-brand-logo"
+                priority
+              />
+              <div className="sidebar-brand-copy">
+                <span>TASK AND</span>
+                <span>TELECONFERENCE</span>
+                <span>SYSTEM</span>
+              </div>
             </div>
+
+            <button
+              type="button"
+              className="sidebar-collapse-toggle"
+              aria-label={sidebarCollapsed ? "Expand side navigation" : "Collapse side navigation"}
+              aria-pressed={sidebarCollapsed}
+              onClick={() => {
+                if (window.innerWidth <= SIDEBAR_DESKTOP_BREAKPOINT) {
+                  return;
+                }
+
+                setUserMenuOpen(false);
+                setSidebarCollapsed((current) => {
+                  const next = !current;
+                  window.localStorage.setItem(SIDEBAR_COLLAPSE_KEY, String(next));
+                  return next;
+                });
+              }}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                {sidebarCollapsed ? (
+                  <>
+                    <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
+                    <rect x="15.25" y="6.75" width="2.75" height="10.5" rx="1.1" fill="currentColor" opacity="0.35" stroke="none" />
+                    <path d="M7.75 12h5.5" />
+                    <path d="m10.75 9.25 2.75 2.75-2.75 2.75" />
+                  </>
+                ) : (
+                  <>
+                    <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
+                    <rect x="6" y="6.75" width="2.75" height="10.5" rx="1.1" fill="currentColor" opacity="0.35" stroke="none" />
+                    <path d="M10.75 12h5.5" />
+                    <path d="m13.75 9.25-2.75 2.75 2.75 2.75" />
+                  </>
+                )}
+              </svg>
+            </button>
           </div>
 
           <div className="sidebar-nav">
             {navGroups.map((group) => (
-              <div key={group.section}>
+              <div key={group.section} className="sidebar-group">
                 <div className="sidebar-section">{group.section}</div>
                 {group.items.map((item) => (
                   <Link
                     key={item.label}
                     className={`sidebar-link${pathname === item.href ? " active" : ""}`}
                     href={item.href}
+                    title={sidebarCollapsed ? item.label : undefined}
                   >
                     <span className="sidebar-icon">
                       <SidebarIcon icon={item.icon} />
                     </span>
-                    <span>{item.label}</span>
+                    <span className="sidebar-link-label">{item.label}</span>
                     {item.href === "/admin/inbox" ? (
                       <span className="sidebar-badge">{unreadCount}</span>
                     ) : "badge" in item && item.badge ? (

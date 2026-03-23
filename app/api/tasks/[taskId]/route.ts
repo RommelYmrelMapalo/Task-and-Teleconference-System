@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/app/utils/utils/supabase/admin";
 import { createClient } from "@/app/utils/utils/supabase/server";
+import { cleanupExpiredTasks } from "@/lib/task-retention";
 import { TaskMutationError, updateTaskForUser } from "@/lib/task-write-service";
 
 function parseTaskId(value: string) {
@@ -57,6 +58,7 @@ export async function GET(request: Request, context: { params: Promise<{ taskId:
     const url = new URL(request.url);
     const attachmentId = parseAttachmentId(url.searchParams.get("attachmentId"));
     const admin = createAdminClient();
+    await cleanupExpiredTasks(admin);
     const attachmentResult = await admin
       .from("task_attachments")
       .select("id,task_id,filename,mimetype,storage_path")

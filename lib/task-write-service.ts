@@ -4,6 +4,7 @@ import {
   buildTaskAssignmentSubject,
   buildTaskThreadKey,
 } from "@/lib/inbox-service";
+import { cleanupExpiredTasks } from "@/lib/task-retention";
 import type { TaskPriority, TaskStatus } from "@/lib/ttcs-data";
 import { isMissingSupabaseColumn, isMissingSupabaseTable } from "@/lib/supabase-errors";
 
@@ -347,6 +348,7 @@ async function resolveAssignmentRecipients(
 
 async function getTaskAccessContext(userId: string, taskId: number) {
   const { admin, isAdmin } = await loadWriterContext(userId);
+  await cleanupExpiredTasks(admin);
 
   const { data: task, error: taskError } = await admin
     .from("tasks")
@@ -487,6 +489,7 @@ async function deleteAttachmentRows(admin: ReturnType<typeof createAdminClient>,
 
 export async function createTaskForUser(userId: string, formData: FormData) {
   const { admin, actorName, isAdmin } = await loadWriterContext(userId);
+  await cleanupExpiredTasks(admin);
   const values = parseTaskValues(formData);
   const requestedAssigneeIds = parseAssigneeIds(formData).filter((assigneeId) => assigneeId !== userId);
   const now = new Date().toISOString();

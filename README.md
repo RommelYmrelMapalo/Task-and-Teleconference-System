@@ -36,6 +36,10 @@ For the Supabase "Confirm signup" email, use [`supabase/email-templates/confirm-
 
 Task assignments can be handled directly inside TTCS inbox threads. Apply [`supabase/inbox-thread-upgrade.sql`](./supabase/inbox-thread-upgrade.sql) to let admins and assigned users reply to each other in the inbox while keeping assignment notices grouped by task. Apply [`supabase/inbox-trash-upgrade.sql`](./supabase/inbox-trash-upgrade.sql) to add per-user trash with 31-day retention for inbox threads.
 
+## Task retention
+
+Tasks are automatically removed after 31 days without edits. The app enforces this lazily before task pages, task mutations, and task attachment downloads, using each task's `last_edited_at` timestamp as the inactivity cutoff.
+
 ## Current coverage
 
 - Auth, session redirects, and logout use Supabase.

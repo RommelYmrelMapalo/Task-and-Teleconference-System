@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createAdminClient } from "@/app/utils/utils/supabase/admin";
 import { createClient } from "@/app/utils/utils/supabase/server";
 import { hasSupabaseEnv } from "@/app/utils/utils/supabase/env";
+import { cleanupExpiredTasks } from "@/lib/task-retention";
 import { isMissingSupabaseColumn, isMissingSupabaseTable } from "@/lib/supabase-errors";
 
 const MANILA_TZ = "Asia/Manila";
@@ -1088,6 +1089,8 @@ export async function getUserTasks(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
 ) {
+  const admin = createAdminClient();
+  await cleanupExpiredTasks(admin);
   const { data: assignments, error: assignmentError } = await supabase
     .from("task_assignments")
     .select("task_id")
@@ -1173,6 +1176,8 @@ export async function getUserTasks(
 export async function getAdminTasks(
   supabase: Awaited<ReturnType<typeof createClient>>,
 ) {
+  const admin = createAdminClient();
+  await cleanupExpiredTasks(admin);
   let { data: taskRows, error: taskError } = await supabase
     .from("tasks")
     .select("id,title,description,status,priority,deadline,created_by,last_edited_by,created_at,last_edited_at")
