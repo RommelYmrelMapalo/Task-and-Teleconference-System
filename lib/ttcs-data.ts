@@ -21,6 +21,19 @@ export type TaskAttachment = {
   downloadUrl: string | null;
 };
 
+export type TaskCommentItem = {
+  id: number;
+  taskId: number;
+  body: string;
+  createdAt: string;
+  createdLabel: string;
+  authorId: string;
+  authorLabel: string;
+  authorInitials: string;
+  authorRoleLabel: string;
+  isAdmin: boolean;
+};
+
 export type ProfileRecord = {
   id: string;
   email: string;
@@ -143,6 +156,7 @@ export type TaskItem = {
   isDelayed: boolean;
   assignees: ShellUser[];
   attachments: TaskAttachment[];
+  comments: TaskCommentItem[];
 };
 
 export type DashboardDay = {
@@ -195,6 +209,14 @@ type TaskAuditLogRow = {
   task_id: number;
   action: string;
   details: string | null;
+  created_at: string;
+};
+
+type TaskCommentRow = {
+  id: number;
+  task_id: number;
+  body: string;
+  author_user_id: string;
   created_at: string;
 };
 
@@ -730,10 +752,34 @@ function mapAttachmentRow(row: AttachmentRow, downloadUrl: string | null, size: 
   };
 }
 
+function mapTaskCommentRow(row: TaskCommentRow, author?: ShellUser | null): TaskCommentItem {
+  const authorLabel = author?.fullName ?? "Unknown user";
+
+  return {
+    id: row.id,
+    taskId: row.task_id,
+    body: row.body,
+    createdAt: row.created_at,
+    createdLabel: formatWithTz(row.created_at, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }),
+    authorId: row.author_user_id,
+    authorLabel,
+    authorInitials: author?.initials ?? initialsFromName(authorLabel),
+    authorRoleLabel: author?.roleLabel ?? "User",
+    isAdmin: author?.isAdmin ?? false,
+  };
+}
+
 function mapTaskRow(
   row: TaskRow,
   assignees: ShellUser[] = [],
   attachments: TaskAttachment[] = [],
+  comments: TaskCommentItem[] = [],
   createdBy?: ShellUser | null,
   lastEditedBy?: ShellUser | null,
 ): TaskItem {
@@ -785,6 +831,7 @@ function mapTaskRow(
     isDelayed,
     assignees,
     attachments,
+    comments,
   };
 }
 
@@ -825,6 +872,54 @@ async function getTaskAttachmentsByTaskId(
   }
 
   return attachmentsByTask;
+}
+
+async function getTaskCommentRowsByTaskId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  taskIds: number[],
+) {
+  if (!taskIds.length) {
+    return new Map<number, TaskCommentRow[]>();
+  }
+
+  const { data, error } = await supabase
+    .from("task_comments")
+    .select("id,task_id,body,author_user_id,created_at")
+    .in("task_id", taskIds)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    if (isMissingSupabaseTable(error)) {
+      return new Map<number, TaskCommentRow[]>();
+    }
+    throw new Error(`Failed to load task comments: ${error.message}`);
+  }
+
+  const commentsByTask = new Map<number, TaskCommentRow[]>();
+
+  for (const row of (data as TaskCommentRow[] | null) ?? []) {
+    const existing = commentsByTask.get(row.task_id) ?? [];
+    existing.push(row);
+    commentsByTask.set(row.task_id, existing);
+  }
+
+  return commentsByTask;
+}
+
+function mapTaskCommentsByTask(
+  rowsByTask: Map<number, TaskCommentRow[]>,
+  profileMap: Map<string, ShellUser>,
+) {
+  const commentsByTask = new Map<number, TaskCommentItem[]>();
+
+  for (const [taskId, rows] of rowsByTask) {
+    commentsByTask.set(
+      taskId,
+      rows.map((row) => mapTaskCommentRow(row, profileMap.get(row.author_user_id) ?? null)),
+    );
+  }
+
+  return commentsByTask;
 }
 
 export async function getUserNotifications(
@@ -1294,15 +1389,19 @@ export async function getUserTasks(
   }
 
   const taskRows = normalizeTaskRows(data as TaskRow[] | LegacyTaskRow[] | null);
-  const attachmentsByTask = await getTaskAttachmentsByTaskId(supabase, taskRows.map((task) => task.id));
+  const loadedTaskIds = taskRows.map((task) => task.id);
+  const attachmentsByTask = await getTaskAttachmentsByTaskId(supabase, loadedTaskIds);
+  const commentRowsByTask = await getTaskCommentRowsByTaskId(supabase, loadedTaskIds);
   const profileIds = unique(
     [
       userId,
       ...taskRows.map((task) => task.created_by).filter((value): value is string => Boolean(value)),
       ...taskRows.map((task) => task.last_edited_by).filter((value): value is string => Boolean(value)),
+      ...Array.from(commentRowsByTask.values()).flatMap((rows) => rows.map((comment) => comment.author_user_id)),
     ],
   );
   const profileMap = new Map<string, ShellUser>();
+  const commentsByTask = mapTaskCommentsByTask(commentRowsByTask, profileMap);
 
   if (profileIds.length) {
     const { data: profiles, error: profileError } = await supabase
@@ -1312,7 +1411,9 @@ export async function getUserTasks(
 
     if (profileError) {
       if (isMissingSupabaseTable(profileError)) {
-        return taskRows.map((item) => mapTaskRow(item, [], attachmentsByTask.get(item.id) ?? []));
+        return taskRows.map((item) =>
+          mapTaskRow(item, [], attachmentsByTask.get(item.id) ?? [], commentsByTask.get(item.id) ?? []),
+        );
       }
       throw new Error(`Failed to load task profiles: ${profileError.message}`);
     }
@@ -1322,11 +1423,14 @@ export async function getUserTasks(
     }
   }
 
+  const mappedCommentsByTask = mapTaskCommentsByTask(commentRowsByTask, profileMap);
+
   return taskRows.map((item) =>
     mapTaskRow(
       item,
       [],
       attachmentsByTask.get(item.id) ?? [],
+      mappedCommentsByTask.get(item.id) ?? [],
       item.created_by ? profileMap.get(item.created_by) ?? null : null,
       item.last_edited_by ? profileMap.get(item.last_edited_by) ?? null : null,
     ),
@@ -1363,6 +1467,7 @@ export async function getAdminTasks(
   const tasks = normalizeTaskRows(taskRows as TaskRow[] | LegacyTaskRow[] | null);
   const taskIds = tasks.map((task) => task.id);
   const attachmentsByTask = await getTaskAttachmentsByTaskId(supabase, taskIds);
+  const commentRowsByTask = await getTaskCommentRowsByTaskId(supabase, taskIds);
 
   let assignmentRows: AssignmentRow[] = [];
   if (taskIds.length) {
@@ -1373,7 +1478,10 @@ export async function getAdminTasks(
 
     if (error) {
       if (isMissingSupabaseTable(error)) {
-        return tasks.map((task) => mapTaskRow(task, [], attachmentsByTask.get(task.id) ?? []));
+        const commentsByTask = mapTaskCommentsByTask(commentRowsByTask, new Map());
+        return tasks.map((task) =>
+          mapTaskRow(task, [], attachmentsByTask.get(task.id) ?? [], commentsByTask.get(task.id) ?? []),
+        );
       }
       throw new Error(`Failed to load admin task assignments: ${error.message}`);
     }
@@ -1385,6 +1493,7 @@ export async function getAdminTasks(
     ...assignmentRows.map((item) => item.user_id),
     ...tasks.map((task) => task.created_by).filter((value): value is string => Boolean(value)),
     ...tasks.map((task) => task.last_edited_by).filter((value): value is string => Boolean(value)),
+    ...Array.from(commentRowsByTask.values()).flatMap((rows) => rows.map((comment) => comment.author_user_id)),
   ]);
   let profiles: ProfileRecord[] = [];
   if (userIds.length) {
@@ -1395,7 +1504,10 @@ export async function getAdminTasks(
 
     if (error) {
       if (isMissingSupabaseTable(error)) {
-        return tasks.map((task) => mapTaskRow(task, [], attachmentsByTask.get(task.id) ?? []));
+        const commentsByTask = mapTaskCommentsByTask(commentRowsByTask, new Map());
+        return tasks.map((task) =>
+          mapTaskRow(task, [], attachmentsByTask.get(task.id) ?? [], commentsByTask.get(task.id) ?? []),
+        );
       }
       throw new Error(`Failed to load assignee profiles: ${error.message}`);
     }
@@ -1404,6 +1516,7 @@ export async function getAdminTasks(
   }
 
   const profileMap = new Map(profiles.map((profile) => [profile.id, buildShellUser(profile)]));
+  const commentsByTask = mapTaskCommentsByTask(commentRowsByTask, profileMap);
   const assignmentsByTask = new Map<number, ShellUser[]>();
 
   for (const assignment of assignmentRows) {
@@ -1422,6 +1535,7 @@ export async function getAdminTasks(
       task,
       assignmentsByTask.get(task.id) ?? [],
       attachmentsByTask.get(task.id) ?? [],
+      commentsByTask.get(task.id) ?? [],
       task.created_by ? profileMap.get(task.created_by) ?? null : null,
       task.last_edited_by ? profileMap.get(task.last_edited_by) ?? null : null,
     ),

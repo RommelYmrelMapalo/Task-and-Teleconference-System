@@ -38,7 +38,7 @@ function buildSystemEvents({
         kind: "login",
         title: "User login",
         detail: `${profile.fullName} signed in successfully.`,
-        meta: profile.lastLoginLabel,
+        meta: profile.email,
         createdAt: profile.lastLoginAt,
         createdLabel: profile.lastLoginLabel,
       });

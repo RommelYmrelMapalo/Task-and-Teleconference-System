@@ -5,12 +5,13 @@ import {
   buildTaskThreadKey,
 } from "@/lib/inbox-service";
 import { cleanupExpiredTasks } from "@/lib/task-retention";
-import type { TaskPriority, TaskStatus } from "@/lib/ttcs-data";
+import type { TaskCommentItem, TaskPriority, TaskStatus } from "@/lib/ttcs-data";
 import { isMissingSupabaseColumn, isMissingSupabaseTable } from "@/lib/supabase-errors";
 
 const ATTACHMENTS_BUCKET = "task-attachments";
 const MANILA_OFFSET_HOURS = 8;
 const ATTACHMENT_FILE_LIMIT_BYTES = 50 * 1024 * 1024;
+const COMMENT_MAX_LENGTH = 4000;
 
 type AttachmentRow = {
   id: number;
@@ -70,6 +71,31 @@ function resolveProfileName(fullName: unknown, email: string | null | undefined)
   return "TTCS User";
 }
 
+function initialsFromName(fullName: string) {
+  const parts = fullName
+    .split(/\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .slice(0, 2);
+
+  if (!parts.length) {
+    return "TT";
+  }
+
+  return parts.map((part) => part[0]?.toUpperCase() ?? "").join("");
+}
+
+function formatCommentLabel(value: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Manila",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
 function readText(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
@@ -77,7 +103,19 @@ function readText(formData: FormData, key: string) {
 
 function combineDueDate(date: string, time: string) {
   if (!date) {
+    if (time) {
+      throw new TaskMutationError("Choose a due date before setting a due time.");
+    }
+
     return null;
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    throw new TaskMutationError("Invalid due date or time.");
+  }
+
+  if (time && !/^\d{2}:\d{2}$/.test(time)) {
+    throw new TaskMutationError("Invalid due date or time.");
   }
 
   const [yearText, monthText, dayText] = date.split("-");
@@ -98,10 +136,33 @@ function combineDueDate(date: string, time: string) {
     throw new TaskMutationError("Invalid due date or time.");
   }
 
-  return new Date(Date.UTC(year, month - 1, day, hour - MANILA_OFFSET_HOURS, minute)).toISOString();
+  if (month < 1 || month > 12 || day < 1 || day > 31 || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    throw new TaskMutationError("Invalid due date or time.");
+  }
+
+  const dueDate = new Date(Date.UTC(year, month - 1, day, hour - MANILA_OFFSET_HOURS, minute));
+  const manilaDate = new Date(dueDate.getTime() + MANILA_OFFSET_HOURS * 60 * 60 * 1000);
+
+  if (
+    manilaDate.getUTCFullYear() !== year ||
+    manilaDate.getUTCMonth() !== month - 1 ||
+    manilaDate.getUTCDate() !== day ||
+    manilaDate.getUTCHours() !== hour ||
+    manilaDate.getUTCMinutes() !== minute
+  ) {
+    throw new TaskMutationError("Invalid due date or time.");
+  }
+
+  return dueDate.toISOString();
 }
 
-function parseTaskValues(formData: FormData) {
+function parseTaskValues(
+  formData: FormData,
+  options: {
+    requireDescription?: boolean;
+    requireDeadline?: boolean;
+  } = {},
+) {
   const title = readText(formData, "title");
   const description = readText(formData, "description");
   const status = readText(formData, "status") as TaskStatus;
@@ -110,6 +171,14 @@ function parseTaskValues(formData: FormData) {
 
   if (!title) {
     throw new TaskMutationError("Task title is required.");
+  }
+
+  if (options.requireDescription && !description) {
+    throw new TaskMutationError("Task description is required.");
+  }
+
+  if (options.requireDeadline && !deadline) {
+    throw new TaskMutationError("Due date is required.");
   }
 
   if (!VALID_STATUS.has(status)) {
@@ -490,7 +559,10 @@ async function deleteAttachmentRows(admin: ReturnType<typeof createAdminClient>,
 export async function createTaskForUser(userId: string, formData: FormData) {
   const { admin, actorName, isAdmin } = await loadWriterContext(userId);
   await cleanupExpiredTasks(admin);
-  const values = parseTaskValues(formData);
+  const values = parseTaskValues(formData, {
+    requireDescription: true,
+    requireDeadline: true,
+  });
   const requestedAssigneeIds = parseAssigneeIds(formData).filter((assigneeId) => assigneeId !== userId);
   const now = new Date().toISOString();
 
@@ -670,4 +742,78 @@ export async function toggleTaskForUser(userId: string, taskId: number) {
   }
 
   return { taskId, status: nextStatus };
+}
+
+export async function addTaskCommentForUser(userId: string, taskId: number, formData: FormData) {
+  const { admin, actorName, isAdmin } = await loadWriterContext(userId);
+  await cleanupExpiredTasks(admin);
+
+  const body = readText(formData, "body");
+  if (!body) {
+    throw new TaskMutationError("Comment cannot be empty.");
+  }
+
+  if (body.length > COMMENT_MAX_LENGTH) {
+    throw new TaskMutationError(`Comment must be ${COMMENT_MAX_LENGTH} characters or fewer.`);
+  }
+
+  const { data: task, error: taskError } = await admin
+    .from("tasks")
+    .select("id")
+    .eq("id", taskId)
+    .maybeSingle();
+
+  if (taskError) {
+    throw new TaskMutationError(taskError.message, 500);
+  }
+
+  if (!task) {
+    throw new TaskMutationError("Task not found.", 404);
+  }
+
+  const insertResult = await admin
+    .from("task_comments")
+    .insert({
+      task_id: taskId,
+      author_user_id: userId,
+      body,
+    })
+    .select("id,task_id,body,author_user_id,created_at")
+    .single();
+
+  if (insertResult.error || !insertResult.data) {
+    if (isMissingSupabaseTable(insertResult.error)) {
+      throw new TaskMutationError("Task comments are not configured yet.", 500);
+    }
+
+    throw new TaskMutationError(insertResult.error?.message || "Could not save comment.", 500);
+  }
+
+  const comment = insertResult.data;
+  const touchResult = await admin
+    .from("tasks")
+    .update({
+      last_edited_by: userId,
+      last_edited_at: comment.created_at,
+    })
+    .eq("id", taskId);
+
+  if (touchResult.error) {
+    console.error("Failed to update task activity after comment.", touchResult.error);
+  }
+
+  const commentItem: TaskCommentItem = {
+    id: comment.id,
+    taskId: comment.task_id,
+    body: comment.body,
+    createdAt: comment.created_at,
+    createdLabel: formatCommentLabel(comment.created_at),
+    authorId: comment.author_user_id,
+    authorLabel: actorName,
+    authorInitials: initialsFromName(actorName),
+    authorRoleLabel: isAdmin ? "Admin" : "User",
+    isAdmin,
+  };
+
+  return { taskId, comment: commentItem };
 }

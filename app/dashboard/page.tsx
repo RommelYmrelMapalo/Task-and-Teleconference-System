@@ -1,5 +1,7 @@
 import { UserShell } from "@/components/user-shell";
 import { DashboardPlanner, DashboardPlannerActions } from "@/components/dashboard-planner";
+import DashboardLoading from "@/app/dashboard/loading";
+import { Suspense } from "react";
 import {
   getVisibleTasks,
   getMeetingItems,
@@ -7,7 +9,7 @@ import {
   requireSessionContext,
 } from "@/lib/ttcs-data";
 
-export default async function DashboardPage() {
+async function DashboardContent() {
   const { supabase, profile, shellUser, unreadCount } = await requireSessionContext();
   const [tasks, notifications] = await Promise.all([
     getVisibleTasks(),
@@ -31,5 +33,13 @@ export default async function DashboardPage() {
         viewerCanManageAll={shellUser.isAdmin}
       />
     </UserShell>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <DashboardContent />
+    </Suspense>
   );
 }

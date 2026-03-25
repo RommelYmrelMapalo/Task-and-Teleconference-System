@@ -24,6 +24,43 @@ const FILTERS: Array<{
 ];
 
 const EVENTS_PER_PAGE = 10;
+const EVENT_KIND_LABELS: Record<MonitoringSystemEventItem["kind"], string> = {
+  account: "Account",
+  login: "Login",
+  notification: "Notification",
+  audit: "Task audit",
+};
+
+function escapeCsvValue(value: string) {
+  return `"${value.replaceAll('"', '""')}"`;
+}
+
+function buildMonitoringCsv(events: MonitoringSystemEventItem[]) {
+  const header = ["Event type", "Title", "Details", "Context", "Timestamp"];
+  const rows = events.map((event) =>
+    [
+      EVENT_KIND_LABELS[event.kind],
+      event.title,
+      event.detail,
+      event.meta,
+      event.createdAt,
+    ]
+      .map((value) => escapeCsvValue(value))
+      .join(","),
+  );
+
+  return [header.map((value) => escapeCsvValue(value)).join(","), ...rows].join("\n");
+}
+
+function buildExportFileName(filter: (typeof FILTERS)[number]["key"]) {
+  const stamp = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+  return `ttcs-system-logs-${filter}-${stamp}.csv`;
+}
 
 function getVisiblePages(currentPage: number, totalPages: number) {
   const pages: Array<number | "ellipsis"> = [];
@@ -72,6 +109,17 @@ export function AdminMonitoringEvents({ events }: { events: MonitoringSystemEven
     return filteredEvents.slice(startIndex, startIndex + EVENTS_PER_PAGE);
   }, [filteredEvents, safePage]);
 
+  function handleExport() {
+    const csv = buildMonitoringCsv(filteredEvents);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = buildExportFileName(filter);
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <section className="page-card monitoring-events-card">
       <div className="monitoring-events-head">
@@ -80,20 +128,30 @@ export function AdminMonitoringEvents({ events }: { events: MonitoringSystemEven
             <h3>System Events</h3>
             <span className="soft-badge">{filteredEvents.length}</span>
           </div>
-          <div className="monitoring-events-filters" role="tablist" aria-label="Filter system events">
-            {FILTERS.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                className={`monitoring-events-filter${filter === item.key ? " active" : ""}`}
-                onClick={() => {
-                  setFilter(item.key);
-                  setCurrentPage(1);
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
+          <div className="monitoring-events-toolbar">
+            <div className="monitoring-events-filters" role="tablist" aria-label="Filter system events">
+              {FILTERS.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={`monitoring-events-filter${filter === item.key ? " active" : ""}`}
+                  onClick={() => {
+                    setFilter(item.key);
+                    setCurrentPage(1);
+                  }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="monitoring-events-export-button"
+              onClick={handleExport}
+              disabled={!filteredEvents.length}
+            >
+              Export logs
+            </button>
           </div>
         </div>
       </div>
@@ -105,13 +163,13 @@ export function AdminMonitoringEvents({ events }: { events: MonitoringSystemEven
               <div className="monitoring-event-copy">
                 <div className="monitoring-event-title-row">
                   <h3>{event.title}</h3>
-                  <span className={`monitoring-event-kind kind-${event.kind}`}>{event.kind}</span>
+                  <span className={`monitoring-event-kind kind-${event.kind}`}>{EVENT_KIND_LABELS[event.kind]}</span>
                 </div>
                 <p>{event.detail}</p>
               </div>
               <div className="monitoring-event-meta">
-                <span className="monitoring-event-meta-text">{event.meta}</span>
                 <span className="soft-badge">{event.createdLabel}</span>
+                <span className="monitoring-event-meta-text">{event.meta}</span>
               </div>
             </article>
           ))

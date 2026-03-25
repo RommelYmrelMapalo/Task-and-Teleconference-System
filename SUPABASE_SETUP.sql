@@ -143,6 +143,17 @@ create table public.task_attachments (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.task_comments (
+  id bigint generated always as identity primary key,
+  task_id bigint not null references public.tasks(id) on delete cascade,
+  author_user_id uuid not null references public.profiles(id) on delete cascade,
+  body text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists task_comments_task_created_idx
+on public.task_comments (task_id, created_at);
+
 create table if not exists public.task_audit_logs (
   id bigint generated always as identity primary key,
   actor_user_id uuid not null references public.profiles(id) on delete cascade,
@@ -215,6 +226,7 @@ alter table public.inbox_thread_states enable row level security;
 alter table public.tasks enable row level security;
 alter table public.task_assignments enable row level security;
 alter table public.task_attachments enable row level security;
+alter table public.task_comments enable row level security;
 alter table public.task_audit_logs enable row level security;
 
 create policy "profiles_select_self_or_admin"
@@ -279,6 +291,17 @@ using (auth.uid() is not null);
 
 create policy "task_attachments_admin_write"
 on public.task_attachments
+for all
+using (public.is_admin())
+with check (public.is_admin());
+
+create policy "task_comments_authenticated_select"
+on public.task_comments
+for select
+using (auth.uid() is not null);
+
+create policy "task_comments_admin_write"
+on public.task_comments
 for all
 using (public.is_admin())
 with check (public.is_admin());

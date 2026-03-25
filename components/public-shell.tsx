@@ -1,11 +1,14 @@
 import Image from "next/image";
 import { ReactNode } from "react";
+import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
 
 export function PublicShell({
+  path,
   title,
   subtitle,
   children,
 }: {
+  path: string;
   title: string;
   subtitle?: string;
   children: ReactNode;
@@ -19,8 +22,7 @@ export function PublicShell({
 
         <section className="auth-box">
           <div className="auth-heading">
-            <h1>{title}</h1>
-            {subtitle ? <p>{subtitle}</p> : null}
+            <PageBreadcrumbs pathname={path} title={title} subtitle={subtitle} centered />
           </div>
           {children}
         </section>

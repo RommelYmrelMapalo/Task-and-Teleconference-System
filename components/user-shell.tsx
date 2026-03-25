@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useEffect, useRef, useState } from "react";
+import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
 import type { ShellUser } from "@/lib/ttcs-data";
 import { SignOutButton } from "./auth/sign-out-button";
 import { SidebarIcon } from "./sidebar-icons";
@@ -245,8 +246,7 @@ export function UserShell({
             <div className="main-inner">
               <div className="dashboard-head">
                 <div className="dashboard-head-left">
-                  <div className="td-title">{title}</div>
-                  {subtitle ? <div className="td-sub">{subtitle}</div> : null}
+                  <PageBreadcrumbs pathname={pathname} title={title} subtitle={subtitle} />
                 </div>
                 {actions ? <div className="planner-actions-top">{actions}</div> : null}
               </div>

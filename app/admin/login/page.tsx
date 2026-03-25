@@ -11,7 +11,7 @@ export default async function AdminLoginPage() {
   }
 
   return (
-    <PublicShell title="Admin Login" subtitle="Access the TTCS administration panel">
+    <PublicShell path="/admin/login" title="Admin Login" subtitle="Access the TTCS administration panel">
       <LoginForm adminOnly />
     </PublicShell>
   );

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useEffect, useRef, useState } from "react";
+import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
 import type { ShellUser } from "@/lib/ttcs-data";
 import { SignOutButton } from "./auth/sign-out-button";
 import { SidebarIcon } from "./sidebar-icons";
@@ -223,15 +224,12 @@ export function AdminShell({
         <section className="main-area">
           <div className="content-wrap">
             <div className={`main-inner admin-main-inner${contentClassName ? ` ${contentClassName}` : ""}`}>
-              {title || subtitle || actions ? (
-                <div className="dashboard-head">
-                  <div className="dashboard-head-left">
-                    {title ? <div className="td-title">{title}</div> : null}
-                    {subtitle ? <div className="td-sub">{subtitle}</div> : null}
-                  </div>
-                  {actions ? <div className="planner-actions-top">{actions}</div> : null}
+              <div className="dashboard-head">
+                <div className="dashboard-head-left">
+                  <PageBreadcrumbs pathname={pathname} title={title} subtitle={subtitle} />
                 </div>
-              ) : null}
+                {actions ? <div className="planner-actions-top">{actions}</div> : null}
+              </div>
               {children}
             </div>
           </div>

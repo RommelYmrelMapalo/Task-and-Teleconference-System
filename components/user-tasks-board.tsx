@@ -13,12 +13,13 @@ import {
   useState,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import type { TaskAttachment, TaskItem } from "@/lib/ttcs-data";
+import type { TaskAttachment, TaskCommentItem, TaskItem } from "@/lib/ttcs-data";
 import { applyTaskStatus, toggleTaskCompletion } from "@/lib/task-cache";
 
 type TaskFilter = "all" | "active" | "revision" | "completed" | "delayed";
 type EditableTask = TaskItem;
 type EditableAttachment = TaskAttachment & { localFile?: File | null };
+type CreateTaskFormErrors = Partial<Record<"title" | "description" | "dueDate" | "dueTime", string>>;
 const GOOGLE_DOCS_PREVIEWABLE_EXTENSIONS = new Set(["doc", "docx", "ppt", "pptx", "xls", "xlsx"]);
 const GOOGLE_DOCS_PREVIEWABLE_MIMETYPES = new Set([
   "application/msword",
@@ -83,11 +84,7 @@ function buildAttachmentViewHref(attachment: EditableAttachment) {
     return attachment.downloadUrl;
   }
 
-  const params = new URLSearchParams({
-    url: attachment.downloadUrl,
-    filename: attachment.filename,
-  });
-  return `/attachment-preview?${params.toString()}`;
+  return `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(attachment.downloadUrl)}`;
 }
 
 function buildAttachmentsFromFiles(files: FileList) {
@@ -186,6 +183,44 @@ function attachmentStatusLabel(count: number, busy: boolean) {
   return `${count} files selected`;
 }
 
+function validateCreateTaskForm(formData: FormData): CreateTaskFormErrors {
+  const errors: CreateTaskFormErrors = {};
+  const title = String(formData.get("title") || "").trim();
+  const description = String(formData.get("description") || "").trim();
+  const dueDate = String(formData.get("dueDate") || "").trim();
+  const dueTime = String(formData.get("dueTime") || "").trim();
+
+  if (!title) {
+    errors.title = "Task title is required.";
+  }
+
+  if (!description) {
+    errors.description = "Task description is required.";
+  }
+
+  if (!dueDate) {
+    errors.dueDate = "Due date is required.";
+  }
+
+  if (dueTime && !dueDate) {
+    const message = "Choose a due date before setting a due time.";
+    errors.dueDate = message;
+    errors.dueTime = message;
+  }
+
+  return errors;
+}
+
+function appendCommentToTask(task: EditableTask, comment: TaskCommentItem): EditableTask {
+  return {
+    ...task,
+    comments: [...task.comments, comment],
+    activityAt: comment.createdAt,
+    activityLabel: comment.createdLabel,
+    lastEditedByLabel: comment.authorLabel,
+  };
+}
+
 function AttachmentList({
   attachments,
   onRemove,
@@ -280,6 +315,10 @@ export function UserTasksBoard({
   const [editSubmitBusy, setEditSubmitBusy] = useState(false);
   const [createSubmitError, setCreateSubmitError] = useState<string | null>(null);
   const [editSubmitError, setEditSubmitError] = useState<string | null>(null);
+  const [createValidationErrors, setCreateValidationErrors] = useState<CreateTaskFormErrors>({});
+  const [commentDraft, setCommentDraft] = useState("");
+  const [commentSubmitBusy, setCommentSubmitBusy] = useState(false);
+  const [commentSubmitError, setCommentSubmitError] = useState<string | null>(null);
   const [toggleBusyId, setToggleBusyId] = useState<number | null>(null);
   const [highlightedTaskId, setHighlightedTaskId] = useState<number | null>(null);
   const handledTaskTargetRef = useRef<string | null>(null);
@@ -293,6 +332,17 @@ export function UserTasksBoard({
   useEffect(() => {
     setTaskList(tasks);
   }, [tasks]);
+
+  useEffect(() => {
+    if (!selectedTask) {
+      return;
+    }
+
+    const latestTask = taskList.find((task) => task.id === selectedTask.id);
+    if (latestTask && latestTask !== selectedTask) {
+      setSelectedTask(latestTask);
+    }
+  }, [selectedTask, taskList]);
 
   useEffect(() => {
     if (!taskModalOpen) return;
@@ -339,6 +389,12 @@ export function UserTasksBoard({
     setEditAttachmentError(null);
     setEditSubmitError(null);
   }, [editingTask]);
+
+  useEffect(() => {
+    setCommentDraft("");
+    setCommentSubmitBusy(false);
+    setCommentSubmitError(null);
+  }, [selectedTask?.id]);
 
   useEffect(() => {
     const taskId = searchParams.get("task");
@@ -551,10 +607,16 @@ export function UserTasksBoard({
     if (createAttachmentsBusy || createSubmitBusy) return;
     const form = event.currentTarget;
     const formData = new FormData(form);
-    const title = String(formData.get("title") || "").trim();
-    if (!title) return;
+    const validationErrors = validateCreateTaskForm(formData);
+
+    if (Object.keys(validationErrors).length > 0) {
+      setCreateValidationErrors(validationErrors);
+      setCreateSubmitError(null);
+      return;
+    }
 
     setCreateSubmitBusy(true);
+    setCreateValidationErrors({});
     setCreateSubmitError(null);
 
     try {
@@ -567,12 +629,38 @@ export function UserTasksBoard({
       form.reset();
       setCreateAttachments([]);
       setCreateAttachmentError(null);
+      setCreateValidationErrors({});
       router.refresh();
     } catch (error) {
       setCreateSubmitError(error instanceof Error ? error.message : "Could not save the task.");
     } finally {
       setCreateSubmitBusy(false);
     }
+  };
+
+  const clearCreateValidationError = (field: keyof CreateTaskFormErrors) => {
+    setCreateValidationErrors((current) => {
+      if (!current[field] && !(field !== "title" && field !== "description" && (current.dueDate || current.dueTime))) {
+        return current;
+      }
+
+      if (field === "title") {
+        const { title, ...rest } = current;
+        void title;
+        return rest;
+      }
+
+      if (field === "description") {
+        const { description, ...rest } = current;
+        void description;
+        return rest;
+      }
+
+      const { dueDate, dueTime, ...rest } = current;
+      void dueDate;
+      void dueTime;
+      return rest;
+    });
   };
 
   const saveEdit = async (event: FormEvent<HTMLFormElement>) => {
@@ -598,6 +686,45 @@ export function UserTasksBoard({
     }
   };
 
+  const postComment = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedTask || commentSubmitBusy) return;
+
+    const body = commentDraft.trim();
+    if (!body) {
+      setCommentSubmitError("Comment cannot be empty.");
+      return;
+    }
+
+    setCommentSubmitBusy(true);
+    setCommentSubmitError(null);
+
+    try {
+      const payload = new FormData();
+      payload.set("body", body);
+
+      const response = await fetch(`/api/tasks/${selectedTask.id}/comments`, {
+        method: "POST",
+        body: payload,
+      });
+      const result = (await response.json().catch(() => null)) as { error?: string; comment?: TaskCommentItem } | null;
+
+      if (!response.ok || !result?.comment) {
+        throw new Error(result?.error || "Could not save comment.");
+      }
+
+      setTaskList((current) =>
+        current.map((task) => (task.id === selectedTask.id ? appendCommentToTask(task, result.comment as TaskCommentItem) : task)),
+      );
+      setCommentDraft("");
+      router.refresh();
+    } catch (error) {
+      setCommentSubmitError(error instanceof Error ? error.message : "Could not save comment.");
+    } finally {
+      setCommentSubmitBusy(false);
+    }
+  };
+
   return (
     <div className={`taskdash-wrap${isAdminVariant ? " admin-taskdash-wrap" : ""}`}>
       {taskModalOpen ? (
@@ -617,46 +744,101 @@ export function UserTasksBoard({
 
       {selectedTask ? (
         <div className="modal-overlay show" onClick={() => setSelectedTask(null)}>
-          <div className="modal-popup modern-popup task-detail-modal" onClick={(event) => event.stopPropagation()}>
-            <div className="modal-text">Task Details</div>
-            <div className="form-stack task-detail-body">
-              <div className="drawer-field task-detail-section-center">
-                <div className="drawer-label">TITLE</div>
-                <div className="field-input task-detail-value">{selectedTask.title}</div>
-              </div>
-              <div className="drawer-field task-detail-section-center">
-                <div className="drawer-label">DESCRIPTION</div>
-                <div className="drawer-textarea task-detail-value task-detail-description">{selectedTask.description}</div>
-              </div>
-              <div className="drawer-grid3 two-up task-detail-grid">
+          <div className="task-detail-shell" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-popup modern-popup task-detail-modal">
+              <div className="modal-text">Task Details</div>
+              <div className="form-stack task-detail-body">
                 <div className="drawer-field task-detail-section-center">
-                  <div className="drawer-label">STATUS</div>
-                  <div className="field-input task-detail-value">{statusLabel(selectedTask)}</div>
+                  <div className="drawer-label">TITLE</div>
+                  <div className="field-input task-detail-value">{selectedTask.title}</div>
                 </div>
                 <div className="drawer-field task-detail-section-center">
-                  <div className="drawer-label">PRIORITY</div>
-                  <div className="field-input task-detail-value">{selectedTask.priority.toUpperCase()}</div>
+                  <div className="drawer-label">DESCRIPTION</div>
+                  <div className="drawer-textarea task-detail-value task-detail-description">{selectedTask.description}</div>
                 </div>
-              </div>
-              <div className="drawer-field task-detail-section-center">
-                <div className="drawer-label">DEADLINE</div>
-                <div className="field-input task-detail-value">{selectedTask.dueLabel}</div>
-              </div>
-              {selectedTask.attachments.length ? (
-                <div className="drawer-field task-detail-attachments task-detail-section-center">
-                  <div className="drawer-label">ATTACHMENTS</div>
-                  <AttachmentList attachments={selectedTask.attachments} taskId={selectedTask.id} />
+                <div className="drawer-grid3 two-up task-detail-grid">
+                  <div className="drawer-field task-detail-section-center">
+                    <div className="drawer-label">STATUS</div>
+                    <div className="field-input task-detail-value">{statusLabel(selectedTask)}</div>
+                  </div>
+                  <div className="drawer-field task-detail-section-center">
+                    <div className="drawer-label">PRIORITY</div>
+                    <div className="field-input task-detail-value">{selectedTask.priority.toUpperCase()}</div>
+                  </div>
                 </div>
-              ) : null}
-              <div className="task-detail-actions">
-                <button type="button" className="btn-mini task-detail-edit" onClick={() => requestEditTask(selectedTask)}>
-                  Edit
-                </button>
-                <button type="button" className="primary-btn task-detail-close" onClick={() => setSelectedTask(null)}>
-                  Close
-                </button>
+                <div className="drawer-field task-detail-section-center">
+                  <div className="drawer-label">DEADLINE</div>
+                  <div className="field-input task-detail-value">{selectedTask.dueLabel}</div>
+                </div>
+                {selectedTask.attachments.length ? (
+                  <div className="drawer-field task-detail-attachments task-detail-section-center">
+                    <div className="drawer-label">ATTACHMENTS</div>
+                    <AttachmentList attachments={selectedTask.attachments} taskId={selectedTask.id} />
+                  </div>
+                ) : null}
+                <div className="task-detail-actions">
+                  <button type="button" className="btn-mini task-detail-edit" onClick={() => requestEditTask(selectedTask)}>
+                    Edit
+                  </button>
+                  <button type="button" className="primary-btn task-detail-close" onClick={() => setSelectedTask(null)}>
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
+
+            <aside className="modal-popup modern-popup task-comments-panel">
+              <div className="modal-text">Comments</div>
+              <div className="task-comments-panel-body">
+                <div className="task-comments-shell">
+                  {selectedTask.comments.length ? (
+                    <div className="task-comments-list">
+                      {selectedTask.comments.map((comment) => (
+                        <article className="task-comment-card" key={comment.id}>
+                          <div className="task-comment-avatar" aria-hidden="true">
+                            {comment.authorInitials}
+                          </div>
+                          <div className="task-comment-content">
+                            <div className="task-comment-head">
+                              <div className="task-comment-author-wrap">
+                                <span className="task-comment-author">{comment.authorLabel}</span>
+                                <span className={`task-comment-role${comment.isAdmin ? " is-admin" : ""}`}>
+                                  {comment.authorRoleLabel}
+                                </span>
+                              </div>
+                              <time className="task-comment-time" dateTime={comment.createdAt}>
+                                {comment.createdLabel}
+                              </time>
+                            </div>
+                            <div className="task-comment-body">{comment.body}</div>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="task-comments-empty">No comments yet. Start the discussion here.</div>
+                  )}
+
+                  <form className="task-comment-form" onSubmit={postComment}>
+                    <textarea
+                      className="drawer-textarea task-comment-input"
+                      name="body"
+                      rows={3}
+                      value={commentDraft}
+                      onChange={(event) => setCommentDraft(event.target.value)}
+                      placeholder="Write a comment about this task..."
+                      disabled={commentSubmitBusy}
+                    />
+                    {commentSubmitError ? <div className="attachment-note attachment-error">{commentSubmitError}</div> : null}
+                    <div className="task-comment-footer">
+                      <button type="submit" className="btn-mini task-comment-submit" disabled={commentSubmitBusy}>
+                        {commentSubmitBusy ? "Posting..." : "Post comment"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </aside>
           </div>
         </div>
       ) : null}
@@ -1057,7 +1239,18 @@ export function UserTasksBoard({
           </div>
           <div className="drawer-field">
             <div className="drawer-label">TITLE</div>
-            <input className="drawer-input" name="title" placeholder="Task title..." />
+            <input
+              className="drawer-input"
+              name="title"
+              placeholder="Task title..."
+              required
+              aria-invalid={createValidationErrors.title ? "true" : undefined}
+              onChange={() => {
+                clearCreateValidationError("title");
+                setCreateSubmitError(null);
+              }}
+            />
+            {createValidationErrors.title ? <div className="field-error">{createValidationErrors.title}</div> : null}
           </div>
 
           <div className="drawer-grid3 two-up">
@@ -1106,19 +1299,52 @@ export function UserTasksBoard({
           </div>
 
           <div className="drawer-grid3 two-up">
-            <div className="drawer-field">
-              <div className="drawer-label">DUE DATE</div>
-              <input className="drawer-input" type="date" name="dueDate" />
+          <div className="drawer-field">
+            <div className="drawer-label">DUE DATE</div>
+            <input
+              className="drawer-input"
+              type="date"
+              name="dueDate"
+              required
+              aria-invalid={createValidationErrors.dueDate ? "true" : undefined}
+              onChange={() => {
+                clearCreateValidationError("dueDate");
+                setCreateSubmitError(null);
+              }}
+              />
+              {createValidationErrors.dueDate ? <div className="field-error">{createValidationErrors.dueDate}</div> : null}
             </div>
             <div className="drawer-field">
               <div className="drawer-label">DUE TIME</div>
-              <input className="drawer-input" type="time" name="dueTime" />
+              <input
+                className="drawer-input"
+                type="time"
+                name="dueTime"
+                aria-invalid={createValidationErrors.dueTime ? "true" : undefined}
+                onChange={() => {
+                  clearCreateValidationError("dueTime");
+                  setCreateSubmitError(null);
+                }}
+              />
+              {createValidationErrors.dueTime ? <div className="field-error">{createValidationErrors.dueTime}</div> : null}
             </div>
           </div>
 
           <div className="drawer-field">
             <div className="drawer-label">DESCRIPTION</div>
-            <textarea className="drawer-textarea" name="description" rows={5} placeholder="Write details..." />
+            <textarea
+              className="drawer-textarea"
+              name="description"
+              rows={5}
+              placeholder="Write details..."
+              required
+              aria-invalid={createValidationErrors.description ? "true" : undefined}
+              onChange={() => {
+                clearCreateValidationError("description");
+                setCreateSubmitError(null);
+              }}
+            />
+            {createValidationErrors.description ? <div className="field-error">{createValidationErrors.description}</div> : null}
           </div>
 
           {isAdminVariant ? (

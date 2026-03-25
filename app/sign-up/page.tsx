@@ -11,7 +11,7 @@ export default async function SignUpPage() {
   }
 
   return (
-    <PublicShell title="Sign Up" subtitle="Create a TTCS user account">
+    <PublicShell path="/sign-up" title="Sign Up" subtitle="Create a TTCS user account">
       <SignUpForm />
     </PublicShell>
   );
