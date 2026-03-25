@@ -27,7 +27,7 @@ type TaskAssignmentEmailConfig = {
 function normalizeEmailAddress(value: string | null | undefined) {
   const email = value?.trim();
   if (!email || !email.includes("@")) {
-    return null;
+    return undefined;
   }
 
   return email;

@@ -431,6 +431,9 @@ export function InboxBrowser({
           taskId: null,
           creatorLabel: viewerLabel,
           threadType: "conversation",
+          isTrashed: false,
+          trashExpiresAt: null,
+          trashExpiresLabel: null,
           messages: [
             {
               id: Date.now(),
@@ -559,6 +562,9 @@ export function InboxBrowser({
             taskId: selectedThread.taskId,
             creatorLabel: selectedThread.creatorLabel,
             threadType: "conversation",
+            isTrashed: false,
+            trashExpiresAt: null,
+            trashExpiresLabel: null,
             messages: [
               {
                 id: Date.now(),
