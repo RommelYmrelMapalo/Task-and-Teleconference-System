@@ -41,6 +41,18 @@ export type ShellUser = {
   roleLabel: string;
 };
 
+export type AdminProfileListItem = ShellUser & {
+  createdAt: string;
+  createdLabel: string;
+  joinedLabel: string;
+  lastLoginAt: string | null;
+  lastLoginLabel: string;
+  lastActiveLabel: string;
+  username: string;
+  statusLabel: "Active" | "Inactive" | "Pending" | "Deactivated";
+  statusTone: "active" | "inactive" | "pending" | "deactivated";
+};
+
 export type NotificationItem = {
   id: number;
   title: string;
@@ -51,6 +63,14 @@ export type NotificationItem = {
   preview: string;
   sender: string;
   timeLabel: string;
+};
+
+export type MonitoringNotificationItem = NotificationItem & {
+  recipientLabel: string;
+  senderLabel: string;
+  isReply: boolean;
+  taskId: number | null;
+  threadKey: string | null;
 };
 
 export type InboxMessageItem = {
@@ -369,6 +389,78 @@ function deriveNameFromEmail(email: string) {
     .trim();
 
   return formatDisplayName(normalized || localPart);
+}
+
+function buildUsername(email: string) {
+  const localPart = email.split("@")[0]?.trim().toLowerCase() ?? "";
+  return localPart.replace(/[^a-z0-9._-]+/g, "") || "ttcs-user";
+}
+
+function formatRelativeTime(value: string | null | undefined) {
+  if (!value) {
+    return "Never signed in";
+  }
+
+  const now = Date.now();
+  const target = new Date(value).getTime();
+  const diffMs = target - now;
+  const diffMinutes = Math.round(diffMs / (60 * 1000));
+  const diffHours = Math.round(diffMs / (60 * 60 * 1000));
+  const diffDays = Math.round(diffMs / (24 * 60 * 60 * 1000));
+  const diffMonths = Math.round(diffMs / (30 * 24 * 60 * 60 * 1000));
+  const diffYears = Math.round(diffMs / (365 * 24 * 60 * 60 * 1000));
+  const formatter = new Intl.RelativeTimeFormat("en-US", { numeric: "auto" });
+
+  if (Math.abs(diffMinutes) < 60) {
+    return formatter.format(diffMinutes, "minute");
+  }
+
+  if (Math.abs(diffHours) < 24) {
+    return formatter.format(diffHours, "hour");
+  }
+
+  if (Math.abs(diffDays) < 30) {
+    return formatter.format(diffDays, "day");
+  }
+
+  if (Math.abs(diffMonths) < 12) {
+    return formatter.format(diffMonths, "month");
+  }
+
+  return formatter.format(diffYears, "year");
+}
+
+function deriveActivityStatus(lastLogin: string | null | undefined, isDeactivated: boolean): {
+  label: "Active" | "Inactive" | "Pending" | "Deactivated";
+  tone: "active" | "inactive" | "pending" | "deactivated";
+} {
+  if (isDeactivated) {
+    return {
+      label: "Deactivated",
+      tone: "deactivated",
+    };
+  }
+
+  if (!lastLogin) {
+    return {
+      label: "Pending",
+      tone: "pending",
+    };
+  }
+
+  const diffDays = Math.abs(Date.now() - new Date(lastLogin).getTime()) / (24 * 60 * 60 * 1000);
+
+  if (diffDays <= 14) {
+    return {
+      label: "Active",
+      tone: "active",
+    };
+  }
+
+  return {
+    label: "Inactive",
+    tone: "inactive",
+  };
 }
 
 function resolveProfileName(fullName: string | null | undefined, email: string) {
@@ -988,6 +1080,74 @@ export async function getAllNotifications(
   return ((data as NotificationRow[] | null) ?? []).map(mapNotificationRow);
 }
 
+export async function getMonitoringNotifications(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  limit?: number,
+): Promise<MonitoringNotificationItem[]> {
+  let query = supabase
+    .from("notifications")
+    .select("id,title,message,is_read,created_at,user_id,sender_user_id,thread_key,task_id")
+    .order("created_at", { ascending: false });
+
+  if (limit) {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    if (isMissingSupabaseTable(error)) {
+      return [];
+    }
+    throw new Error(`Failed to load monitoring notifications: ${error.message}`);
+  }
+
+  const rows = (data as InboxNotificationRow[] | null) ?? [];
+  if (!rows.length) {
+    return [];
+  }
+
+  const profileIds = unique(
+    rows.flatMap((row) => [row.user_id, row.sender_user_id].filter((value): value is string => Boolean(value))),
+  );
+  const profileMap = new Map<string, ShellUser>();
+
+  if (profileIds.length) {
+    const { data: profiles, error: profileError } = await supabase
+      .from("profiles")
+      .select("id,email,full_name,is_admin,role,last_login,created_at")
+      .in("id", profileIds);
+
+    if (profileError && !isMissingSupabaseTable(profileError)) {
+      throw new Error(`Failed to load notification profiles: ${profileError.message}`);
+    }
+
+    for (const profile of (profiles as ProfileRecord[] | null) ?? []) {
+      profileMap.set(profile.id, buildShellUser(profile));
+    }
+  }
+
+  return rows.map((row) => {
+    const base = mapNotificationRow(row);
+    const senderProfile = row.sender_user_id ? profileMap.get(row.sender_user_id) ?? null : null;
+    const recipientProfile = profileMap.get(row.user_id) ?? null;
+    const inferredTaskCreator = inferTaskCreatorFromMessage(row.message);
+    const senderLabel =
+      senderProfile?.fullName ??
+      inferredTaskCreator ??
+      (row.sender_user_id ? "TTCS Member" : base.sender);
+
+    return {
+      ...base,
+      senderLabel,
+      recipientLabel: recipientProfile?.fullName ?? "Unknown recipient",
+      isReply: Boolean(row.task_id !== null && row.sender_user_id && !inferredTaskCreator),
+      taskId: row.task_id,
+      threadKey: row.thread_key,
+    };
+  });
+}
+
 export async function getAdminTaskAuditLogs(
   supabase: Awaited<ReturnType<typeof createClient>>,
   limit = 50,
@@ -1275,7 +1435,17 @@ export async function getVisibleTasks() {
 
 export async function getAllProfiles(
   supabase: Awaited<ReturnType<typeof createClient>>,
-) {
+): Promise<AdminProfileListItem[]> {
+  const admin = createAdminClient();
+  const authUsersResult = await admin.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  });
+
+  const bannedUntilMap = new Map(
+    (authUsersResult.data?.users ?? []).map((user) => [user.id, user.banned_until ?? null]),
+  );
+
   const { data, error } = await supabase
     .from("profiles")
     .select("id,email,full_name,is_admin,role,last_login,created_at")
@@ -1291,6 +1461,8 @@ export async function getAllProfiles(
 
   return ((data as ProfileRecord[] | null) ?? []).map((profile) => ({
     ...buildShellUser(profile),
+    createdAt: profile.created_at,
+    lastLoginAt: profile.last_login,
     lastLoginLabel: profile.last_login
       ? formatWithTz(profile.last_login, {
           month: "short",
@@ -1300,7 +1472,26 @@ export async function getAllProfiles(
           minute: "2-digit",
         })
       : "Never",
+    lastActiveLabel: formatRelativeTime(profile.last_login),
+    username: buildUsername(profile.email),
+    ...(() => {
+      const bannedUntil = bannedUntilMap.get(profile.id);
+      const isDeactivated =
+        typeof bannedUntil === "string" &&
+        bannedUntil.length > 0 &&
+        new Date(bannedUntil).getTime() > Date.now();
+      const status = deriveActivityStatus(profile.last_login, isDeactivated);
+      return {
+        statusLabel: status.label,
+        statusTone: status.tone,
+      };
+    })(),
     createdLabel: formatWithTz(profile.created_at, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+    joinedLabel: formatWithTz(profile.created_at, {
       month: "short",
       day: "numeric",
       year: "numeric",

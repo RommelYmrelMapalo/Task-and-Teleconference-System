@@ -41,6 +41,7 @@ export function AdminShell({
   title,
   subtitle,
   actions,
+  contentClassName,
   sidebarContent,
   user,
   unreadCount = 0,
@@ -49,6 +50,7 @@ export function AdminShell({
   title: string;
   subtitle?: string;
   actions?: ReactNode;
+  contentClassName?: string;
   sidebarContent?: ReactNode;
   user: ShellUser;
   unreadCount?: number;
@@ -220,14 +222,16 @@ export function AdminShell({
 
         <section className="main-area">
           <div className="content-wrap">
-            <div className="main-inner admin-main-inner">
-              <div className="dashboard-head">
-                <div className="dashboard-head-left">
-                  <div className="td-title">{title}</div>
-                  {subtitle ? <div className="td-sub">{subtitle}</div> : null}
+            <div className={`main-inner admin-main-inner${contentClassName ? ` ${contentClassName}` : ""}`}>
+              {title || subtitle || actions ? (
+                <div className="dashboard-head">
+                  <div className="dashboard-head-left">
+                    {title ? <div className="td-title">{title}</div> : null}
+                    {subtitle ? <div className="td-sub">{subtitle}</div> : null}
+                  </div>
+                  {actions ? <div className="planner-actions-top">{actions}</div> : null}
                 </div>
-                {actions ? <div className="planner-actions-top">{actions}</div> : null}
-              </div>
+              ) : null}
               {children}
             </div>
           </div>

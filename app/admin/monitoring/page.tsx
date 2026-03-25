@@ -1,102 +1,101 @@
 import { AdminShell } from "@/components/admin-shell";
 import {
+  AdminMonitoringEvents,
+  type MonitoringSystemEventItem,
+} from "@/components/admin-monitoring-events";
+import {
   getAdminTaskAuditLogs,
-  getAdminTasks,
-  getAllNotifications,
   getAllProfiles,
+  getMonitoringNotifications,
   requireSessionContext,
 } from "@/lib/ttcs-data";
 
+function buildSystemEvents({
+  profiles,
+  notifications,
+  auditLogs,
+}: {
+  profiles: Awaited<ReturnType<typeof getAllProfiles>>;
+  notifications: Awaited<ReturnType<typeof getMonitoringNotifications>>;
+  auditLogs: Awaited<ReturnType<typeof getAdminTaskAuditLogs>>;
+}): MonitoringSystemEventItem[] {
+  const events: MonitoringSystemEventItem[] = [];
+
+  for (const profile of profiles) {
+    events.push({
+      id: `profile-created:${profile.id}`,
+      kind: "account",
+      title: "Account created",
+      detail: `${profile.fullName} joined the platform as ${profile.roleLabel}.`,
+      meta: profile.email,
+      createdAt: profile.createdAt,
+      createdLabel: profile.joinedLabel,
+    });
+
+    if (profile.lastLoginAt) {
+      events.push({
+        id: `profile-login:${profile.id}:${profile.lastLoginAt}`,
+        kind: "login",
+        title: "User login",
+        detail: `${profile.fullName} signed in successfully.`,
+        meta: profile.lastLoginLabel,
+        createdAt: profile.lastLoginAt,
+        createdLabel: profile.lastLoginLabel,
+      });
+    }
+  }
+
+  for (const notification of notifications) {
+    const directionLabel = notification.isReply
+      ? `Reply: ${notification.senderLabel} -> ${notification.recipientLabel}`
+      : `From ${notification.senderLabel} to ${notification.recipientLabel}`;
+
+    events.push({
+      id: `notification:${notification.id}`,
+      kind: "notification",
+      title: notification.title || "System notification",
+      detail: notification.preview || notification.message,
+      meta: directionLabel,
+      createdAt: notification.createdAt,
+      createdLabel: notification.timeLabel,
+    });
+  }
+
+  for (const log of auditLogs) {
+    events.push({
+      id: `audit:${log.id}`,
+      kind: "audit",
+      title: log.action,
+      detail: `${log.actorName} overrode "${log.taskTitle}". ${log.details}`,
+      meta: `Task: ${log.taskTitle}`,
+      createdAt: log.createdAt,
+      createdLabel: log.createdLabel,
+    });
+  }
+
+  return events.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+}
+
 export default async function MonitoringPage() {
   const { supabase, shellUser, unreadCount } = await requireSessionContext({ admin: true });
-  const [tasks, profiles, notifications, auditLogs] = await Promise.all([
-    getAdminTasks(supabase),
+  const [profiles, notifications, auditLogs] = await Promise.all([
     getAllProfiles(supabase),
-    getAllNotifications(supabase, 500),
+    getMonitoringNotifications(supabase, 500),
     getAdminTaskAuditLogs(supabase, 20),
   ]);
+  const systemEvents = buildSystemEvents({ profiles, notifications, auditLogs });
 
   return (
     <AdminShell
       title="Monitoring Panel"
       subtitle="Recent Supabase-backed account activity and reports"
+      contentClassName="monitoring-screen"
       user={shellUser}
       unreadCount={unreadCount}
     >
-      <section className="page-card">
-        <h3>Activity Stream</h3>
-        <div className="list-stack">
-          {profiles.slice(0, 3).map((user) => (
-            <article className="table-row" key={user.id}>
-              <div>
-                <h3>{user.fullName}</h3>
-                <p>Last login: {user.lastLoginLabel}</p>
-              </div>
-              <span className="soft-badge">{user.roleLabel}</span>
-            </article>
-          ))}
-          {tasks.slice(0, 3).map((task) => (
-            <article className="table-row" key={task.id}>
-              <div>
-                <h3>{task.title}</h3>
-                <p>{task.description}</p>
-              </div>
-              <span className="soft-badge">{task.activityLabel}</span>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <div className="page-grid three-col">
-        <section className="page-card">
-          <h3>Task Summary</h3>
-          <p>Total tasks: {tasks.length}</p>
-          <p>Completed: {tasks.filter((task) => task.status === "completed").length}</p>
-          <p>Delayed: {tasks.filter((task) => task.isDelayed).length}</p>
-        </section>
-        <section className="page-card">
-          <h3>Meeting Summary</h3>
-          <p>
-            Meeting notices:{" "}
-            {
-              notifications.filter((item) =>
-                `${item.title} ${item.message}`.toLowerCase().includes("meeting")
-              ).length
-            }
-          </p>
-          <p>Unread notices: {notifications.filter((item) => !item.isRead).length}</p>
-        </section>
-        <section className="page-card">
-          <h3>User Activity</h3>
-          <p>Total profiles: {profiles.length}</p>
-          <p>Admins: {profiles.filter((profile) => profile.isAdmin).length}</p>
-          <p>Users: {profiles.filter((profile) => !profile.isAdmin).length}</p>
-        </section>
+      <div className="monitoring-page-shell">
+        <AdminMonitoringEvents events={systemEvents} />
       </div>
-
-      <section className="page-card">
-        <div className="card-headline">
-          <h3>Task Override Logs</h3>
-          <span className="soft-badge">{auditLogs.length}</span>
-        </div>
-        <div className="list-stack">
-          {auditLogs.length ? (
-            auditLogs.map((log) => (
-              <article className="table-row" key={log.id}>
-                <div>
-                  <h3>{log.action}</h3>
-                  <p>User: {log.actorName}</p>
-                  <p>Task: {log.taskTitle}</p>
-                  <p>{log.details}</p>
-                </div>
-                <span className="soft-badge">{log.createdLabel}</span>
-              </article>
-            ))
-          ) : (
-            <p>No override edits have been logged.</p>
-          )}
-        </div>
-      </section>
     </AdminShell>
   );
 }

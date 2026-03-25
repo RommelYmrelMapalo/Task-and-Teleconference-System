@@ -19,6 +19,15 @@ import { applyTaskStatus, toggleTaskCompletion } from "@/lib/task-cache";
 type TaskFilter = "all" | "active" | "revision" | "completed" | "delayed";
 type EditableTask = TaskItem;
 type EditableAttachment = TaskAttachment & { localFile?: File | null };
+const GOOGLE_DOCS_PREVIEWABLE_EXTENSIONS = new Set(["doc", "docx", "ppt", "pptx", "xls", "xlsx"]);
+const GOOGLE_DOCS_PREVIEWABLE_MIMETYPES = new Set([
+  "application/msword",
+  "application/vnd.ms-excel",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+]);
 
 function generateAttachmentId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -46,6 +55,39 @@ function formatAttachmentSize(size: number | null) {
 
 function getAttachmentMetaParts(attachment: EditableAttachment) {
   return [formatAttachmentSize(attachment.size)].filter((value): value is string => Boolean(value));
+}
+
+function getAttachmentExtension(filename: string) {
+  const segments = filename.toLowerCase().split(".");
+  return segments.length > 1 ? segments.at(-1) ?? "" : "";
+}
+
+function isGoogleDocsPreviewableAttachment(attachment: EditableAttachment) {
+  if (!attachment.downloadUrl || !/^https?:/i.test(attachment.downloadUrl)) {
+    return false;
+  }
+
+  const extension = getAttachmentExtension(attachment.filename);
+  return (
+    GOOGLE_DOCS_PREVIEWABLE_EXTENSIONS.has(extension) ||
+    (attachment.mimetype !== null && GOOGLE_DOCS_PREVIEWABLE_MIMETYPES.has(attachment.mimetype))
+  );
+}
+
+function buildAttachmentViewHref(attachment: EditableAttachment) {
+  if (!attachment.downloadUrl) {
+    return null;
+  }
+
+  if (!isGoogleDocsPreviewableAttachment(attachment)) {
+    return attachment.downloadUrl;
+  }
+
+  const params = new URLSearchParams({
+    url: attachment.downloadUrl,
+    filename: attachment.filename,
+  });
+  return `/attachment-preview?${params.toString()}`;
 }
 
 function buildAttachmentsFromFiles(files: FileList) {
@@ -159,39 +201,40 @@ function AttachmentList({
 
   return (
     <div className="attachment-list" role="list">
-      {attachments.map((attachment) => (
-        <div className="attachment-chip" key={attachment.id} role="listitem">
-          <div className="attachment-copy">
-            <span className={`attachment-name${attachment.downloadUrl ? "" : " attachment-name-static"}`}>
-              {attachment.filename}
-            </span>
-            <span className="attachment-meta">{getAttachmentMetaParts(attachment).join(" | ")}</span>
-          </div>
-          {onRemove ? (
-            <button type="button" className="attachment-remove" onClick={() => onRemove(attachment.id)}>
-              Remove
-            </button>
-          ) : attachment.downloadUrl ? (
-            <div className="attachment-actions">
-              <a
-                className="attachment-action"
-                href={attachment.downloadUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                View
-              </a>
-              <a
-                className="attachment-action attachment-action-download"
-                href={taskId ? `/api/tasks/${taskId}?attachmentId=${attachment.id}` : attachment.downloadUrl}
-                rel="noreferrer"
-              >
-                Download
-              </a>
+      {attachments.map((attachment) => {
+        const viewHref = buildAttachmentViewHref(attachment);
+
+        return (
+          <div className="attachment-chip" key={attachment.id} role="listitem">
+            <div className="attachment-copy">
+              <span className={`attachment-name${attachment.downloadUrl ? "" : " attachment-name-static"}`}>
+                {attachment.filename}
+              </span>
+              <span className="attachment-meta">{getAttachmentMetaParts(attachment).join(" | ")}</span>
             </div>
-          ) : null}
-        </div>
-      ))}
+            {onRemove ? (
+              <button type="button" className="attachment-remove" onClick={() => onRemove(attachment.id)}>
+                Remove
+              </button>
+            ) : attachment.downloadUrl ? (
+              <div className="attachment-actions">
+                {viewHref ? (
+                  <a className="attachment-action" href={viewHref} target="_blank" rel="noreferrer">
+                    View
+                  </a>
+                ) : null}
+                <a
+                  className="attachment-action attachment-action-download"
+                  href={taskId ? `/api/tasks/${taskId}?attachmentId=${attachment.id}` : attachment.downloadUrl}
+                  rel="noreferrer"
+                >
+                  Download
+                </a>
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -43,7 +43,7 @@ export function LoginForm({ adminOnly = false }: { adminOnly?: boolean }) {
 
     if (signInError) {
       setPending(false);
-      setError(signInError.message);
+      setError(/banned/i.test(signInError.message) ? "This account has been deactivated by an administrator." : signInError.message);
       return;
     }
 
