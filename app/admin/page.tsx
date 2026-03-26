@@ -1,7 +1,7 @@
 import { AdminShell } from "@/components/admin-shell";
 import { AdminDashboardCalendar } from "@/components/admin-dashboard-calendar";
 import { DashboardSidebarCalendars } from "@/components/dashboard-sidebar-calendars";
-import AdminDashboardLoading from "@/app/admin/loading";
+import AdminDashboardLoading from "@/app/admin/dashboard-loading";
 import { Suspense } from "react";
 import {
   getAdminTasks,
