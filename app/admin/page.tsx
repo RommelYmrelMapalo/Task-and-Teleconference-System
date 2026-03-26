@@ -1,6 +1,8 @@
 import { AdminShell } from "@/components/admin-shell";
 import { AdminDashboardCalendar } from "@/components/admin-dashboard-calendar";
 import { DashboardSidebarCalendars } from "@/components/dashboard-sidebar-calendars";
+import AdminDashboardLoading from "@/app/admin/loading";
+import { Suspense } from "react";
 import {
   getAdminTasks,
   getAllNotifications,
@@ -8,7 +10,7 @@ import {
   requireSessionContext,
 } from "@/lib/ttcs-data";
 
-export default async function AdminDashboardPage() {
+async function AdminDashboardContent() {
   const { supabase, shellUser, unreadCount } = await requireSessionContext({ admin: true });
   const [tasks, notifications] = await Promise.all([
     getAdminTasks(supabase),
@@ -41,5 +43,13 @@ export default async function AdminDashboardPage() {
         />
       </div>
     </AdminShell>
+  );
+}
+
+export default function AdminDashboardPage() {
+  return (
+    <Suspense fallback={<AdminDashboardLoading />}>
+      <AdminDashboardContent />
+    </Suspense>
   );
 }

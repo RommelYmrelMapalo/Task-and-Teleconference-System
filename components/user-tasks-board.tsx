@@ -13,6 +13,7 @@ import {
   useState,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { TaskAttachment, TaskCommentItem, TaskItem } from "@/lib/ttcs-data";
 import { applyTaskStatus, toggleTaskCompletion } from "@/lib/task-cache";
 
@@ -219,6 +220,28 @@ function appendCommentToTask(task: EditableTask, comment: TaskCommentItem): Edit
     activityLabel: comment.createdLabel,
     lastEditedByLabel: comment.authorLabel,
   };
+}
+
+function TaskCommentSkeletonCard() {
+  return (
+    <article className="task-comment-card" aria-hidden="true">
+      <Skeleton className="task-comment-avatar rounded-[14px]" />
+      <div className="task-comment-content">
+        <div className="task-comment-head">
+          <div className="task-comment-author-wrap">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-6 w-20 rounded-full" />
+          </div>
+          <Skeleton className="h-3 w-20" />
+        </div>
+        <div className="mt-3 grid gap-2">
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-5/6" />
+          <Skeleton className="h-3 w-2/3" />
+        </div>
+      </div>
+    </article>
+  );
 }
 
 function AttachmentList({
@@ -791,7 +814,7 @@ export function UserTasksBoard({
               <div className="modal-text">Comments</div>
               <div className="task-comments-panel-body">
                 <div className="task-comments-shell">
-                  {selectedTask.comments.length ? (
+                  {selectedTask.comments.length || commentSubmitBusy ? (
                     <div className="task-comments-list">
                       {selectedTask.comments.map((comment) => (
                         <article className="task-comment-card" key={comment.id}>
@@ -814,6 +837,7 @@ export function UserTasksBoard({
                           </div>
                         </article>
                       ))}
+                      {commentSubmitBusy ? <TaskCommentSkeletonCard /> : null}
                     </div>
                   ) : (
                     <div className="task-comments-empty">No comments yet. Start the discussion here.</div>

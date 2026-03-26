@@ -3,6 +3,8 @@ import {
   AdminMonitoringEvents,
   type MonitoringSystemEventItem,
 } from "@/components/admin-monitoring-events";
+import AdminMonitoringLoading from "@/app/admin/monitoring/loading";
+import { Suspense } from "react";
 import {
   getAdminTaskAuditLogs,
   getAllProfiles,
@@ -76,7 +78,7 @@ function buildSystemEvents({
   return events.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
 }
 
-export default async function MonitoringPage() {
+async function MonitoringContent() {
   const { supabase, shellUser, unreadCount } = await requireSessionContext({ admin: true });
   const [profiles, notifications, auditLogs] = await Promise.all([
     getAllProfiles(supabase),
@@ -97,5 +99,13 @@ export default async function MonitoringPage() {
         <AdminMonitoringEvents events={systemEvents} />
       </div>
     </AdminShell>
+  );
+}
+
+export default function MonitoringPage() {
+  return (
+    <Suspense fallback={<AdminMonitoringLoading />}>
+      <MonitoringContent />
+    </Suspense>
   );
 }

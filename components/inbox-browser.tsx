@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { InboxThreadItem } from "@/lib/ttcs-data";
 
 function createTemporaryMessageTime() {
@@ -61,6 +62,29 @@ function createForwardedMessageBody(
     "",
     message.body,
   ].join("\n");
+}
+
+function InboxMessageSkeleton({ outgoing = false }: { outgoing?: boolean }) {
+  return (
+    <article className={`inbox-message-card${outgoing ? " outgoing" : ""}`} aria-hidden="true">
+      <div className="inbox-message-meta">
+        <div className="inbox-message-author">
+          <Skeleton className="h-[42px] w-[42px] rounded-[14px]" />
+          <div className="grid gap-2">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+        </div>
+        <Skeleton className="h-3 w-10" />
+      </div>
+      <Skeleton className="mt-4 h-3 w-24" />
+      <div className="mt-4 grid gap-2">
+        <Skeleton className="h-3 w-full" />
+        <Skeleton className="h-3 w-11/12" />
+        <Skeleton className="h-3 w-2/3" />
+      </div>
+    </article>
+  );
 }
 
 export function InboxBrowser({
@@ -866,6 +890,8 @@ export function InboxBrowser({
                     </div>
                   </article>
                 ))}
+                {isPending ? <InboxMessageSkeleton /> : null}
+                {replyBusy ? <InboxMessageSkeleton outgoing /> : null}
               </div>
 
               {!replyOpen ? (

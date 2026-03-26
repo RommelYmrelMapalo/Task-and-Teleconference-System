@@ -11,7 +11,7 @@ export default async function LoginPage() {
   }
 
   return (
-    <PublicShell path="/" title="User Login" subtitle="Sign in to your TTCS account">
+    <PublicShell title="User Login" subtitle="Sign in to your TTCS account">
       <LoginForm />
     </PublicShell>
   );

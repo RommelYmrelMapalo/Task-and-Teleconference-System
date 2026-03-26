@@ -1,8 +1,10 @@
 import { UserShell } from "@/components/user-shell";
 import { InboxBrowser } from "@/components/inbox-browser";
+import InboxLoading from "@/app/inbox/loading";
+import { Suspense } from "react";
 import { getInboxContacts, getUserInboxThreads, requireSessionContext } from "@/lib/ttcs-data";
 
-export default async function InboxPage() {
+async function InboxContent() {
   const { supabase, profile, shellUser, unreadCount } = await requireSessionContext();
   const [threads, contacts] = await Promise.all([getUserInboxThreads(supabase, profile.id), getInboxContacts(profile.id)]);
 
@@ -20,5 +22,13 @@ export default async function InboxPage() {
         contacts={contacts}
       />
     </UserShell>
+  );
+}
+
+export default function InboxPage() {
+  return (
+    <Suspense fallback={<InboxLoading />}>
+      <InboxContent />
+    </Suspense>
   );
 }

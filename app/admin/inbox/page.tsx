@@ -1,8 +1,10 @@
 import { AdminShell } from "@/components/admin-shell";
 import { InboxBrowser } from "@/components/inbox-browser";
+import AdminInboxLoading from "@/app/admin/inbox/loading";
+import { Suspense } from "react";
 import { getInboxContacts, getUserInboxThreads, requireSessionContext } from "@/lib/ttcs-data";
 
-export default async function AdminInboxPage() {
+async function AdminInboxContent() {
   const { supabase, profile, shellUser, unreadCount } = await requireSessionContext({ admin: true });
   const [threads, contacts] = await Promise.all([getUserInboxThreads(supabase, profile.id), getInboxContacts(profile.id)]);
 
@@ -20,5 +22,13 @@ export default async function AdminInboxPage() {
         contacts={contacts}
       />
     </AdminShell>
+  );
+}
+
+export default function AdminInboxPage() {
+  return (
+    <Suspense fallback={<AdminInboxLoading />}>
+      <AdminInboxContent />
+    </Suspense>
   );
 }
