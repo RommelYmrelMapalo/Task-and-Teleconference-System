@@ -3,7 +3,7 @@ import { createAdminClient } from "@/app/utils/utils/supabase/admin";
 import { createClient } from "@/app/utils/utils/supabase/server";
 import { hasSupabaseEnv } from "@/app/utils/utils/supabase/env";
 import { cleanupExpiredTasks } from "@/lib/task-retention";
-import { isMissingSupabaseColumn, isMissingSupabaseTable } from "@/lib/supabase-errors";
+import { isMissingSupabaseColumn, isMissingSupabaseTable, normalizeEmailAddress } from "@/lib/supabase-errors";
 
 const MANILA_TZ = "Asia/Manila";
 
@@ -552,7 +552,20 @@ async function getProfileRecord(
     throw new Error(`Failed to load profile: ${error.message}`);
   }
 
-  return (data as ProfileRecord | null) ?? fallbackProfile(user);
+  const profile = (data as ProfileRecord | null) ?? fallbackProfile(user);
+  const authEmail = normalizeEmailAddress(user.email || "");
+  const profileEmail = normalizeEmailAddress(profile.email || "");
+
+  if (!authEmail || authEmail === profileEmail) {
+    return profile;
+  }
+
+  await supabase.from("profiles").update({ email: authEmail }).eq("id", user.id);
+
+  return {
+    ...profile,
+    email: authEmail,
+  };
 }
 
 async function getUnreadCount(
