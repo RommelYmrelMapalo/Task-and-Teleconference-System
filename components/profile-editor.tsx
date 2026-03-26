@@ -86,16 +86,32 @@ export function ProfileEditor({
     }
 
     const supabase = createClient();
-    const { error: updateError } = await supabase.auth.updateUser({ email });
-
-    setPendingSection(null);
+    const { data, error: updateError } = await supabase.auth.updateUser({ email });
 
     if (updateError) {
+      setPendingSection(null);
       setError(getEmailConflictMessage(updateError, "Unable to update the email address."));
       return;
     }
 
-    setMessage("Email update requested. Check your inbox if confirmation is required.");
+    const updatedAuthEmail = normalizeEmailAddress(data.user?.email ?? "");
+
+    if (updatedAuthEmail === email) {
+      const { error: profileUpdateError } = await supabase.from("profiles").update({ email }).eq("id", user.id);
+
+      if (profileUpdateError) {
+        setPendingSection(null);
+        setError(`Email updated in authentication, but the profile record could not be synced: ${profileUpdateError.message}`);
+        router.refresh();
+        return;
+      }
+
+      setMessage("Email updated.");
+    } else {
+      setMessage("Email update requested. Check your inbox if confirmation is required.");
+    }
+
+    setPendingSection(null);
     router.refresh();
   };
 
@@ -158,7 +174,7 @@ export function ProfileEditor({
     <div className="page-grid profile-grid">
       <section className="page-card">
         <h3>{heading}</h3>
-        <form className="form-stack" onSubmit={saveName}>
+        <form key={`name:${user.fullName}`} className="form-stack" onSubmit={saveName}>
           <input className="field-input" defaultValue={firstName} name="firstName" placeholder="First name" />
           <input className="field-input" defaultValue={lastName} name="lastName" placeholder="Last name" />
           <button className="primary-btn" type="submit" disabled={pendingSection === "name"}>
@@ -169,8 +185,8 @@ export function ProfileEditor({
 
       <section className="page-card">
         <h3>Email</h3>
-        <form className="form-stack" onSubmit={saveEmail}>
-          <input className="field-input" defaultValue={user.email} name="email" placeholder="Email address" />
+        <form key={`email:${user.email}`} className="form-stack" onSubmit={saveEmail}>
+          <input className="field-input" defaultValue={user.email} name="email" placeholder="Email address" type="email" />
           <button className="primary-btn" type="submit" disabled={pendingSection === "email"}>
             {pendingSection === "email" ? "Updating..." : "Update Email"}
           </button>
