@@ -18,9 +18,14 @@ import type { TaskAttachment, TaskCommentItem, TaskItem } from "@/lib/ttcs-data"
 import { applyTaskStatus, toggleTaskCompletion } from "@/lib/task-cache";
 
 type TaskFilter = "all" | "active" | "revision" | "completed" | "delayed";
+type TaskReviewMode = "approve" | "reject";
 type EditableTask = TaskItem;
 type EditableAttachment = TaskAttachment & { localFile?: File | null };
 type CreateTaskFormErrors = Partial<Record<"title" | "description" | "dueDate" | "dueTime", string>>;
+const ADMIN_REVIEW_PREFIXES = {
+  approve: "Approved by admin.\nReason:",
+  reject: "Rejected by admin.\nReason:",
+} as const;
 const GOOGLE_DOCS_PREVIEWABLE_EXTENSIONS = new Set(["doc", "docx", "ppt", "pptx", "xls", "xlsx"]);
 const GOOGLE_DOCS_PREVIEWABLE_MIMETYPES = new Set([
   "application/msword",
@@ -184,6 +189,46 @@ function attachmentStatusLabel(count: number, busy: boolean) {
   return `${count} files selected`;
 }
 
+function parseAdminReviewComment(comment: TaskCommentItem) {
+  if (!comment.isAdmin) {
+    return null;
+  }
+
+  if (comment.body.startsWith(ADMIN_REVIEW_PREFIXES.approve)) {
+    return {
+      mode: "approve" as const,
+      reason: comment.body.slice(ADMIN_REVIEW_PREFIXES.approve.length).trim(),
+    };
+  }
+
+  if (comment.body.startsWith(ADMIN_REVIEW_PREFIXES.reject)) {
+    return {
+      mode: "reject" as const,
+      reason: comment.body.slice(ADMIN_REVIEW_PREFIXES.reject.length).trim(),
+    };
+  }
+
+  return null;
+}
+
+function getLatestAdminReview(task: EditableTask) {
+  for (let index = task.comments.length - 1; index >= 0; index -= 1) {
+    const comment = task.comments[index];
+    const review = parseAdminReviewComment(comment);
+
+    if (review) {
+      return {
+        ...review,
+        authorLabel: comment.authorLabel,
+        createdAt: comment.createdAt,
+        createdLabel: comment.createdLabel,
+      };
+    }
+  }
+
+  return null;
+}
+
 function validateCreateTaskForm(formData: FormData): CreateTaskFormErrors {
   const errors: CreateTaskFormErrors = {};
   const title = String(formData.get("title") || "").trim();
@@ -328,6 +373,10 @@ export function UserTasksBoard({
   const [editingTask, setEditingTask] = useState<EditableTask | null>(null);
   const [pendingEditWarningTask, setPendingEditWarningTask] = useState<EditableTask | null>(null);
   const [pendingToggleWarningTask, setPendingToggleWarningTask] = useState<EditableTask | null>(null);
+  const [reviewMode, setReviewMode] = useState<TaskReviewMode | null>(null);
+  const [reviewReason, setReviewReason] = useState("");
+  const [reviewSubmitBusy, setReviewSubmitBusy] = useState(false);
+  const [reviewSubmitError, setReviewSubmitError] = useState<string | null>(null);
   const [createAttachments, setCreateAttachments] = useState<EditableAttachment[]>([]);
   const [createAttachmentsBusy, setCreateAttachmentsBusy] = useState(false);
   const [createAttachmentError, setCreateAttachmentError] = useState<string | null>(null);
@@ -417,6 +466,10 @@ export function UserTasksBoard({
     setCommentDraft("");
     setCommentSubmitBusy(false);
     setCommentSubmitError(null);
+    setReviewMode(null);
+    setReviewReason("");
+    setReviewSubmitBusy(false);
+    setReviewSubmitError(null);
   }, [selectedTask?.id]);
 
   useEffect(() => {
@@ -483,6 +536,7 @@ export function UserTasksBoard({
   }, [activeFilter, priorityFilter, search, taskList]);
 
   const recentItems = taskList.slice(0, 3);
+  const latestAdminReview = selectedTask ? getLatestAdminReview(selectedTask) : null;
   const canModifyTask = (task: EditableTask) =>
     viewerCanManageAll || task.assignees.some((assignee) => assignee.id === viewerId);
   const canToggleTaskWithoutWarning = (task: EditableTask) => canModifyTask(task);
@@ -748,6 +802,54 @@ export function UserTasksBoard({
     }
   };
 
+  const submitAdminReview = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedTask || !reviewMode || reviewSubmitBusy) return;
+
+    const reason = reviewReason.trim();
+    if (!reason) {
+      setReviewSubmitError(`${reviewMode === "approve" ? "Approval" : "Rejection"} reason is required.`);
+      return;
+    }
+
+    setReviewSubmitBusy(true);
+    setReviewSubmitError(null);
+
+    try {
+      const payload = new FormData();
+      payload.set("decision", reviewMode);
+      payload.set("reason", reason);
+
+      const response = await fetch(`/api/tasks/${selectedTask.id}/review`, {
+        method: "POST",
+        body: payload,
+      });
+      const result = (await response.json().catch(() => null)) as {
+        error?: string;
+        status?: TaskItem["status"];
+        comment?: TaskCommentItem;
+      } | null;
+
+      if (!response.ok || !result?.status || !result.comment) {
+        throw new Error(result?.error || "Could not review task.");
+      }
+
+      setTaskList((current) => {
+        const nextTasks = applyTaskStatus(current, selectedTask.id, result.status as TaskItem["status"]);
+        return nextTasks.map((task) =>
+          task.id === selectedTask.id ? appendCommentToTask(task, result.comment as TaskCommentItem) : task,
+        );
+      });
+      setReviewMode(null);
+      setReviewReason("");
+      router.refresh();
+    } catch (error) {
+      setReviewSubmitError(error instanceof Error ? error.message : "Could not review task.");
+    } finally {
+      setReviewSubmitBusy(false);
+    }
+  };
+
   return (
     <div className={`taskdash-wrap${isAdminVariant ? " admin-taskdash-wrap" : ""}`}>
       {taskModalOpen ? (
@@ -793,11 +895,97 @@ export function UserTasksBoard({
                   <div className="drawer-label">DEADLINE</div>
                   <div className="field-input task-detail-value">{selectedTask.dueLabel}</div>
                 </div>
+                {latestAdminReview ? (
+                  <div className="drawer-field task-detail-section-center">
+                    <div className="drawer-label">
+                      {latestAdminReview.mode === "approve" ? "LATEST APPROVAL REASON" : "LATEST REJECTION REASON"}
+                    </div>
+                    <div className="drawer-textarea task-detail-value task-detail-description">{latestAdminReview.reason}</div>
+                    <div className="attachment-note">
+                      {latestAdminReview.mode === "approve" ? "Approved" : "Rejected"} by {latestAdminReview.authorLabel} on{" "}
+                      {latestAdminReview.createdLabel}
+                    </div>
+                  </div>
+                ) : null}
                 {selectedTask.attachments.length ? (
                   <div className="drawer-field task-detail-attachments task-detail-section-center">
                     <div className="drawer-label">ATTACHMENTS</div>
                     <AttachmentList attachments={selectedTask.attachments} taskId={selectedTask.id} />
                   </div>
+                ) : null}
+                {viewerCanManageAll ? (
+                  <form className="drawer-field task-detail-section-center" onSubmit={submitAdminReview}>
+                    <div className="drawer-label">ADMIN REVIEW</div>
+                    <div className="task-detail-actions">
+                      <button
+                        type="button"
+                        className="btn-mini"
+                        disabled={reviewSubmitBusy}
+                        onClick={() => {
+                          setReviewMode("approve");
+                          setReviewReason("");
+                          setReviewSubmitError(null);
+                        }}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-mini ghost"
+                        disabled={reviewSubmitBusy}
+                        onClick={() => {
+                          setReviewMode("reject");
+                          setReviewReason("");
+                          setReviewSubmitError(null);
+                        }}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                    {reviewMode ? (
+                      <>
+                        <textarea
+                          className="drawer-textarea task-comment-input"
+                          rows={3}
+                          value={reviewReason}
+                          onChange={(event) => setReviewReason(event.target.value)}
+                          placeholder={
+                            reviewMode === "approve"
+                              ? "Why is this task approved?"
+                              : "Why is this task being rejected?"
+                          }
+                          disabled={reviewSubmitBusy}
+                        />
+                        <div className="attachment-note">
+                          {reviewMode === "approve"
+                            ? "Submitting approval will mark this task as completed."
+                            : "Submitting rejection will move this task back to For Revision."}
+                        </div>
+                        {reviewSubmitError ? <div className="attachment-note attachment-error">{reviewSubmitError}</div> : null}
+                        <div className="drawer-footer">
+                          <button
+                            type="button"
+                            className="btn-mini drawer-cancel"
+                            disabled={reviewSubmitBusy}
+                            onClick={() => {
+                              setReviewMode(null);
+                              setReviewReason("");
+                              setReviewSubmitError(null);
+                            }}
+                          >
+                            Cancel review
+                          </button>
+                          <button type="submit" className="primary-btn drawer-publish" disabled={reviewSubmitBusy}>
+                            {reviewSubmitBusy
+                              ? "Submitting..."
+                              : reviewMode === "approve"
+                                ? "Submit approval"
+                                : "Submit rejection"}
+                          </button>
+                        </div>
+                      </>
+                    ) : null}
+                  </form>
                 ) : null}
                 <div className="task-detail-actions">
                   <button type="button" className="btn-mini task-detail-edit" onClick={() => requestEditTask(selectedTask)}>

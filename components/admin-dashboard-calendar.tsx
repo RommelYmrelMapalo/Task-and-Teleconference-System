@@ -264,60 +264,62 @@ export function AdminDashboardCalendar({
         </div>
       </div>
 
-      <div className="admin-large-calendar-weekdays">
-        {WEEKDAY_LABELS.map((label) => (
-          <span key={label}>{label}</span>
-        ))}
-      </div>
+      <div className="admin-large-calendar-scroll">
+        <div className="admin-large-calendar-weekdays">
+          {WEEKDAY_LABELS.map((label) => (
+            <span key={label}>{label}</span>
+          ))}
+        </div>
 
-      <div className="admin-large-calendar-grid">
-        {cells.map((cell, index) =>
-          cell ? (
-            <article
-              className={`admin-large-calendar-cell${cell.isToday ? " is-today" : ""}`}
-              key={cell.key}
-            >
-              <div className="admin-large-calendar-cell-top">
-                <span className="admin-large-calendar-day">{cell.dayNumber}</span>
-              </div>
+        <div className="admin-large-calendar-grid">
+          {cells.map((cell, index) =>
+            cell ? (
+              <article
+                className={`admin-large-calendar-cell${cell.isToday ? " is-today" : ""}`}
+                key={cell.key}
+              >
+                <div className="admin-large-calendar-cell-top">
+                  <span className="admin-large-calendar-day">{cell.dayNumber}</span>
+                </div>
 
-              <div className="admin-large-calendar-cell-body">
-                {cell.items.slice(0, 2).map((item) =>
-                  item.kind === "task" && typeof item.taskId === "number" ? (
-                    <button
-                      type="button"
-                      className={`admin-large-calendar-chip admin-large-calendar-chip-${item.tone}`}
-                      key={item.id}
-                      onClick={() => openTaskDashboard(item.taskId)}
-                      title={item.title}
-                    >
-                      <span className="admin-large-calendar-chip-time">{item.timeLabel}</span>
-                      <span className="admin-large-calendar-chip-title">{item.title}</span>
-                    </button>
-                  ) : (
-                    <div
-                      className={`admin-large-calendar-chip admin-large-calendar-chip-${item.tone} is-static`}
-                      key={item.id}
-                      title={item.title}
-                    >
-                      <span className="admin-large-calendar-chip-time">{item.timeLabel}</span>
-                      <span className="admin-large-calendar-chip-title">{item.title}</span>
-                    </div>
-                  ),
-                )}
+                <div className="admin-large-calendar-cell-body">
+                  {cell.items.slice(0, 2).map((item) =>
+                    item.kind === "task" && typeof item.taskId === "number" ? (
+                      <button
+                        type="button"
+                        className={`admin-large-calendar-chip admin-large-calendar-chip-${item.tone}`}
+                        key={item.id}
+                        onClick={() => openTaskDashboard(item.taskId)}
+                        title={item.title}
+                      >
+                        <span className="admin-large-calendar-chip-time">{item.timeLabel}</span>
+                        <span className="admin-large-calendar-chip-title">{item.title}</span>
+                      </button>
+                    ) : (
+                      <div
+                        className={`admin-large-calendar-chip admin-large-calendar-chip-${item.tone} is-static`}
+                        key={item.id}
+                        title={item.title}
+                      >
+                        <span className="admin-large-calendar-chip-time">{item.timeLabel}</span>
+                        <span className="admin-large-calendar-chip-title">{item.title}</span>
+                      </div>
+                    ),
+                  )}
 
-                {cell.items.length > 2 ? (
-                  <span className="admin-large-calendar-more">+{cell.items.length - 2} more</span>
-                ) : null}
-              </div>
-            </article>
-          ) : (
-            <div
-              className="admin-large-calendar-cell admin-large-calendar-cell-empty"
-              key={`empty-${index}`}
-            />
-          ),
-        )}
+                  {cell.items.length > 2 ? (
+                    <span className="admin-large-calendar-more">+{cell.items.length - 2} more</span>
+                  ) : null}
+                </div>
+              </article>
+            ) : (
+              <div
+                className="admin-large-calendar-cell admin-large-calendar-cell-empty"
+                key={`empty-${index}`}
+              />
+            ),
+          )}
+        </div>
       </div>
     </section>
   );

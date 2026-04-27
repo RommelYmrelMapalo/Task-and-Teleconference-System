@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createAdminClient } from "@/app/utils/utils/supabase/admin";
 import { createClient } from "@/app/utils/utils/supabase/server";
 import { hasSupabaseEnv } from "@/app/utils/utils/supabase/env";
+import { syncAutomaticTaskReminders } from "@/lib/task-reminder-service";
 import { cleanupExpiredTasks } from "@/lib/task-retention";
 import { isMissingSupabaseColumn, isMissingSupabaseTable, normalizeEmailAddress } from "@/lib/supabase-errors";
 
@@ -123,8 +124,13 @@ export type MeetingItem = {
   description: string;
   room: string;
   dateTime: string;
+  endDateTime: string | null;
   dateLabel: string;
   timeLabel: string;
+  endTimeLabel: string;
+  createdAt: string;
+  createdByLabel: string;
+  assignees: ShellUser[];
 };
 
 export type TaskAuditLogItem = {
@@ -603,6 +609,7 @@ export async function getOptionalSessionContext() {
   }
 
   const profile = await getProfileRecord(supabase, user);
+  await syncAutomaticTaskReminders();
   const unreadCount = await getUnreadCount(supabase, profile.id);
 
   return {
@@ -1210,7 +1217,16 @@ export async function getMonitoringNotifications(
     throw new Error(`Failed to load monitoring notifications: ${error.message}`);
   }
 
-  const rows = (data as InboxNotificationRow[] | null) ?? [];
+  const rows = ((data as InboxNotificationRow[] | null) ?? []).filter((row) => {
+    const threadKey = row.thread_key ?? "";
+    const title = row.title ?? "";
+
+    return (
+      !threadKey.startsWith("task-reminder:") &&
+      !title.startsWith("Task Overdue:") &&
+      !title.startsWith("Task Deadline Reminder:")
+    );
+  });
   if (!rows.length) {
     return [];
   }
@@ -1341,6 +1357,7 @@ export function getMeetingItems(notifications: NotificationItem[]) {
       description: item.message,
       room: "",
       dateTime: item.createdAt,
+      endDateTime: null,
       dateLabel: formatWithTz(item.createdAt, {
         month: "long",
         day: "numeric",
@@ -1350,6 +1367,10 @@ export function getMeetingItems(notifications: NotificationItem[]) {
         hour: "numeric",
         minute: "2-digit",
       }),
+      endTimeLabel: "",
+      createdAt: item.createdAt,
+      createdByLabel: "TTCS",
+      assignees: [],
     }));
 }
 

@@ -23,7 +23,7 @@ const FILTERS: Array<{
   { key: "audit", label: "Task audits" },
 ];
 
-const EVENTS_PER_PAGE = 10;
+const MONITORING_ROWS_PER_PAGE_OPTIONS = [5, 10, 25, 50] as const;
 const EVENT_KIND_LABELS: Record<MonitoringSystemEventItem["kind"], string> = {
   account: "Account",
   login: "Login",
@@ -96,18 +96,19 @@ function getVisiblePages(currentPage: number, totalPages: number) {
 export function AdminMonitoringEvents({ events }: { events: MonitoringSystemEventItem[] }) {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]["key"]>("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState<(typeof MONITORING_ROWS_PER_PAGE_OPTIONS)[number]>(10);
 
   const filteredEvents = useMemo(
     () => (filter === "all" ? events : events.filter((event) => event.kind === filter)),
     [events, filter],
   );
-  const totalPages = Math.max(1, Math.ceil(filteredEvents.length / EVENTS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(filteredEvents.length / rowsPerPage));
   const safePage = Math.min(currentPage, totalPages);
   const visiblePages = getVisiblePages(safePage, totalPages);
   const paginatedEvents = useMemo(() => {
-    const startIndex = (safePage - 1) * EVENTS_PER_PAGE;
-    return filteredEvents.slice(startIndex, startIndex + EVENTS_PER_PAGE);
-  }, [filteredEvents, safePage]);
+    const startIndex = (safePage - 1) * rowsPerPage;
+    return filteredEvents.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredEvents, rowsPerPage, safePage]);
 
   function handleExport() {
     const csv = buildMonitoringCsv(filteredEvents);
@@ -180,7 +181,24 @@ export function AdminMonitoringEvents({ events }: { events: MonitoringSystemEven
 
       <div className="monitoring-events-footer">
         <div className="monitoring-events-count">
-          Events per page <span>{EVENTS_PER_PAGE}</span> of {filteredEvents.length} events
+          Rows per page
+          <label className="monitoring-events-rows-select">
+            <select
+              value={rowsPerPage}
+              onChange={(event) => {
+                setRowsPerPage(Number(event.target.value) as (typeof MONITORING_ROWS_PER_PAGE_OPTIONS)[number]);
+                setCurrentPage(1);
+              }}
+              aria-label="Rows per page"
+            >
+              {MONITORING_ROWS_PER_PAGE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+          of {filteredEvents.length} events
         </div>
         <div className="monitoring-events-pagination">
           <button

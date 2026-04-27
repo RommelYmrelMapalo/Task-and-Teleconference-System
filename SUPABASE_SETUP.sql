@@ -134,6 +134,32 @@ create table public.task_assignments (
   primary key (task_id, user_id)
 );
 
+create table if not exists public.meetings (
+  id bigint generated always as identity primary key,
+  title text not null,
+  description text,
+  room text,
+  scheduled_for timestamptz not null,
+  ends_at timestamptz,
+  created_by uuid references public.profiles(id) on delete set null,
+  updated_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  check (ends_at is null or ends_at > scheduled_for)
+);
+
+create table if not exists public.meeting_assignments (
+  meeting_id bigint not null references public.meetings(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (meeting_id, user_id)
+);
+
+create index if not exists meetings_scheduled_for_idx
+on public.meetings (scheduled_for);
+
+create index if not exists meeting_assignments_user_idx
+on public.meeting_assignments (user_id, meeting_id);
+
 create table public.task_attachments (
   id bigint generated always as identity primary key,
   task_id bigint not null references public.tasks(id) on delete cascade,
@@ -225,6 +251,8 @@ alter table public.notifications enable row level security;
 alter table public.inbox_thread_states enable row level security;
 alter table public.tasks enable row level security;
 alter table public.task_assignments enable row level security;
+alter table public.meetings enable row level security;
+alter table public.meeting_assignments enable row level security;
 alter table public.task_attachments enable row level security;
 alter table public.task_comments enable row level security;
 alter table public.task_audit_logs enable row level security;
@@ -280,6 +308,28 @@ using (auth.uid() is not null);
 
 create policy "task_assignments_admin_write"
 on public.task_assignments
+for all
+using (public.is_admin())
+with check (public.is_admin());
+
+create policy "meetings_authenticated_select"
+on public.meetings
+for select
+using (auth.uid() is not null);
+
+create policy "meetings_admin_write"
+on public.meetings
+for all
+using (public.is_admin())
+with check (public.is_admin());
+
+create policy "meeting_assignments_authenticated_select"
+on public.meeting_assignments
+for select
+using (auth.uid() is not null);
+
+create policy "meeting_assignments_admin_write"
+on public.meeting_assignments
 for all
 using (public.is_admin())
 with check (public.is_admin());

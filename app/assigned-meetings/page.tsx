@@ -1,15 +1,15 @@
 import { UserShell } from "@/components/user-shell";
-import { getMeetingItems, getUserNotifications, requireSessionContext } from "@/lib/ttcs-data";
+import { getUserMeetings } from "@/lib/meeting-data";
+import { requireSessionContext } from "@/lib/ttcs-data";
 
 export default async function AssignedMeetingsPage() {
   const { supabase, profile, shellUser, unreadCount } = await requireSessionContext();
-  const notifications = await getUserNotifications(supabase, profile.id, 50);
-  const meetings = getMeetingItems(notifications);
+  const meetings = await getUserMeetings(supabase, profile.id, 50);
 
   return (
     <UserShell
       title="Assigned Meetings"
-      subtitle="Meeting-related notifications assigned to your account"
+      subtitle="Meeting schedules assigned to your account"
       user={shellUser}
       unreadCount={unreadCount}
     >
@@ -23,15 +23,16 @@ export default async function AssignedMeetingsPage() {
               </div>
               <p>{meeting.dateLabel}</p>
               <p>{meeting.timeLabel}</p>
+              <p>{meeting.room ? `Room: ${meeting.room}` : "Room: To be announced"}</p>
               <p>{meeting.description}</p>
             </section>
           ))
         ) : (
-          <section className="page-card">
-            <h3>No meetings assigned</h3>
-            <p>Meeting notices will appear here after they are sent to your account.</p>
-          </section>
-        )}
+            <section className="page-card">
+              <h3>No meetings assigned</h3>
+              <p>Assigned meetings will appear here as soon as an admin schedules them for your account.</p>
+            </section>
+          )}
       </div>
     </UserShell>
   );

@@ -1,9 +1,10 @@
 import { UserShell } from "@/components/user-shell";
-import { getMeetingItems, getUserNotifications, requireSessionContext } from "@/lib/ttcs-data";
+import { getUserMeetings } from "@/lib/meeting-data";
+import { requireSessionContext } from "@/lib/ttcs-data";
 
 export default async function RecordTimeOutPage() {
   const { supabase, profile, shellUser, unreadCount } = await requireSessionContext();
-  const meetings = getMeetingItems(await getUserNotifications(supabase, profile.id, 20));
+  const meetings = await getUserMeetings(supabase, profile.id, 20);
 
   return (
     <UserShell
@@ -15,7 +16,7 @@ export default async function RecordTimeOutPage() {
       <div className="form-grid">
         <section className="page-card">
           <h3>Meeting Time-out</h3>
-          <p>This page now reads meeting options from Supabase notifications. Attendance submission still needs a dedicated table.</p>
+          <p>This page now reads assigned meeting records directly from the meeting schedule. Attendance submission still needs a dedicated table.</p>
           <div className="form-stack">
             <div className="select-shell">
               <select className="field-input field-select" defaultValue={meetings[0]?.id ?? ""}>

@@ -3,21 +3,18 @@ import { AdminDashboardCalendar } from "@/components/admin-dashboard-calendar";
 import { DashboardSidebarCalendars } from "@/components/dashboard-sidebar-calendars";
 import AdminDashboardLoading from "@/app/admin/dashboard-loading";
 import { Suspense } from "react";
+import { getAdminMeetings } from "@/lib/meeting-data";
 import {
   getAdminTasks,
-  getAllNotifications,
-  getMeetingItems,
   requireSessionContext,
 } from "@/lib/ttcs-data";
 
 async function AdminDashboardContent() {
   const { supabase, shellUser, unreadCount } = await requireSessionContext({ admin: true });
-  const [tasks, notifications] = await Promise.all([
+  const [tasks, meetings] = await Promise.all([
     getAdminTasks(supabase),
-    getAllNotifications(supabase, 100),
+    getAdminMeetings(supabase, 100),
   ]);
-
-  const meetings = getMeetingItems(notifications);
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((task) => task.status === "completed").length;
   const pendingTasks = tasks.filter((task) => task.status !== "completed" && !task.isDelayed).length;

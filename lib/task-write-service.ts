@@ -12,6 +12,8 @@ const ATTACHMENTS_BUCKET = "task-attachments";
 const MANILA_OFFSET_HOURS = 8;
 const ATTACHMENT_FILE_LIMIT_BYTES = 50 * 1024 * 1024;
 const COMMENT_MAX_LENGTH = 4000;
+const ADMIN_APPROVAL_PREFIX = "Approved by admin.\nReason: ";
+const ADMIN_REJECTION_PREFIX = "Rejected by admin.\nReason: ";
 
 type AttachmentRow = {
   id: number;
@@ -99,6 +101,10 @@ function formatCommentLabel(value: string) {
 function readText(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
+}
+
+function buildAdminReviewCommentBody(decision: "approve" | "reject", reason: string) {
+  return `${decision === "approve" ? ADMIN_APPROVAL_PREFIX : ADMIN_REJECTION_PREFIX}${reason}`;
 }
 
 function combineDueDate(date: string, time: string) {
@@ -485,6 +491,72 @@ async function writeTaskAuditLog(
   }
 }
 
+async function createTaskCommentEntry(
+  admin: ReturnType<typeof createAdminClient>,
+  {
+    taskId,
+    authorUserId,
+    body,
+    actorName,
+    isAdmin,
+    touchTaskActivity = true,
+  }: {
+    taskId: number;
+    authorUserId: string;
+    body: string;
+    actorName: string;
+    isAdmin: boolean;
+    touchTaskActivity?: boolean;
+  },
+) {
+  const insertResult = await admin
+    .from("task_comments")
+    .insert({
+      task_id: taskId,
+      author_user_id: authorUserId,
+      body,
+    })
+    .select("id,task_id,body,author_user_id,created_at")
+    .single();
+
+  if (insertResult.error || !insertResult.data) {
+    if (isMissingSupabaseTable(insertResult.error)) {
+      throw new TaskMutationError("Task comments are not configured yet.", 500);
+    }
+
+    throw new TaskMutationError(insertResult.error?.message || "Could not save comment.", 500);
+  }
+
+  const comment = insertResult.data;
+
+  if (touchTaskActivity) {
+    const touchResult = await admin
+      .from("tasks")
+      .update({
+        last_edited_by: authorUserId,
+        last_edited_at: comment.created_at,
+      })
+      .eq("id", taskId);
+
+    if (touchResult.error) {
+      console.error("Failed to update task activity after comment.", touchResult.error);
+    }
+  }
+
+  return {
+    id: comment.id,
+    taskId: comment.task_id,
+    body: comment.body,
+    createdAt: comment.created_at,
+    createdLabel: formatCommentLabel(comment.created_at),
+    authorId: comment.author_user_id,
+    authorLabel: actorName,
+    authorInitials: initialsFromName(actorName),
+    authorRoleLabel: isAdmin ? "Admin" : "User",
+    isAdmin,
+  } satisfies TaskCommentItem;
+}
+
 function getFiles(formData: FormData) {
   return formData
     .getAll("attachments")
@@ -771,49 +843,87 @@ export async function addTaskCommentForUser(userId: string, taskId: number, form
     throw new TaskMutationError("Task not found.", 404);
   }
 
-  const insertResult = await admin
-    .from("task_comments")
-    .insert({
-      task_id: taskId,
-      author_user_id: userId,
-      body,
-    })
-    .select("id,task_id,body,author_user_id,created_at")
-    .single();
+  const commentItem = await createTaskCommentEntry(admin, {
+    taskId,
+    authorUserId: userId,
+    body,
+    actorName,
+    isAdmin,
+  });
 
-  if (insertResult.error || !insertResult.data) {
-    if (isMissingSupabaseTable(insertResult.error)) {
-      throw new TaskMutationError("Task comments are not configured yet.", 500);
-    }
+  return { taskId, comment: commentItem };
+}
 
-    throw new TaskMutationError(insertResult.error?.message || "Could not save comment.", 500);
+export async function reviewTaskForAdmin(userId: string, taskId: number, formData: FormData) {
+  const { admin, actorName, isAdmin } = await loadWriterContext(userId);
+  await cleanupExpiredTasks(admin);
+
+  if (!isAdmin) {
+    throw new TaskMutationError("Only admins can review tasks.", 403);
   }
 
-  const comment = insertResult.data;
-  const touchResult = await admin
+  const decision = readText(formData, "decision");
+  const reason = readText(formData, "reason");
+
+  if (decision !== "approve" && decision !== "reject") {
+    throw new TaskMutationError("Invalid review decision.");
+  }
+
+  if (!reason) {
+    throw new TaskMutationError(`${decision === "approve" ? "Approval" : "Rejection"} reason is required.`);
+  }
+
+  if (reason.length > COMMENT_MAX_LENGTH) {
+    throw new TaskMutationError(`Reason must be ${COMMENT_MAX_LENGTH} characters or fewer.`);
+  }
+
+  const { data: task, error: taskError } = await admin
+    .from("tasks")
+    .select("id")
+    .eq("id", taskId)
+    .maybeSingle();
+
+  if (taskError) {
+    throw new TaskMutationError(taskError.message, 500);
+  }
+
+  if (!task) {
+    throw new TaskMutationError("Task not found.", 404);
+  }
+
+  const nextStatus: TaskStatus = decision === "approve" ? "completed" : "for_revision";
+  const reviewedAt = new Date().toISOString();
+  const updateResult = await admin
     .from("tasks")
     .update({
+      status: nextStatus,
       last_edited_by: userId,
-      last_edited_at: comment.created_at,
+      last_edited_at: reviewedAt,
     })
     .eq("id", taskId);
 
-  if (touchResult.error) {
-    console.error("Failed to update task activity after comment.", touchResult.error);
+  if (updateResult.error) {
+    throw new TaskMutationError(updateResult.error.message, 500);
   }
 
-  const commentItem: TaskCommentItem = {
-    id: comment.id,
-    taskId: comment.task_id,
-    body: comment.body,
-    createdAt: comment.created_at,
-    createdLabel: formatCommentLabel(comment.created_at),
-    authorId: comment.author_user_id,
-    authorLabel: actorName,
-    authorInitials: initialsFromName(actorName),
-    authorRoleLabel: isAdmin ? "Admin" : "User",
+  const comment = await createTaskCommentEntry(admin, {
+    taskId,
+    authorUserId: userId,
+    body: buildAdminReviewCommentBody(decision, reason),
+    actorName,
     isAdmin,
-  };
+  });
 
-  return { taskId, comment: commentItem };
+  await writeTaskAuditLog(admin, {
+    actorUserId: userId,
+    taskId,
+    action: decision === "approve" ? "task_approved" : "task_rejected",
+    details: reason,
+  });
+
+  return {
+    taskId,
+    status: nextStatus,
+    comment,
+  };
 }

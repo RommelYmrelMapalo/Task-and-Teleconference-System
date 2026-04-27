@@ -75,6 +75,7 @@ export function UserShell({
 }) {
   const pathname = usePathname();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement | null>(null);
   const displayName = formatDisplayName(user.fullName);
@@ -83,10 +84,12 @@ export function UserShell({
     const syncSidebarPreference = () => {
       if (window.innerWidth <= SIDEBAR_DESKTOP_BREAKPOINT) {
         setSidebarCollapsed(false);
+        setMobileSidebarOpen(false);
         return;
       }
 
       setSidebarCollapsed(window.localStorage.getItem(SIDEBAR_COLLAPSE_KEY) === "true");
+      setMobileSidebarOpen(false);
     };
 
     syncSidebarPreference();
@@ -108,6 +111,7 @@ export function UserShell({
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setUserMenuOpen(false);
+        setMobileSidebarOpen(false);
       }
     };
 
@@ -122,7 +126,13 @@ export function UserShell({
 
   return (
     <main className="dashboard-page">
-      <div className={`app-shell${sidebarCollapsed ? " sidebar-collapsed" : ""}`}>
+      <div className={`app-shell${sidebarCollapsed ? " sidebar-collapsed" : ""}${mobileSidebarOpen ? " sidebar-mobile-open" : ""}`}>
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Close navigation"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
         <aside className={`sidebar-dark${sidebarCollapsed ? " is-collapsed" : ""}`}>
           <div className="sidebar-brand">
             <div className="sidebar-brand-main">
@@ -192,6 +202,7 @@ export function UserShell({
                       className={`sidebar-link${isActive ? " active" : ""}`}
                       href={item.href}
                       title={sidebarCollapsed ? item.label : undefined}
+                      onClick={() => setMobileSidebarOpen(false)}
                     >
                       <span className="sidebar-icon">
                         <SidebarIcon icon={item.icon} />
@@ -246,6 +257,28 @@ export function UserShell({
             <div className="main-inner">
               <div className="dashboard-head">
                 <div className="dashboard-head-left">
+                  <button
+                    type="button"
+                    className="mobile-sidebar-toggle"
+                    aria-label={mobileSidebarOpen ? "Close navigation" : "Open navigation"}
+                    aria-expanded={mobileSidebarOpen}
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      setMobileSidebarOpen((open) => !open);
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      {mobileSidebarOpen ? (
+                        <path d="M6 6 18 18M18 6 6 18" />
+                      ) : (
+                        <>
+                          <path d="M4 7h16" />
+                          <path d="M4 12h16" />
+                          <path d="M4 17h16" />
+                        </>
+                      )}
+                    </svg>
+                  </button>
                   <PageBreadcrumbs pathname={pathname} title={title} subtitle={subtitle} />
                 </div>
                 {actions ? <div className="planner-actions-top">{actions}</div> : null}
