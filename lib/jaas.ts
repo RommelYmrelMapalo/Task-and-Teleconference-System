@@ -1,6 +1,8 @@
 import { createSign } from "node:crypto";
 
-const JAAS_APP_ID = process.env.JAAS_APP_ID?.trim() || process.env.NEXT_PUBLIC_JAAS_APP_ID?.trim();
+const DEFAULT_JAAS_APP_ID = "vpaas-magic-cookie-9a6b118f35bf4c298927b0321c04267e";
+const JAAS_APP_ID =
+  process.env.JAAS_APP_ID?.trim() || process.env.NEXT_PUBLIC_JAAS_APP_ID?.trim() || DEFAULT_JAAS_APP_ID;
 const JAAS_KID = process.env.JAAS_KID?.trim();
 const JAAS_PRIVATE_KEY = process.env.JAAS_PRIVATE_KEY?.trim() || process.env.JAAS_PRIVATE_KEY_BASE64?.trim();
 
