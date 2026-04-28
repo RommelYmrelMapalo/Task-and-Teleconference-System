@@ -242,6 +242,10 @@ export function DashboardPlanner({
     router.push(`/tasks?${params.toString()}`);
   };
 
+  const openMeetingRoom = (joinPath: string) => {
+    router.push(joinPath);
+  };
+
   return (
     <div className={`planner-wrap${viewMode === "cards" ? " card-view" : ""}`} ref={plannerRef}>
       {pendingToggleWarningTask ? (
@@ -372,9 +376,18 @@ export function DashboardPlanner({
 
                           return (
                             <article
-                              className={`plan-row ${accent.rowClass}`}
+                              className={`plan-row ${accent.rowClass} is-clickable`}
                               data-item-type="meeting"
                               key={`list-meeting-${meeting.id}`}
+                              onClick={() => openMeetingRoom(meeting.joinPath)}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter" || event.key === " ") {
+                                  event.preventDefault();
+                                  openMeetingRoom(meeting.joinPath);
+                                }
+                              }}
+                              role="link"
+                              tabIndex={0}
                             >
                               <button type="button" className="plan-check is-disabled" disabled>
                                 {"\u2713"}
@@ -469,9 +482,16 @@ export function DashboardPlanner({
                             const accent = getAccentClasses(meeting.id);
 
                             return (
-                              <article className="gcard" data-item-type="meeting" key={`card-meeting-${meeting.id}`}>
+                              <article className="gcard is-clickable" data-item-type="meeting" key={`card-meeting-${meeting.id}`}>
                                 <div className={`gcard-cover ${accent.coverClass}`}>
-                                  <div className="gcard-menu">{"\u22EE"}</div>
+                                  <button
+                                    type="button"
+                                    className="gcard-menu"
+                                    aria-label={`Open ${meeting.title} meeting room`}
+                                    onClick={() => openMeetingRoom(meeting.joinPath)}
+                                  >
+                                    {"\u24D8"}
+                                  </button>
                                 </div>
 
                                 <div className="gcard-body">

@@ -24,6 +24,7 @@ type CalendarItemBase = {
 
 type MeetingCalendarItem = CalendarItemBase & {
   kind: "meeting";
+  joinPath: string;
 };
 
 type TaskCalendarItem = CalendarItemBase & {
@@ -137,6 +138,7 @@ export function AdminDashboardCalendar({
         timeLabel: getChipTime(meeting.dateTime),
         sortValue: new Date(meeting.dateTime).getTime(),
         tone: "meeting",
+        joinPath: meeting.joinPath,
       });
       eventMap.set(key, items);
     }
@@ -211,6 +213,10 @@ export function AdminDashboardCalendar({
   const openTaskDashboard = (taskId: number) => {
     const params = new URLSearchParams({ task: String(taskId), open: "1" });
     router.push(`/admin/tasks?${params.toString()}`);
+  };
+
+  const openMeetingRoom = (joinPath: string) => {
+    router.push(joinPath);
   };
 
   const visiblePills = [
@@ -296,14 +302,16 @@ export function AdminDashboardCalendar({
                         <span className="admin-large-calendar-chip-title">{item.title}</span>
                       </button>
                     ) : (
-                      <div
-                        className={`admin-large-calendar-chip admin-large-calendar-chip-${item.tone} is-static`}
+                      <button
+                        type="button"
+                        className={`admin-large-calendar-chip admin-large-calendar-chip-${item.tone}`}
                         key={item.id}
+                        onClick={() => openMeetingRoom(item.joinPath)}
                         title={item.title}
                       >
                         <span className="admin-large-calendar-chip-time">{item.timeLabel}</span>
                         <span className="admin-large-calendar-chip-title">{item.title}</span>
-                      </div>
+                      </button>
                     ),
                   )}
 
