@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { MeetingEmbed } from "@/components/meeting-embed";
+import { createJaasJwt, getJaasAppId, hasJaasAppId, hasJaasJwtEnv, buildJaasRoomName } from "@/lib/jaas";
 import { buildMeetingEmbedUrl } from "@/lib/meeting-links";
 import { getMeetingByIdForUser } from "@/lib/meeting-data";
 import { requireSessionContext } from "@/lib/ttcs-data";
@@ -85,13 +87,45 @@ export default async function MeetingRoomPage({
   const participantSummary = meeting.assignees.length
     ? meeting.assignees.map((assignee) => assignee.fullName).join(", ")
     : "No participants listed";
-  const embedUrl = buildMeetingEmbedUrl(meeting.videoRoomCode, shellUser.fullName);
+  const hasJaasApp = hasJaasAppId();
+  const useJaasJwt = hasJaasJwtEnv();
+  const useJaas = hasJaasApp && useJaasJwt;
+  const jaasAppId = useJaas ? getJaasAppId() : null;
+  const embedProps = useJaas
+    ? {
+        provider: "jaas" as const,
+        appId: jaasAppId!,
+        roomName: buildJaasRoomName(jaasAppId!, meeting.videoRoomCode),
+        jwt: useJaasJwt
+          ? createJaasJwt({
+              roomCode: meeting.videoRoomCode,
+              userId: shellUser.id,
+              displayName: shellUser.fullName,
+              email: shellUser.email,
+              moderator: profile.is_admin,
+            })
+          : undefined,
+        displayName: shellUser.fullName,
+        email: shellUser.email,
+        title: `${meeting.title} secure video room`,
+      }
+    : {
+        provider: "jitsi" as const,
+        iframeUrl: buildMeetingEmbedUrl(meeting.videoRoomCode, shellUser.fullName),
+        title: `${meeting.title} video room`,
+      };
 
   return (
     <MeetingAccessShell
       backHref={backHref}
       title={meeting.title}
-      subtitle="Only invited participants can open this video room through TTCS."
+      subtitle={
+        useJaas
+          ? useJaasJwt
+            ? "Only invited participants can open this secure 8x8 JaaS room through TTCS."
+            : "Only invited participants can open this 8x8 JaaS room through TTCS."
+          : "Only invited participants can open this video room through TTCS."
+      }
     >
       <div className="meeting-room-meta">
         <p>{meeting.dateLabel}</p>
@@ -100,15 +134,25 @@ export default async function MeetingRoomPage({
         <p>Participants: {participantSummary}</p>
       </div>
 
-      <div className="meeting-video-frame-shell">
-        <iframe
-          title={`${meeting.title} video room`}
-          className="meeting-video-frame"
-          src={embedUrl}
-          allow="camera; microphone; fullscreen; display-capture; autoplay"
-          referrerPolicy="origin"
-        />
-      </div>
+      {hasJaasApp && !useJaasJwt ? (
+        <section className="page-card meeting-security-card">
+          <div className="card-headline">
+            <div>
+              <h3>Secure meeting authentication is incomplete</h3>
+              <p className="meeting-card-copy">
+                This 8x8 JaaS room is configured with an App ID but not with participant JWT signing.
+              </p>
+            </div>
+            <span className="pill task">Action needed</span>
+          </div>
+          <p>
+            To require authenticated joins, set <code>JAAS_KID</code> and <code>JAAS_PRIVATE_KEY</code> on the server,
+            then reload the meeting page.
+          </p>
+        </section>
+      ) : (
+        <MeetingEmbed {...embedProps} />
+      )}
     </MeetingAccessShell>
   );
 }
