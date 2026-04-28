@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { MeetingEmbed } from "@/components/meeting-embed";
 import { createJaasJwt, getJaasAppId, hasJaasAppId, hasJaasJwtEnv, buildJaasRoomName } from "@/lib/jaas";
 import { buildMeetingEmbedUrl } from "@/lib/meeting-links";
@@ -55,15 +56,7 @@ export default async function MeetingRoomPage({
   const backHref = profile.is_admin ? "/admin/meetings" : "/assigned-meetings";
 
   if (!Number.isInteger(meetingId) || meetingId <= 0) {
-    return (
-      <MeetingAccessShell
-        backHref={backHref}
-        title="Meeting not found"
-        subtitle="The meeting link is invalid or no longer available."
-      >
-        <p>Check the meeting link from your schedule and try again.</p>
-      </MeetingAccessShell>
-    );
+    notFound();
   }
 
   const meeting = await getMeetingByIdForUser({
@@ -73,15 +66,7 @@ export default async function MeetingRoomPage({
   });
 
   if (!meeting) {
-    return (
-      <MeetingAccessShell
-        backHref={backHref}
-        title="Access restricted"
-        subtitle="Only assigned participants and admins can open this meeting room."
-      >
-        <p>If you believe this is a mistake, ask the meeting organizer to verify your invitation.</p>
-      </MeetingAccessShell>
-    );
+    notFound();
   }
 
   const participantSummary = meeting.assignees.length
@@ -89,7 +74,7 @@ export default async function MeetingRoomPage({
     : "No participants listed";
   const hasJaasApp = hasJaasAppId();
   const useJaasJwt = hasJaasJwtEnv();
-  const useJaas = hasJaasApp && useJaasJwt;
+  const useJaas = hasJaasApp;
   const jaasAppId = useJaas ? getJaasAppId() : null;
   const embedProps = useJaas
     ? {
@@ -134,25 +119,7 @@ export default async function MeetingRoomPage({
         <p>Participants: {participantSummary}</p>
       </div>
 
-      {hasJaasApp && !useJaasJwt ? (
-        <section className="page-card meeting-security-card">
-          <div className="card-headline">
-            <div>
-              <h3>Secure meeting authentication is incomplete</h3>
-              <p className="meeting-card-copy">
-                This 8x8 JaaS room is configured with an App ID but not with participant JWT signing.
-              </p>
-            </div>
-            <span className="pill task">Action needed</span>
-          </div>
-          <p>
-            To require authenticated joins, set <code>JAAS_KID</code> and <code>JAAS_PRIVATE_KEY</code> on the server,
-            then reload the meeting page.
-          </p>
-        </section>
-      ) : (
-        <MeetingEmbed {...embedProps} />
-      )}
+      <MeetingEmbed {...embedProps} />
     </MeetingAccessShell>
   );
 }
