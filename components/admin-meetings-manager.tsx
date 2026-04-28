@@ -1,12 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
-import {
-  createMeetingAction,
-  initialCreateMeetingState,
-} from "@/app/admin/meetings/actions";
+import { initialCreateMeetingState } from "@/app/admin/meetings/action-state";
+import { createMeetingAction } from "@/app/admin/meetings/actions";
 import type { AdminProfileListItem, MeetingItem } from "@/lib/ttcs-data";
 
 function CreateMeetingSubmitButton() {
@@ -47,6 +46,32 @@ export function AdminMeetingsManager({
     () => users.filter((user) => user.statusTone !== "deactivated"),
     [users],
   );
+  const roleOptions = useMemo(() => {
+    const options = new Map<
+      AdminProfileListItem["role"],
+      {
+        role: AdminProfileListItem["role"];
+        label: string;
+        count: number;
+      }
+    >();
+
+    for (const user of selectableUsers) {
+      const existing = options.get(user.role);
+      if (existing) {
+        existing.count += 1;
+        continue;
+      }
+
+      options.set(user.role, {
+        role: user.role,
+        label: user.roleLabel,
+        count: 1,
+      });
+    }
+
+    return Array.from(options.values());
+  }, [selectableUsers]);
 
   useEffect(() => {
     if (state.status === "success") {
@@ -84,13 +109,13 @@ export function AdminMeetingsManager({
             </div>
             <div className="users-form-field">
               <label className="users-form-label drawer-label" htmlFor="meeting-room">
-                Room or Link
+                Meeting Room
               </label>
               <input
                 id="meeting-room"
                 className="field-input"
                 name="room"
-                placeholder="Conference Room A or video link"
+                placeholder="Conference Room A"
               />
             </div>
           </div>
@@ -128,8 +153,8 @@ export function AdminMeetingsManager({
             />
           </div>
 
-          <div className="meeting-participants-shell">
-            <div className="card-headline">
+	          <div className="meeting-participants-shell">
+	            <div className="card-headline">
               <div>
                 <h3>Participants</h3>
                 <p className="meeting-card-copy">
@@ -140,29 +165,63 @@ export function AdminMeetingsManager({
             </div>
 
             {selectableUsers.length ? (
-              <div className="meeting-participant-grid">
-                {selectableUsers.map((user) => (
-                  <label className="meeting-participant-option" key={user.id}>
-                    <input type="checkbox" name="participantIds" value={user.id} />
-                    <span className="meeting-participant-copy">
-                      <strong>{user.fullName}</strong>
-                      <span>{user.roleLabel}</span>
-                    </span>
-                  </label>
-                ))}
+              <div className="meeting-selection-stack">
+                {roleOptions.length ? (
+                  <div className="meeting-selection-block">
+                    <div className="meeting-selection-copy">
+                      <div className="meeting-selection-heading">Assign By Role</div>
+                      <p className="meeting-card-copy">
+                        Select a role when everyone in that group should receive the meeting notice.
+                      </p>
+                    </div>
+                    <div className="meeting-participant-grid meeting-role-grid">
+                      {roleOptions.map((roleOption) => (
+                        <label className="meeting-participant-option meeting-role-option" key={roleOption.role}>
+                          <input type="checkbox" name="participantRoles" value={roleOption.role} />
+                          <span className="meeting-participant-copy">
+                            <strong>{roleOption.label === "Admin" ? "All Admins" : "All Users"}</strong>
+                            <span>
+                              {roleOption.count} available participant{roleOption.count === 1 ? "" : "s"}
+                            </span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="meeting-selection-block">
+                  <div className="meeting-selection-copy">
+                    <div className="meeting-selection-heading">Assign Individually</div>
+                    <p className="meeting-card-copy">
+                      Add specific people here. Role and individual selections are merged automatically.
+                    </p>
+                  </div>
+                  <div className="meeting-participant-grid">
+                    {selectableUsers.map((user) => (
+                      <label className="meeting-participant-option" key={user.id}>
+                        <input type="checkbox" name="participantIds" value={user.id} />
+                        <span className="meeting-participant-copy">
+                          <strong>{user.fullName}</strong>
+                          <span>{user.roleLabel}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
-            ) : (
-              <div className="meeting-empty-copy">No active users are currently available for meeting assignments.</div>
-            )}
-          </div>
+	            ) : (
+	              <div className="meeting-empty-copy">No active users are currently available for meeting assignments.</div>
+	            )}
 
-          <div className="drawer-footer">
-            <div className="users-form-actions">
-              <CreateMeetingSubmitButton />
-            </div>
-          </div>
+	            <div className="meeting-actions">
+	              <div className="users-form-actions">
+	              <CreateMeetingSubmitButton />
+	              </div>
+	            </div>
+	          </div>
 
-          {state.message ? (
+	          {state.message ? (
             <div className={state.status === "error" ? "field-error" : "field-success"}>{state.message}</div>
           ) : null}
         </form>
@@ -186,11 +245,19 @@ export function AdminMeetingsManager({
                 </div>
                 <p>{meeting.dateLabel}</p>
                 <p>{meeting.timeLabel}</p>
-                <p>{meeting.room ? `Room: ${meeting.room}` : "Room: To be announced"}</p>
+                <p>{meeting.room ? `Meeting room: ${meeting.room}` : "Meeting room: To be announced"}</p>
+                {meeting.joinPath ? <p className="meeting-link-copy">Join link: {meeting.joinPath}</p> : null}
                 <p>{meeting.description}</p>
                 <p className="meeting-participant-summary">
                   Participants: {formatParticipantSummary(meeting)}
                 </p>
+                {meeting.joinPath ? (
+                  <div className="meeting-link-actions">
+                    <Link className="primary-btn" href={meeting.joinPath}>
+                      Join Meeting
+                    </Link>
+                  </div>
+                ) : null}
               </section>
             );
           })}

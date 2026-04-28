@@ -1,18 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { CreateMeetingState } from "@/app/admin/meetings/action-state";
+import { buildMeetingJoinPath } from "@/lib/meeting-links";
 import { requireSessionContext } from "@/lib/ttcs-data";
 import { createMeetingForUser, MeetingMutationError } from "@/lib/meeting-write-service";
-
-export type CreateMeetingState = {
-  status: "idle" | "success" | "error";
-  message: string | null;
-};
-
-export const initialCreateMeetingState: CreateMeetingState = {
-  status: "idle",
-  message: null,
-};
 
 export async function createMeetingAction(
   _previousState: CreateMeetingState,
@@ -34,7 +26,7 @@ export async function createMeetingAction(
 
     return {
       status: "success",
-      message: `Meeting "${result.title}" created for ${result.assigneeCount} participant${result.assigneeCount === 1 ? "" : "s"}.`,
+      message: `Meeting "${result.title}" created for ${result.assigneeCount} participant${result.assigneeCount === 1 ? "" : "s"}. Join link: ${buildMeetingJoinPath(result.meetingId)}`,
     };
   } catch (error) {
     if (error instanceof MeetingMutationError) {

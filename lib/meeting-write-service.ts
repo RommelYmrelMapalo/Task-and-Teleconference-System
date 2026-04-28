@@ -1,7 +1,10 @@
 import { createAdminClient } from "@/app/utils/utils/supabase/admin";
+import { buildMeetingJoinPath } from "@/lib/meeting-links";
 import { isMissingSupabaseColumn, isMissingSupabaseTable } from "@/lib/supabase-errors";
+import type { AppRole } from "@/lib/ttcs-data";
 
 const MANILA_OFFSET_HOURS = 8;
+const VALID_MEETING_ROLES = new Set<AppRole>(["admin", "user"]);
 
 type MeetingRecipient = {
   id: string;
@@ -83,6 +86,18 @@ function parseParticipantIds(formData: FormData) {
         .filter((value): value is string => typeof value === "string")
         .map((value) => value.trim())
         .filter(Boolean),
+    ),
+  );
+}
+
+function parseParticipantRoles(formData: FormData) {
+  return Array.from(
+    new Set(
+      formData
+        .getAll("participantRoles")
+        .filter((value): value is string => typeof value === "string")
+        .map((value) => value.trim())
+        .filter((value): value is AppRole => VALID_MEETING_ROLES.has(value as AppRole)),
     ),
   );
 }
@@ -190,29 +205,89 @@ async function loadWriterContext(userId: string) {
   };
 }
 
-async function resolveRecipients(admin: ReturnType<typeof createAdminClient>, participantIds: string[]) {
-  if (!participantIds.length) {
+async function loadDeactivatedUserIds(admin: ReturnType<typeof createAdminClient>) {
+  const authUsersResult = await admin.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  });
+
+  if (authUsersResult.error) {
+    throw new MeetingMutationError(authUsersResult.error.message, 500);
+  }
+
+  return new Set(
+    (authUsersResult.data?.users ?? [])
+      .filter((user) => {
+        const bannedUntil = user.banned_until;
+        return typeof bannedUntil === "string" && bannedUntil.length > 0 && new Date(bannedUntil).getTime() > Date.now();
+      })
+      .map((user) => user.id),
+  );
+}
+
+function mapMeetingRecipients(rows: MeetingRecipientRow[], deactivatedUserIds: Set<string>) {
+  return rows
+    .filter((recipient) => !deactivatedUserIds.has(recipient.id))
+    .map((recipient) => ({
+      id: recipient.id,
+      email: recipient.email,
+      fullName: resolveProfileName(recipient.full_name, recipient.email),
+    }));
+}
+
+async function resolveRecipients(
+  admin: ReturnType<typeof createAdminClient>,
+  participantIds: string[],
+  participantRoles: AppRole[],
+) {
+  if (!participantIds.length && !participantRoles.length) {
     return [];
   }
 
-  const result = await admin
-    .from("profiles")
-    .select("id,email,full_name")
-    .in("id", participantIds);
+  const recipientsById = new Map<string, MeetingRecipient>();
+  const deactivatedUserIds = await loadDeactivatedUserIds(admin);
 
-  if (result.error) {
-    if (isMissingSupabaseTable(result.error)) {
-      throw new MeetingMutationError("Profiles are not configured yet.", 500);
+  if (participantIds.length) {
+    const result = await admin
+      .from("profiles")
+      .select("id,email,full_name")
+      .in("id", participantIds);
+
+    if (result.error) {
+      if (isMissingSupabaseTable(result.error)) {
+        throw new MeetingMutationError("Profiles are not configured yet.", 500);
+      }
+
+      throw new MeetingMutationError(result.error.message, 500);
     }
 
-    throw new MeetingMutationError(result.error.message, 500);
+    for (const recipient of mapMeetingRecipients((result.data as MeetingRecipientRow[] | null) ?? [], deactivatedUserIds)) {
+      recipientsById.set(recipient.id, recipient);
+    }
   }
 
-  return ((result.data as MeetingRecipientRow[] | null) ?? []).map((recipient) => ({
-    id: recipient.id,
-    email: recipient.email,
-    fullName: resolveProfileName(recipient.full_name, recipient.email),
-  }));
+  if (participantRoles.length) {
+    const result = await admin
+      .from("profiles")
+      .select("id,email,full_name")
+      .in("role", participantRoles);
+
+    if (result.error) {
+      if (isMissingSupabaseTable(result.error)) {
+        throw new MeetingMutationError("Profiles are not configured yet.", 500);
+      }
+
+      throw new MeetingMutationError(result.error.message, 500);
+    }
+
+    for (const recipient of mapMeetingRecipients((result.data as MeetingRecipientRow[] | null) ?? [], deactivatedUserIds)) {
+      recipientsById.set(recipient.id, recipient);
+    }
+  }
+
+  return Array.from(recipientsById.values()).sort(
+    (left, right) => left.fullName.localeCompare(right.fullName) || left.email.localeCompare(right.email),
+  );
 }
 
 function buildMeetingSubject(title: string) {
@@ -221,6 +296,7 @@ function buildMeetingSubject(title: string) {
 
 function buildMeetingMessage({
   actorName,
+  meetingId,
   title,
   description,
   room,
@@ -228,6 +304,7 @@ function buildMeetingMessage({
   endsAt,
 }: {
   actorName: string;
+  meetingId: number;
   title: string;
   description: string;
   room: string;
@@ -257,13 +334,14 @@ function buildMeetingMessage({
     `${actorName} scheduled a meeting for you.`,
     `Meeting: ${title}`,
     `Schedule: ${scheduleLabel}`,
-    `Room: ${room || "TBD"}`,
+    `Meeting room: ${room || "TBD"}`,
   ];
 
   if (description) {
     lines.push("", "Meeting details:", description);
   }
 
+  lines.push("", `Join link: ${buildMeetingJoinPath(meetingId)}`);
   lines.push("", "Open the Assigned Meetings page to review the latest meeting schedule.");
   return lines.join("\n");
 }
@@ -303,6 +381,7 @@ async function createMeetingNotifications(
     title: buildMeetingSubject(title),
     message: buildMeetingMessage({
       actorName,
+      meetingId,
       title,
       description,
       room,
@@ -340,12 +419,13 @@ export async function createMeetingForUser(userId: string, formData: FormData) {
   const { admin, actorName } = await loadWriterContext(userId);
   const values = parseMeetingValues(formData);
   const participantIds = parseParticipantIds(formData);
+  const participantRoles = parseParticipantRoles(formData);
 
-  if (!participantIds.length) {
+  if (!participantIds.length && !participantRoles.length) {
     throw new MeetingMutationError("Select at least one meeting participant.");
   }
 
-  const recipients = await resolveRecipients(admin, participantIds);
+  const recipients = await resolveRecipients(admin, participantIds, participantRoles);
   if (!recipients.length) {
     throw new MeetingMutationError("No valid meeting participants were found.");
   }

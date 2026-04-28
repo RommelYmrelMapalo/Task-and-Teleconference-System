@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { UserShell } from "@/components/user-shell";
 import { getUserMeetings } from "@/lib/meeting-data";
 import { requireSessionContext } from "@/lib/ttcs-data";
@@ -23,8 +24,16 @@ export default async function AssignedMeetingsPage() {
               </div>
               <p>{meeting.dateLabel}</p>
               <p>{meeting.timeLabel}</p>
-              <p>{meeting.room ? `Room: ${meeting.room}` : "Room: To be announced"}</p>
+              <p>{meeting.room ? `Meeting room: ${meeting.room}` : "Meeting room: To be announced"}</p>
+              {meeting.joinPath ? <p className="meeting-link-copy">Join link: {meeting.joinPath}</p> : null}
               <p>{meeting.description}</p>
+              {meeting.joinPath ? (
+                <div className="meeting-link-actions">
+                  <Link className="primary-btn" href={meeting.joinPath}>
+                    Join Meeting
+                  </Link>
+                </div>
+              ) : null}
             </section>
           ))
         ) : (

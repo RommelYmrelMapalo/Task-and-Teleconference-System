@@ -4516,10 +4516,41 @@ select.drawer-input::-ms-expand {
     linear-gradient(180deg, rgba(18, 18, 20, 0.96), rgba(9, 9, 10, 0.98));
 }
 
+.meeting-selection-stack,
+.meeting-selection-block {
+  display: grid;
+  gap: 14px;
+}
+
+.meeting-selection-heading {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.meeting-selection-note {
+  margin: 0;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.meeting-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
 .meeting-participant-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
+}
+
+.meeting-role-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .meeting-participant-option {
@@ -4533,6 +4564,10 @@ select.drawer-input::-ms-expand {
   background: rgba(255, 255, 255, 0.03);
   cursor: pointer;
   transition: border-color 180ms ease, transform 180ms ease, background 180ms ease;
+}
+
+.meeting-role-option {
+  align-items: center;
 }
 
 .meeting-participant-option:hover {
@@ -4568,6 +4603,93 @@ select.drawer-input::-ms-expand {
 
 .meeting-participant-summary {
   margin: 0;
+}
+
+.meeting-link-copy {
+  margin: 0;
+  color: #7dd3fc;
+  font-family: "IBM Plex Mono", "Fira Code", monospace;
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+
+.meeting-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.meeting-room-page {
+  min-height: 100vh;
+  padding: 32px 18px;
+  background:
+    radial-gradient(circle at top, rgba(59, 130, 246, 0.18), transparent 28%),
+    linear-gradient(180deg, #050816 0%, #09111f 48%, #05070e 100%);
+}
+
+.meeting-room-shell {
+  width: min(1320px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+}
+
+.meeting-room-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.meeting-room-backlink,
+.meeting-room-brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.7);
+  color: #e2e8f0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.meeting-room-backlink:hover {
+  border-color: rgba(125, 211, 252, 0.42);
+  color: #f8fafc;
+}
+
+.meeting-room-card {
+  gap: 20px;
+}
+
+.meeting-room-meta {
+  display: grid;
+  gap: 8px;
+}
+
+.meeting-room-meta p {
+  margin: 0;
+}
+
+.meeting-video-frame-shell {
+  min-height: 72vh;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  background: rgba(2, 6, 23, 0.82);
+}
+
+.meeting-video-frame {
+  width: 100%;
+  min-height: calc(72vh - 24px);
+  border: 0;
+  border-radius: 20px;
+  background: #020617;
 }
 
 .mail-item {
@@ -6368,6 +6490,7 @@ html[data-theme="light"] .plan-sub,
 html[data-theme="light"] .gcard-small,
 html[data-theme="light"] .meeting-card-copy,
 html[data-theme="light"] .meeting-empty-copy,
+html[data-theme="light"] .meeting-selection-note,
 html[data-theme="light"] .meeting-participant-summary,
 html[data-theme="light"] .meeting-participant-copy span,
 html[data-theme="light"] .page-card p,
@@ -6441,6 +6564,15 @@ html[data-theme="light"] .meeting-participant-option:hover {
 
 html[data-theme="light"] .meeting-participant-copy strong {
   color: #0f172a;
+}
+
+html[data-theme="light"] .meeting-create-card {
+  background: #ffffff;
+  box-shadow: none;
+}
+
+html[data-theme="light"] .meeting-selection-heading {
+  color: #475569;
 }
 
 html[data-theme="light"] .sidebar-calendar-group {
@@ -9920,5 +10052,179 @@ html[data-theme="light"] .attachment-remove {
 
   .admin-large-calendar-chip-title {
     font-size: 0.78rem;
+  }
+}
+
+.app-error-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+  background:
+    radial-gradient(700px 420px at 18% 20%, rgba(239, 68, 68, 0.14), transparent 58%),
+    radial-gradient(820px 480px at 82% 14%, rgba(249, 115, 22, 0.12), transparent 60%),
+    linear-gradient(180deg, #050505 0%, #09090b 56%, #111827 100%);
+}
+
+.app-error-card {
+  width: min(100%, 640px);
+  padding: 32px;
+  border: 1px solid rgba(248, 113, 113, 0.24);
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(24, 24, 27, 0.96), rgba(9, 9, 11, 0.96)),
+    rgba(9, 9, 11, 0.96);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.4);
+}
+
+.app-error-badge {
+  width: fit-content;
+  margin-bottom: 16px;
+  padding: 7px 12px;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 999px;
+  background: rgba(127, 29, 29, 0.34);
+  color: #fecaca;
+  font-size: 0.77rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.app-error-card h1 {
+  margin: 0;
+  color: #fafafa;
+  font-size: clamp(2rem, 4vw, 2.7rem);
+  line-height: 1.05;
+}
+
+.app-error-copy {
+  margin: 14px 0 0;
+  color: rgba(244, 244, 245, 0.8);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.app-error-message {
+  margin-top: 22px;
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #f4f4f5;
+  font-family: var(--font-geist-mono);
+  font-size: 0.94rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.app-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 24px;
+}
+
+.app-error-button,
+.app-error-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #fafafa;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.app-error-button:hover,
+.app-error-button:focus-visible,
+.app-error-link:hover,
+.app-error-link:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.app-error-button-primary {
+  border-color: rgba(248, 113, 113, 0.34);
+  background: linear-gradient(180deg, rgba(220, 38, 38, 0.92), rgba(153, 27, 27, 0.92));
+}
+
+.app-error-button-primary:hover,
+.app-error-button-primary:focus-visible {
+  border-color: rgba(252, 165, 165, 0.58);
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.96), rgba(185, 28, 28, 0.96));
+}
+
+.app-error-meta {
+  margin-top: 18px;
+  color: rgba(244, 244, 245, 0.56);
+  font-size: 0.83rem;
+}
+
+html[data-theme="light"] .app-error-shell {
+  background:
+    radial-gradient(700px 420px at 18% 20%, rgba(248, 113, 113, 0.2), transparent 58%),
+    radial-gradient(820px 480px at 82% 14%, rgba(251, 146, 60, 0.14), transparent 60%),
+    linear-gradient(180deg, #fff7ed 0%, #f8fafc 54%, #eef2ff 100%);
+}
+
+html[data-theme="light"] .app-error-card {
+  border-color: rgba(248, 113, 113, 0.2);
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.92), transparent 72%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
+  box-shadow: 0 30px 70px rgba(148, 163, 184, 0.24);
+}
+
+html[data-theme="light"] .app-error-card h1,
+html[data-theme="light"] .app-error-message,
+html[data-theme="light"] .app-error-button,
+html[data-theme="light"] .app-error-link {
+  color: #0f172a;
+}
+
+html[data-theme="light"] .app-error-copy,
+html[data-theme="light"] .app-error-meta {
+  color: rgba(15, 23, 42, 0.7);
+}
+
+html[data-theme="light"] .app-error-message {
+  border-color: rgba(148, 163, 184, 0.18);
+  background: rgba(241, 245, 249, 0.9);
+}
+
+html[data-theme="light"] .app-error-button,
+html[data-theme="light"] .app-error-link {
+  border-color: rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+@media (max-width: 640px) {
+  .app-error-card {
+    padding: 24px;
+    border-radius: 22px;
+  }
+
+  .app-error-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .app-error-button,
+  .app-error-link {
+    width: 100%;
   }
 }

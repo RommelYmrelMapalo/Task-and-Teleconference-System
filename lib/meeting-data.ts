@@ -8,6 +8,7 @@ import {
   type ProfileRecord,
   type ShellUser,
 } from "@/lib/ttcs-data";
+import { buildMeetingJoinPath, buildMeetingVideoRoomCode } from "@/lib/meeting-links";
 import { isMissingSupabaseTable } from "@/lib/supabase-errors";
 
 const MANILA_TZ = "Asia/Manila";
@@ -139,6 +140,12 @@ function mapMeetingRow(
     title: row.title,
     description: row.description?.trim() || "No meeting notes yet.",
     room: row.room?.trim() || "",
+    joinPath: buildMeetingJoinPath(row.id),
+    videoRoomCode: buildMeetingVideoRoomCode({
+      meetingId: row.id,
+      title: row.title,
+      createdAt: row.created_at,
+    }),
     dateTime: row.scheduled_for,
     endDateTime: row.ends_at,
     dateLabel: formatWithTz(row.scheduled_for, {
@@ -311,4 +318,58 @@ export async function getAdminMeetings(
   }
 
   return hydrated;
+}
+
+export async function getMeetingByIdForUser({
+  meetingId,
+  userId,
+  isAdmin,
+}: {
+  meetingId: number;
+  userId: string;
+  isAdmin: boolean;
+}) {
+  const admin = createAdminClient();
+
+  if (!isAdmin) {
+    const assignmentResult = await admin
+      .from("meeting_assignments")
+      .select("meeting_id")
+      .eq("meeting_id", meetingId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (assignmentResult.error) {
+      if (isMissingSupabaseTable(assignmentResult.error)) {
+        return null;
+      }
+
+      throw new Error(`Failed to verify meeting access: ${assignmentResult.error.message}`);
+    }
+
+    if (!assignmentResult.data) {
+      return null;
+    }
+  }
+
+  const meetingResult = await admin
+    .from("meetings")
+    .select("id,title,description,room,scheduled_for,ends_at,created_by,created_at,updated_at")
+    .eq("id", meetingId)
+    .maybeSingle();
+
+  if (meetingResult.error) {
+    if (isMissingSupabaseTable(meetingResult.error)) {
+      return null;
+    }
+
+    throw new Error(`Failed to load meeting record: ${meetingResult.error.message}`);
+  }
+
+  if (!meetingResult.data) {
+    return null;
+  }
+
+  const hydrated = await hydrateMeetings([meetingResult.data as MeetingRow]);
+  return hydrated?.[0] ?? null;
 }

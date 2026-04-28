@@ -123,6 +123,8 @@ export type MeetingItem = {
   title: string;
   description: string;
   room: string;
+  joinPath: string;
+  videoRoomCode: string;
   dateTime: string;
   endDateTime: string | null;
   dateLabel: string;
@@ -1356,6 +1358,8 @@ export function getMeetingItems(notifications: NotificationItem[]) {
       title: item.title || "Meeting",
       description: item.message,
       room: "",
+      joinPath: "",
+      videoRoomCode: "",
       dateTime: item.createdAt,
       endDateTime: null,
       dateLabel: formatWithTz(item.createdAt, {
