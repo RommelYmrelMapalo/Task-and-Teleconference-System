@@ -289,19 +289,23 @@ export function AdminDashboardCalendar({
                 </div>
 
                 <div className="admin-large-calendar-cell-body">
-                  {cell.items.slice(0, 2).map((item) =>
-                    item.kind === "task" && typeof item.taskId === "number" ? (
-                      <button
-                        type="button"
-                        className={`admin-large-calendar-chip admin-large-calendar-chip-${item.tone}`}
-                        key={item.id}
-                        onClick={() => openTaskDashboard(item.taskId)}
-                        title={item.title}
-                      >
-                        <span className="admin-large-calendar-chip-time">{item.timeLabel}</span>
-                        <span className="admin-large-calendar-chip-title">{item.title}</span>
-                      </button>
-                    ) : (
+                  {cell.items.slice(0, 2).map((item) => {
+                    if (item.kind === "task" && typeof item.taskId === "number") {
+                      return (
+                        <button
+                          type="button"
+                          className={`admin-large-calendar-chip admin-large-calendar-chip-${item.tone}`}
+                          key={item.id}
+                          onClick={() => openTaskDashboard(item.taskId)}
+                          title={item.title}
+                        >
+                          <span className="admin-large-calendar-chip-time">{item.timeLabel}</span>
+                          <span className="admin-large-calendar-chip-title">{item.title}</span>
+                        </button>
+                      );
+                    }
+
+                    return (
                       <button
                         type="button"
                         className={`admin-large-calendar-chip admin-large-calendar-chip-${item.tone}`}
@@ -312,8 +316,8 @@ export function AdminDashboardCalendar({
                         <span className="admin-large-calendar-chip-time">{item.timeLabel}</span>
                         <span className="admin-large-calendar-chip-title">{item.title}</span>
                       </button>
-                    ),
-                  )}
+                    );
+                  })}
 
                   {cell.items.length > 2 ? (
                     <span className="admin-large-calendar-more">+{cell.items.length - 2} more</span>
