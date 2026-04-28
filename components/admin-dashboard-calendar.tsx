@@ -305,17 +305,30 @@ export function AdminDashboardCalendar({
                       );
                     }
 
+                    if (item.kind === "meeting") {
+                      return (
+                        <button
+                          type="button"
+                          className={`admin-large-calendar-chip admin-large-calendar-chip-${item.tone}`}
+                          key={item.id}
+                          onClick={() => openMeetingRoom(item.joinPath)}
+                          title={item.title}
+                        >
+                          <span className="admin-large-calendar-chip-time">{item.timeLabel}</span>
+                          <span className="admin-large-calendar-chip-title">{item.title}</span>
+                        </button>
+                      );
+                    }
+
                     return (
-                      <button
-                        type="button"
-                        className={`admin-large-calendar-chip admin-large-calendar-chip-${item.tone}`}
+                      <div
+                        className={`admin-large-calendar-chip admin-large-calendar-chip-${item.tone} is-static`}
                         key={item.id}
-                        onClick={() => openMeetingRoom(item.joinPath)}
                         title={item.title}
                       >
                         <span className="admin-large-calendar-chip-time">{item.timeLabel}</span>
                         <span className="admin-large-calendar-chip-title">{item.title}</span>
-                      </button>
+                      </div>
                     );
                   })}
 
