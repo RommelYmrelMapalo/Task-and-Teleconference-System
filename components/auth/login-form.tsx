@@ -9,7 +9,13 @@ import { isMissingSupabaseTable, normalizeEmailAddress } from "@/lib/supabase-er
 
 const isConfigured = hasSupabaseEnv();
 
-export function LoginForm({ adminOnly = false }: { adminOnly?: boolean }) {
+export function LoginForm({
+  adminOnly = false,
+  initialMessage = null,
+}: {
+  adminOnly?: boolean;
+  initialMessage?: string | null;
+}) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -150,9 +156,11 @@ export function LoginForm({ adminOnly = false }: { adminOnly?: boolean }) {
         {pending ? "Signing In..." : adminOnly ? "Login as Admin" : "Login"}
       </button>
       {error ? <div className="field-error">{error}</div> : null}
+      {initialMessage ? <div className="field-success">{initialMessage}</div> : null}
       {!isConfigured ? <div className="field-error">{SUPABASE_ENV_HINT}</div> : null}
       <div className="auth-links-row">
         {adminOnly ? <Link href="/">Back to user login</Link> : <Link href="/sign-up">Create an account</Link>}
+        <Link href="/forgot-password">Forgot password?</Link>
         {adminOnly ? null : <Link href="/admin/login">Admin login</Link>}
       </div>
     </form>

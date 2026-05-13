@@ -70,20 +70,11 @@ TTCS is a browser-based system built on Next.js and Supabase-backed services. Th
 
 ### 2.1 Hardware Requirements
 
-Recommended minimum hardware for end users:
+Recommended minimum hardware for end users: PC/laptop with a modern dual-core 64-bit processor, 4GB RAM, 500MB free storage, and working microphone, speakers, or headset for meetings.
 
-- Desktop or laptop computer
-- Modern mobile device for basic access
-- At least 4 GB RAM for regular browser use
-- Working microphone, speakers, or headset for meetings
-- Webcam if video participation is required
+Recommended minimum hardware for administrators: PC/laptop with a modern quad-core 64-bit processor, 8GB RAM, 1GB free storage, and working microphone, speakers, or headset for meetings.
 
-Recommended minimum hardware for administrators:
-
-- Desktop or laptop computer
-- At least 8 GB RAM for smoother multitasking
-- Keyboard and mouse for easier record management
-- Audio devices for teleconference use when needed
+If video participation is required, a webcam is also recommended.
 
 ### 2.2 Software Requirements
 
@@ -138,13 +129,23 @@ Important current access rules:
 
 ### 3.2 Forgot Password Procedure
 
-The current TTCS build does not expose a dedicated `Forgot Password` screen in the visible user interface.
+TTCS now provides a dedicated `Forgot Password` screen from the login interface.
 
-At present, recovery should be handled through one of the following:
+To recover access:
 
-- Administrator assistance for managed accounts
-- Supabase-authenticated recovery workflow if configured in deployment
-- Password change from the `Profile` page when the user is still able to sign in
+1. Open the TTCS login page.
+2. Select `Forgot password?`.
+3. Enter the registered email address.
+4. Select `Send Reset Link`.
+5. Open the password recovery email sent by Supabase.
+6. Follow the recovery link and enter a new password.
+7. Return to the login page and sign in with the new password.
+
+Additional recovery notes:
+
+- Password reset delivery depends on the Supabase email recovery workflow being configured in deployment.
+- If the recovery email is delayed, check spam or junk folders first.
+- Managed accounts can still request administrator assistance when needed.
 
 If a user can still access the account, the password can be changed from the profile section by entering:
 
@@ -348,6 +349,8 @@ Users should visit the dashboard first after logging in to review what needs att
 
 The `Tasks Dashboard`, `Task Status`, and `Task Archive` pages make up the main task workflow for users.
 
+The `Tasks Dashboard` is the main workspace for viewing and managing active task records. It helps users monitor assigned work, review task details, update progress when allowed, and keep supporting files organized before a task is submitted or completed.
+
 Inside `Tasks Dashboard`, users can:
 
 - View visible tasks
@@ -366,6 +369,10 @@ Task-related pages available to users:
 - `Task Status`
 - `Task Archive`
 
+The `Task Status` page gives users a progress-focused view of their task records. It helps users quickly check the current state of work, follow task movement across statuses, and review deadlines or priorities without opening every task individually.
+
+The `Task Archive` page stores older task records that have already moved out of the active workflow because of inactivity. It helps users look back on past work for reference while keeping archived entries separate from current tasks.
+
 Archive behavior in the current build:
 
 - Tasks are archived after 31 days of inactivity
@@ -378,6 +385,8 @@ Users can manage communication and participation through the remaining user modu
 
 `Manage Meetings`:
 
+The `Manage Meetings` page allows users to organize meeting sessions directly from the TTCS workspace. It helps users schedule discussions, define meeting details, choose participants, and send meeting-related notices without leaving the system.
+
 - Create meetings from the user workspace
 - Set title, date, start time, end time, and description
 - Assign participants by role or by individual account
@@ -385,11 +394,15 @@ Users can manage communication and participation through the remaining user modu
 
 `Assigned Meetings`:
 
+The `Assigned Meetings` page gives users a focused view of meetings they are expected to attend. It helps users confirm schedules, review meeting details in advance, and enter active meeting rooms from the TTCS workspace when the session is available.
+
 - View meetings assigned to the current account
 - Review date, time, and description
 - Open the meeting room while it is still active
 
 `Meeting Attendance`:
+
+The `Meeting Attendance` page provides a record of participation for meetings connected to the current account. It helps users confirm whether attendance was captured correctly and review time-based participation details after or during a meeting session.
 
 - Review attendance records
 - See meeting date and time
@@ -397,6 +410,8 @@ Users can manage communication and participation through the remaining user modu
 - Check attendance status such as `Pending`, `In Call`, `Completed`, `Closed`, or `Missed`
 
 `Inbox`:
+
+The `Inbox` page is the main communication area for messages inside TTCS. It helps users keep track of task updates, meeting notices, and direct conversations while giving them one place to read, reply to, organize, and manage message threads.
 
 - Search conversations
 - Filter by `All`, `Task`, `Meeting`, `Chat`, and `Trash`
@@ -422,13 +437,13 @@ Trash behavior:
 
 The following practices help keep TTCS records accurate and useful:
 
-- Update task status as work changes
-- Write clear task descriptions and deadlines
-- Use attachments when task context depends on files
-- Use the TTCS inbox instead of outside channels when a task already has an existing thread
-- Open meetings through TTCS so attendance is recorded properly
-- Share temporary passwords securely when creating accounts manually
-- Review archived tasks instead of recreating historical records
+- **Task Updates:** Keep task status current as work changes so progress stays visible to other users and administrators.
+- **Task Details:** Write clear task descriptions, deadlines, and supporting notes so requirements are easy to understand.
+- **Attachments:** Add files when task context depends on documents, screenshots, or other reference materials.
+- **Inbox Usage:** Use the TTCS inbox instead of outside channels when a task or meeting already has an existing thread.
+- **Meeting Access:** Open meetings through TTCS so attendance can be recorded correctly by the system.
+- **Password Sharing:** Share temporary passwords securely when accounts are created or managed manually.
+- **Archive Review:** Check archived tasks first before recreating old records that may already exist in TTCS.
 
 ## 7. Troubleshooting Guide
 
@@ -514,7 +529,43 @@ Yes. A deleted conversation can be restored from trash before the 31-day deletio
 
 `Does TTCS currently have a visible forgot-password page?`
 
-No. The current visible interface does not expose a dedicated forgot-password page.
+Yes. Users can open the `Forgot Password` page from the login screen and request a password reset link.
+
+`Can users edit tasks after creating them?`
+
+Yes. Users can edit tasks when the current task state and permissions allow changes.
+
+`What happens when a task becomes inactive for a long time?`
+
+Inactive tasks are moved to the `Task Archive` after 31 days and remain available there as read-only records.
+
+`Can users see who is assigned to a meeting?`
+
+Users can review meeting details provided in TTCS, including the information shown in the meeting record and assigned meeting view.
+
+`Do users need to open meetings through TTCS?`
+
+Yes. Opening the meeting through TTCS helps ensure the session is linked correctly and attendance is recorded by the system.
+
+`Can users change their own password after signing in?`
+
+Yes. Users can change their password from the `Profile` page when they still have access to the account.
+
+`Can inbox messages be searched and filtered?`
+
+Yes. The inbox supports search and filtering by categories such as `All`, `Task`, `Meeting`, `Chat`, and `Trash`.
+
+`What should a user do if a password reset email does not arrive?`
+
+The user should first check spam or junk folders, then confirm that the correct email address was entered, and request another reset link if needed.
+
+`Can administrators deactivate accounts without deleting them?`
+
+Yes. Administrators can deactivate accounts and later reactivate them when access needs to be restored.
+
+`Are archived tasks still editable?`
+
+No. Archived tasks remain visible for reference, but they are read-only in the current build.
 
 ## Document Note
 

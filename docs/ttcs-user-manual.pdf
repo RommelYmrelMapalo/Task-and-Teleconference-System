@@ -102,587 +102,574 @@ BT /F1 9 Tf 1 0 0 1 483.12 30.00 Tm (Page 2 of 13) Tj ET
 endstream
 endobj
 5 0 obj
-<< /Length 3460 >>
+<< /Length 3204 >>
 stream
-BT /F1 11 Tf 1 0 0 1 56.00 777.89 Tm (Recommended minimum hardware for end users:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 749.94 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 749.94 Tm (Desktop or laptop computer) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 731.99 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 731.99 Tm (Modern mobile device for basic access) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 714.04 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 714.04 Tm (At least 4 GB RAM for regular browser use) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 696.09 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 696.09 Tm (Working microphone, speakers, or headset for meetings) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 678.14 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 678.14 Tm (Webcam if video participation is required) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 652.19 Tm (Recommended minimum hardware for administrators:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 624.24 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 624.24 Tm (Desktop or laptop computer) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 606.29 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 606.29 Tm (At least 8 GB RAM for smoother multitasking) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 588.34 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 588.34 Tm (Keyboard and mouse for easier record management) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 570.39 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 570.39 Tm (Audio devices for teleconference use when needed) Tj ET
-BT /F2 12 Tf 1 0 0 1 56.00 536.44 Tm (2.2 Software Requirements) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 508.44 Tm (TTCS currently requires:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 480.49 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 480.49 Tm (A modern web browser) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 462.54 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 462.54 Tm (JavaScript enabled in the browser) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 444.59 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 444.59 Tm (Internet access to reach the application and Supabase-backed services) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 418.64 Tm (Browsers should be updated versions of common modern browsers that can run current) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 402.69 Tm (web applications reliably.) Tj ET
-BT /F2 12 Tf 1 0 0 1 56.00 366.74 Tm (2.3 Network Requirements) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 338.74 Tm (TTCS depends on stable network access for authentication, task updates, message) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 322.79 Tm (loading, and meeting participation.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 294.84 Tm (Recommended network conditions:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 266.89 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 266.89 Tm (Stable internet connection) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 248.94 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 248.94 Tm (Reliable access to the TTCS deployment URL) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 230.99 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 230.99 Tm (Sufficient bandwidth for teleconference participation) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 213.04 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 213.04 Tm (Network access that does not block embedded meeting sessions) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 187.09 Tm (For meetings, stronger and more stable connectivity is recommended than for normal) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 171.14 Tm (browsing.) Tj ET
-BT /F2 15 Tf 1 0 0 1 56.00 133.19 Tm (3. Accessing the TTCS) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 99.19 Tm (TTCS provides separate login entry points for regular users and administrators.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 777.89 Tm (Recommended minimum hardware for end users: PC/laptop with a modern dual-core 64-bit) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 761.94 Tm (processor, 4GB RAM, 500MB free storage, and working microphone, speakers, or headset) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 745.99 Tm (for meetings.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 718.04 Tm (Recommended minimum hardware for administrators: PC/laptop with a modern quad-core) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 702.09 Tm (64-bit processor, 8GB RAM, 1GB free storage, and working microphone, speakers, or) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 686.14 Tm (headset for meetings.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 658.19 Tm (If video participation is required, a webcam is also recommended.) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 622.24 Tm (2.2 Software Requirements) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 594.24 Tm (TTCS currently requires:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 566.29 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 566.29 Tm (A modern web browser) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 548.34 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 548.34 Tm (JavaScript enabled in the browser) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 530.39 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 530.39 Tm (Internet access to reach the application and Supabase-backed services) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 504.44 Tm (Browsers should be updated versions of common modern browsers that can run current) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 488.49 Tm (web applications reliably.) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 452.54 Tm (2.3 Network Requirements) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 424.54 Tm (TTCS depends on stable network access for authentication, task updates, message) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 408.59 Tm (loading, and meeting participation.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 380.64 Tm (Recommended network conditions:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 352.69 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 352.69 Tm (Stable internet connection) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 334.74 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 334.74 Tm (Reliable access to the TTCS deployment URL) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 316.79 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 316.79 Tm (Sufficient bandwidth for teleconference participation) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 298.84 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 298.84 Tm (Network access that does not block embedded meeting sessions) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 272.89 Tm (For meetings, stronger and more stable connectivity is recommended than for normal) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 256.94 Tm (browsing.) Tj ET
+BT /F2 15 Tf 1 0 0 1 56.00 218.99 Tm (3. Accessing the TTCS) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 184.99 Tm (TTCS provides separate login entry points for regular users and administrators.) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 149.04 Tm (3.1 Logging In) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 121.04 Tm (For regular users:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 93.09 Tm (1.) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 93.09 Tm (Open the TTCS user login page.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 75.14 Tm (2.) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 75.14 Tm (Enter the registered email address.) Tj ET
 BT /F1 9 Tf 1 0 0 1 483.12 30.00 Tm (Page 3 of 13) Tj ET
 endstream
 endobj
 6 0 obj
-<< /Length 3530 >>
+<< /Length 3649 >>
 stream
-BT /F2 12 Tf 1 0 0 1 56.00 777.89 Tm (3.1 Logging In) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 749.89 Tm (For regular users:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 721.94 Tm (1.) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 721.94 Tm (Open the TTCS user login page.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 703.99 Tm (2.) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 703.99 Tm (Enter the registered email address.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 686.04 Tm (3.) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 686.04 Tm (Enter the password.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 668.09 Tm (4.) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 668.09 Tm (Select `Login`.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 650.14 Tm (5.) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 650.14 Tm (After successful authentication, the account is redirected to the user dashboard.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 624.19 Tm (For administrators:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 596.24 Tm (1.) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 596.24 Tm (Open the TTCS admin login page.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 578.29 Tm (2.) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 578.29 Tm (Enter the admin email address.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 560.34 Tm (3.) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 560.34 Tm (Enter the password.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 542.39 Tm (4.) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 542.39 Tm (Select `Login as Admin`.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 524.44 Tm (5.) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 524.44 Tm (After successful authentication, the account is redirected to the admin) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 508.49 Tm (dashboard.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 482.54 Tm (Important current access rules:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 454.59 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 454.59 Tm (User accounts must use the standard user login page.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 436.64 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 436.64 Tm (Admin accounts must use the admin login page.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 418.69 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 418.69 Tm (Deactivated accounts cannot sign in.) Tj ET
-BT /F2 12 Tf 1 0 0 1 56.00 384.74 Tm (3.2 Forgot Password Procedure) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 356.74 Tm (The current TTCS build does not expose a dedicated `Forgot Password` screen in the) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 340.79 Tm (visible user interface.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 312.84 Tm (At present, recovery should be handled through one of the following:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 284.89 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 284.89 Tm (Administrator assistance for managed accounts) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 266.94 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 266.94 Tm (Supabase-authenticated recovery workflow if configured in deployment) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 248.99 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 248.99 Tm (Password change from the `Profile` page when the user is still able to sign in) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 223.04 Tm (If a user can still access the account, the password can be changed from the profile) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 207.09 Tm (section by entering:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 179.14 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 179.14 Tm (Current password) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 161.19 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 161.19 Tm (New password) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 143.24 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 143.24 Tm (Confirmation password) Tj ET
-BT /F2 15 Tf 1 0 0 1 56.00 107.29 Tm (4. Admin User Guide) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 777.89 Tm (3.) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 777.89 Tm (Enter the password.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 759.94 Tm (4.) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 759.94 Tm (Select `Login`.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 741.99 Tm (5.) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 741.99 Tm (After successful authentication, the account is redirected to the user dashboard.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 716.04 Tm (For administrators:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 688.09 Tm (1.) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 688.09 Tm (Open the TTCS admin login page.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 670.14 Tm (2.) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 670.14 Tm (Enter the admin email address.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 652.19 Tm (3.) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 652.19 Tm (Enter the password.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 634.24 Tm (4.) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 634.24 Tm (Select `Login as Admin`.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 616.29 Tm (5.) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 616.29 Tm (After successful authentication, the account is redirected to the admin) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 600.34 Tm (dashboard.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 574.39 Tm (Important current access rules:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 546.44 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 546.44 Tm (User accounts must use the standard user login page.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 528.49 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 528.49 Tm (Admin accounts must use the admin login page.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 510.54 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 510.54 Tm (Deactivated accounts cannot sign in.) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 476.59 Tm (3.2 Forgot Password Procedure) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 448.59 Tm (The current TTCS build does not expose a dedicated `Forgot Password` screen in the) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 432.64 Tm (visible user interface.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 404.69 Tm (At present, recovery should be handled through one of the following:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 376.74 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 376.74 Tm (Administrator assistance for managed accounts) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 358.79 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 358.79 Tm (Supabase-authenticated recovery workflow if configured in deployment) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 340.84 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 340.84 Tm (Password change from the `Profile` page when the user is still able to sign in) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 314.89 Tm (If a user can still access the account, the password can be changed from the profile) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 298.94 Tm (section by entering:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 270.99 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 270.99 Tm (Current password) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 253.04 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 253.04 Tm (New password) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 235.09 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 235.09 Tm (Confirmation password) Tj ET
+BT /F2 15 Tf 1 0 0 1 56.00 199.14 Tm (4. Admin User Guide) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 165.14 Tm (The admin workspace provides system-wide controls for tasks, meetings, users, inbox) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 149.19 Tm (communication, and monitoring.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 121.24 Tm (The current admin sidebar modules are:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 93.29 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 93.29 Tm (`Dashboard`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 75.34 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 75.34 Tm (`Manage Tasks`) Tj ET
 BT /F1 9 Tf 1 0 0 1 483.12 30.00 Tm (Page 4 of 13) Tj ET
 endstream
 endobj
 7 0 obj
-<< /Length 3640 >>
+<< /Length 3471 >>
 stream
-BT /F1 11 Tf 1 0 0 1 56.00 777.89 Tm (The admin workspace provides system-wide controls for tasks, meetings, users, inbox) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 761.94 Tm (communication, and monitoring.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 733.99 Tm (The current admin sidebar modules are:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 706.04 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 706.04 Tm (`Dashboard`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 688.09 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 688.09 Tm (`Manage Tasks`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 670.14 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 670.14 Tm (`Task Status`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 652.19 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 652.19 Tm (`Task Archive`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 634.24 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 634.24 Tm (`Manage Meetings`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 616.29 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 616.29 Tm (`Meeting Attendance`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 598.34 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 598.34 Tm (`Monitoring Panel`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 580.39 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 580.39 Tm (`Manage Users`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 562.44 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 562.44 Tm (`Inbox`) Tj ET
-BT /F2 12 Tf 1 0 0 1 56.00 528.49 Tm (4.1 Admin Dashboard Overview) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 500.49 Tm (The `Admin Dashboard` is the main landing page for administrator accounts. It) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 484.54 Tm (provides an overview of:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 456.59 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 456.59 Tm (Current task workload) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 438.64 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 438.64 Tm (Pending, completed, and delayed task counts) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 420.69 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 420.69 Tm (Meeting schedule visibility) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 402.74 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 402.74 Tm (Calendar-based planning support) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 376.79 Tm (Administrators should begin here when checking the overall status of the system.) Tj ET
-BT /F2 12 Tf 1 0 0 1 56.00 340.84 Tm (4.2 Adding New Users) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 312.84 Tm (New accounts can be created from the `Manage Users` page.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 284.89 Tm (To add a user:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 256.94 Tm (1.) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 256.94 Tm (Open `Manage Users`.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 238.99 Tm (2.) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 238.99 Tm (Select `Add User`.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 221.04 Tm (3.) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 221.04 Tm (Enter the full name.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 203.09 Tm (4.) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 203.09 Tm (Enter the email address.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 185.14 Tm (5.) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 185.14 Tm (Choose the role: `User` or `Admin`.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 167.19 Tm (6.) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 167.19 Tm (Submit the form.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 141.24 Tm (Current account creation behavior:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 113.29 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 113.29 Tm (TTCS generates a temporary password automatically) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 95.34 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 95.34 Tm (The temporary password is shown after successful creation) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 77.39 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 77.39 Tm (The password should be shared securely with the new user) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 777.89 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 777.89 Tm (`Task Status`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 759.94 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 759.94 Tm (`Task Archive`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 741.99 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 741.99 Tm (`Manage Meetings`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 724.04 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 724.04 Tm (`Meeting Attendance`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 706.09 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 706.09 Tm (`Monitoring Panel`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 688.14 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 688.14 Tm (`Manage Users`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 670.19 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 670.19 Tm (`Inbox`) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 636.24 Tm (4.1 Admin Dashboard Overview) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 608.24 Tm (The `Admin Dashboard` is the main landing page for administrator accounts. It) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 592.29 Tm (provides an overview of:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 564.34 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 564.34 Tm (Current task workload) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 546.39 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 546.39 Tm (Pending, completed, and delayed task counts) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 528.44 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 528.44 Tm (Meeting schedule visibility) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 510.49 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 510.49 Tm (Calendar-based planning support) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 484.54 Tm (Administrators should begin here when checking the overall status of the system.) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 448.59 Tm (4.2 Adding New Users) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 420.59 Tm (New accounts can be created from the `Manage Users` page.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 392.64 Tm (To add a user:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 364.69 Tm (1.) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 364.69 Tm (Open `Manage Users`.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 346.74 Tm (2.) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 346.74 Tm (Select `Add User`.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 328.79 Tm (3.) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 328.79 Tm (Enter the full name.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 310.84 Tm (4.) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 310.84 Tm (Enter the email address.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 292.89 Tm (5.) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 292.89 Tm (Choose the role: `User` or `Admin`.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 274.94 Tm (6.) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 274.94 Tm (Submit the form.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 248.99 Tm (Current account creation behavior:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 221.04 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 221.04 Tm (TTCS generates a temporary password automatically) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 203.09 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 203.09 Tm (The temporary password is shown after successful creation) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 185.14 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 185.14 Tm (The password should be shared securely with the new user) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 151.19 Tm (4.3 Managing Users) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 123.19 Tm (The `Manage Users` page allows administrators to maintain account records across the) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 107.24 Tm (system.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 79.29 Tm (Available user management features:) Tj ET
 BT /F1 9 Tf 1 0 0 1 483.12 30.00 Tm (Page 5 of 13) Tj ET
 endstream
 endobj
 8 0 obj
-<< /Length 3528 >>
+<< /Length 3692 >>
 stream
-BT /F2 12 Tf 1 0 0 1 56.00 777.89 Tm (4.3 Managing Users) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 749.89 Tm (The `Manage Users` page allows administrators to maintain account records across the) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 733.94 Tm (system.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 705.99 Tm (Available user management features:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 678.04 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 678.04 Tm (Search by full name, email, or username) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 660.09 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 660.09 Tm (Filter by role) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 642.14 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 642.14 Tm (Filter by status) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 624.19 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 624.19 Tm (Sort by joined date) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 606.24 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 606.24 Tm (Export user records to CSV) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 588.29 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 588.29 Tm (Edit user details) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 570.34 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 570.34 Tm (Deactivate or reactivate accounts) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 552.39 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 552.39 Tm (Delete accounts) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 526.44 Tm (Current editable properties include:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 498.49 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 498.49 Tm (Full name) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 480.54 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 480.54 Tm (Role) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 454.59 Tm (Current read-only display values include:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 426.64 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 426.64 Tm (Email) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 408.69 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 408.69 Tm (Joined date) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 390.74 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 390.74 Tm (Last active) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 372.79 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 372.79 Tm (Current status) Tj ET
-BT /F2 12 Tf 1 0 0 1 56.00 338.84 Tm (4.4 Managing Tasks) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 310.84 Tm (The `Manage Tasks` page gives administrators broad control over task records.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 282.89 Tm (Admins can:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 254.94 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 254.94 Tm (Create new tasks) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 236.99 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 236.99 Tm (Set title, description, due date, due time, status, and priority) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 219.04 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 219.04 Tm (Assign tasks to one or more users) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 201.09 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 201.09 Tm (Leave a task unassigned when appropriate) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 183.14 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 183.14 Tm (Upload attachments) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 165.19 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 165.19 Tm (Edit visible tasks) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 147.24 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 147.24 Tm (Open task details) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 129.29 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 129.29 Tm (Review task comments and activity) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 111.34 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 111.34 Tm (Approve or reject tasks with a reason) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 85.39 Tm (Current task statuses visible in TTCS:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 777.89 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 777.89 Tm (Search by full name, email, or username) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 759.94 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 759.94 Tm (Filter by role) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 741.99 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 741.99 Tm (Filter by status) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 724.04 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 724.04 Tm (Sort by joined date) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 706.09 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 706.09 Tm (Export user records to CSV) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 688.14 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 688.14 Tm (Edit user details) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 670.19 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 670.19 Tm (Deactivate or reactivate accounts) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 652.24 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 652.24 Tm (Delete accounts) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 626.29 Tm (Current editable properties include:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 598.34 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 598.34 Tm (Full name) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 580.39 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 580.39 Tm (Role) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 554.44 Tm (Current read-only display values include:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 526.49 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 526.49 Tm (Email) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 508.54 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 508.54 Tm (Joined date) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 490.59 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 490.59 Tm (Last active) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 472.64 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 472.64 Tm (Current status) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 438.69 Tm (4.4 Managing Tasks) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 410.69 Tm (The `Manage Tasks` page gives administrators broad control over task records.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 382.74 Tm (Admins can:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 354.79 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 354.79 Tm (Create new tasks) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 336.84 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 336.84 Tm (Set title, description, due date, due time, status, and priority) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 318.89 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 318.89 Tm (Assign tasks to one or more users) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 300.94 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 300.94 Tm (Leave a task unassigned when appropriate) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 282.99 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 282.99 Tm (Upload attachments) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 265.04 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 265.04 Tm (Edit visible tasks) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 247.09 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 247.09 Tm (Open task details) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 229.14 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 229.14 Tm (Review task comments and activity) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 211.19 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 211.19 Tm (Approve or reject tasks with a reason) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 185.24 Tm (Current task statuses visible in TTCS:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 157.29 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 157.29 Tm (`Assigned`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 139.34 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 139.34 Tm (`In Progress`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 121.39 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 121.39 Tm (`For Revision`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 103.44 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 103.44 Tm (`Completed`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 77.49 Tm (Important review behavior:) Tj ET
 BT /F1 9 Tf 1 0 0 1 483.12 30.00 Tm (Page 6 of 13) Tj ET
 endstream
 endobj
 9 0 obj
-<< /Length 3770 >>
+<< /Length 3854 >>
 stream
 BT /F1 11 Tf 1 0 0 1 56.00 777.89 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 777.89 Tm (`Assigned`) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 777.89 Tm (Admin approval records a review note with the reason) Tj ET
 BT /F1 11 Tf 1 0 0 1 56.00 759.94 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 759.94 Tm (`In Progress`) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 759.94 Tm (Admin rejection records a review note and returns the task to `For Revision`) Tj ET
 BT /F1 11 Tf 1 0 0 1 56.00 741.99 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 741.99 Tm (`For Revision`) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 741.99 Tm (Delayed tasks are visually flagged when overdue and unfinished) Tj ET
 BT /F1 11 Tf 1 0 0 1 56.00 724.04 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 724.04 Tm (`Completed`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 698.09 Tm (Important review behavior:) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 724.04 Tm (Archived tasks are read-only) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 698.09 Tm (Other task-related sidebar modules for admins:) Tj ET
 BT /F1 11 Tf 1 0 0 1 56.00 670.14 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 670.14 Tm (Admin approval records a review note with the reason) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 652.19 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 652.19 Tm (Admin rejection records a review note and returns the task to `For Revision`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 634.24 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 634.24 Tm (Delayed tasks are visually flagged when overdue and unfinished) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 616.29 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 616.29 Tm (Archived tasks are read-only) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 590.34 Tm (Other task-related sidebar modules for admins:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 562.39 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 562.39 Tm (`Task Status` provides a cross-user overview of task progress, assignees,) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 546.44 Tm (assigned by, and deadlines) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 528.49 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 528.49 Tm (`Task Archive` shows archived task records retained after inactivity for) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 512.54 Tm (historical review) Tj ET
-BT /F2 12 Tf 1 0 0 1 56.00 478.59 Tm (4.5 Managing Meetings) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 450.59 Tm (The `Manage Meetings` page allows administrators to schedule meetings and assign) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 434.64 Tm (participants.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 406.69 Tm (Meeting creation fields currently include:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 378.74 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 378.74 Tm (Title) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 360.79 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 360.79 Tm (Date) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 342.84 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 342.84 Tm (Start time) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 670.14 Tm (`Task Status` provides a cross-user overview of task progress, assignees,) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 654.19 Tm (assigned by, and deadlines) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 636.24 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 636.24 Tm (`Task Archive` shows archived task records retained after inactivity for) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 620.29 Tm (historical review) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 586.34 Tm (4.5 Managing Meetings) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 558.34 Tm (The `Manage Meetings` page allows administrators to schedule meetings and assign) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 542.39 Tm (participants.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 514.44 Tm (Meeting creation fields currently include:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 486.49 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 486.49 Tm (Title) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 468.54 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 468.54 Tm (Date) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 450.59 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 450.59 Tm (Start time) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 432.64 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 432.64 Tm (End time) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 414.69 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 414.69 Tm (Description) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 396.74 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 396.74 Tm (Participant roles) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 378.79 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 378.79 Tm (Individual participant accounts) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 352.84 Tm (Participant assignment behavior:) Tj ET
 BT /F1 11 Tf 1 0 0 1 56.00 324.89 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 324.89 Tm (End time) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 324.89 Tm (Admins may assign by role) Tj ET
 BT /F1 11 Tf 1 0 0 1 56.00 306.94 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 306.94 Tm (Description) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 306.94 Tm (Admins may assign individual users directly) Tj ET
 BT /F1 11 Tf 1 0 0 1 56.00 288.99 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 288.99 Tm (Participant roles) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 288.99 Tm (Role-based and direct selections are merged automatically) Tj ET
 BT /F1 11 Tf 1 0 0 1 56.00 271.04 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 271.04 Tm (Individual participant accounts) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 245.09 Tm (Participant assignment behavior:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 217.14 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 217.14 Tm (Admins may assign by role) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 271.04 Tm (Meeting notices are sent to participant inboxes) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 253.09 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 253.09 Tm (Assigned meetings become visible in relevant user meeting pages) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 227.14 Tm (The admin `Meeting Attendance` sidebar module is used to:) Tj ET
 BT /F1 11 Tf 1 0 0 1 56.00 199.19 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 199.19 Tm (Admins may assign individual users directly) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 199.19 Tm (Review attendance records) Tj ET
 BT /F1 11 Tf 1 0 0 1 56.00 181.24 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 181.24 Tm (Role-based and direct selections are merged automatically) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 181.24 Tm (See time-in and time-out values) Tj ET
 BT /F1 11 Tf 1 0 0 1 56.00 163.29 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 163.29 Tm (Meeting notices are sent to participant inboxes) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 145.34 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 145.34 Tm (Assigned meetings become visible in relevant user meeting pages) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 119.39 Tm (The admin `Meeting Attendance` sidebar module is used to:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 91.44 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 91.44 Tm (Review attendance records) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 163.29 Tm (Check meeting status such as `Pending`, `In Call`, `Completed`, `Closed`, or) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 147.34 Tm (`Missed`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 129.39 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 129.39 Tm (Open meeting rooms while the schedule is still active) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 95.44 Tm (4.6 Monitoring Panel and Admin Inbox) Tj ET
 BT /F1 9 Tf 1 0 0 1 483.12 30.00 Tm (Page 7 of 13) Tj ET
 endstream
 endobj
 10 0 obj
-<< /Length 3588 >>
+<< /Length 3522 >>
 stream
-BT /F1 11 Tf 1 0 0 1 56.00 777.89 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 777.89 Tm (See time-in and time-out values) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 759.94 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 759.94 Tm (Check meeting status such as `Pending`, `In Call`, `Completed`, `Closed`, or) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 743.99 Tm (`Missed`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 726.04 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 726.04 Tm (Open meeting rooms while the schedule is still active) Tj ET
-BT /F2 12 Tf 1 0 0 1 56.00 692.09 Tm (4.6 Monitoring Panel and Admin Inbox) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 664.09 Tm (The `Monitoring Panel` and `Inbox` support administrative follow-up and) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 648.14 Tm (communication.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 620.19 Tm (Monitoring Panel capabilities:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 592.24 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 592.24 Tm (View system events) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 574.29 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 574.29 Tm (Filter events by category) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 556.34 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 556.34 Tm (Review account, login, notification, and task audit activity) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 538.39 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 538.39 Tm (Export filtered system events to CSV) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 512.44 Tm (Admin Inbox capabilities:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 484.49 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 484.49 Tm (Read task and meeting conversations) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 466.54 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 466.54 Tm (Reply to users inside TTCS) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 448.59 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 448.59 Tm (Compose direct messages) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 430.64 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 430.64 Tm (Review trashed threads) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 412.69 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 412.69 Tm (Restore threads before permanent deletion) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 386.74 Tm (The `Manage Users` sidebar module supports:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 358.79 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 358.79 Tm (Adding new user and admin accounts) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 340.84 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 340.84 Tm (Editing user names and roles) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 322.89 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 322.89 Tm (Deactivating or reactivating accounts) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 304.94 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 304.94 Tm (Deleting accounts) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 286.99 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 286.99 Tm (Searching, filtering, and exporting account records) Tj ET
-BT /F2 15 Tf 1 0 0 1 56.00 251.04 Tm (5. Standard User Guide) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 217.04 Tm (The user workspace is intended for everyday task work, meetings, attendance, inbox) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 201.09 Tm (communication, and account maintenance.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 173.14 Tm (The current user sidebar modules are:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 145.19 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 145.19 Tm (`Dashboard`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 127.24 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 127.24 Tm (`Tasks Dashboard`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 109.29 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 109.29 Tm (`Task Status`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 91.34 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 91.34 Tm (`Task Archive`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 777.89 Tm (The `Monitoring Panel` and `Inbox` support administrative follow-up and) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 761.94 Tm (communication.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 733.99 Tm (Monitoring Panel capabilities:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 706.04 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 706.04 Tm (View system events) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 688.09 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 688.09 Tm (Filter events by category) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 670.14 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 670.14 Tm (Review account, login, notification, and task audit activity) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 652.19 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 652.19 Tm (Export filtered system events to CSV) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 626.24 Tm (Admin Inbox capabilities:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 598.29 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 598.29 Tm (Read task and meeting conversations) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 580.34 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 580.34 Tm (Reply to users inside TTCS) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 562.39 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 562.39 Tm (Compose direct messages) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 544.44 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 544.44 Tm (Review trashed threads) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 526.49 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 526.49 Tm (Restore threads before permanent deletion) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 500.54 Tm (The `Manage Users` sidebar module supports:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 472.59 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 472.59 Tm (Adding new user and admin accounts) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 454.64 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 454.64 Tm (Editing user names and roles) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 436.69 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 436.69 Tm (Deactivating or reactivating accounts) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 418.74 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 418.74 Tm (Deleting accounts) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 400.79 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 400.79 Tm (Searching, filtering, and exporting account records) Tj ET
+BT /F2 15 Tf 1 0 0 1 56.00 364.84 Tm (5. Standard User Guide) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 330.84 Tm (The user workspace is intended for everyday task work, meetings, attendance, inbox) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 314.89 Tm (communication, and account maintenance.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 286.94 Tm (The current user sidebar modules are:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 258.99 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 258.99 Tm (`Dashboard`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 241.04 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 241.04 Tm (`Tasks Dashboard`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 223.09 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 223.09 Tm (`Task Status`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 205.14 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 205.14 Tm (`Task Archive`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 187.19 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 187.19 Tm (`Manage Meetings`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 169.24 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 169.24 Tm (`Assigned Meetings`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 151.29 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 151.29 Tm (`Meeting Attendance`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 133.34 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 133.34 Tm (`Inbox`) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 99.39 Tm (5.1 User Dashboard Overview) Tj ET
 BT /F1 9 Tf 1 0 0 1 483.12 30.00 Tm (Page 8 of 13) Tj ET
 endstream
 endobj
 11 0 obj
-<< /Length 3440 >>
+<< /Length 3487 >>
 stream
-BT /F1 11 Tf 1 0 0 1 56.00 777.89 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 777.89 Tm (`Manage Meetings`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 759.94 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 759.94 Tm (`Assigned Meetings`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 741.99 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 741.99 Tm (`Meeting Attendance`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 724.04 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 724.04 Tm (`Inbox`) Tj ET
-BT /F2 12 Tf 1 0 0 1 56.00 690.09 Tm (5.1 User Dashboard Overview) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 662.09 Tm (The `Dashboard` is the starting page for regular users.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 634.14 Tm (It provides:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 606.19 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 606.19 Tm (Overview of visible tasks) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 588.24 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 588.24 Tm (Meeting updates) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 570.29 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 570.29 Tm (Current planning context) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 552.34 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 552.34 Tm (Quick awareness of workload and upcoming activity) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 526.39 Tm (Users should visit the dashboard first after logging in to review what needs) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 510.44 Tm (attention.) Tj ET
-BT /F2 12 Tf 1 0 0 1 56.00 474.49 Tm (5.2 Managing Personal Tasks) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 446.49 Tm (The `Tasks Dashboard`, `Task Status`, and `Task Archive` pages make up the main task) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 430.54 Tm (workflow for users.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 402.59 Tm (Inside `Tasks Dashboard`, users can:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 374.64 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 374.64 Tm (View visible tasks) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 356.69 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 356.69 Tm (Search by title or description) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 338.74 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 338.74 Tm (Filter by task status) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 320.79 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 320.79 Tm (Filter by priority) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 302.84 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 302.84 Tm (Open task records) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 284.89 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 284.89 Tm (Edit tasks when permitted) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 266.94 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 266.94 Tm (Mark a task complete or restore it to a previous status) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 248.99 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 248.99 Tm (Create tasks) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 231.04 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 231.04 Tm (Add or remove attachments before submission) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 205.09 Tm (Task-related pages available to users:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 177.14 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 177.14 Tm (`Tasks Dashboard`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 159.19 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 159.19 Tm (`Task Status`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 141.24 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 141.24 Tm (`Task Archive`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 115.29 Tm (Archive behavior in the current build:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 87.34 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 87.34 Tm (Tasks are archived after 31 days of inactivity) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 777.89 Tm (The `Dashboard` is the starting page for regular users.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 749.94 Tm (It provides:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 721.99 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 721.99 Tm (Overview of visible tasks) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 704.04 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 704.04 Tm (Meeting updates) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 686.09 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 686.09 Tm (Current planning context) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 668.14 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 668.14 Tm (Quick awareness of workload and upcoming activity) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 642.19 Tm (Users should visit the dashboard first after logging in to review what needs) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 626.24 Tm (attention.) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 590.29 Tm (5.2 Managing Personal Tasks) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 562.29 Tm (The `Tasks Dashboard`, `Task Status`, and `Task Archive` pages make up the main task) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 546.34 Tm (workflow for users.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 518.39 Tm (Inside `Tasks Dashboard`, users can:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 490.44 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 490.44 Tm (View visible tasks) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 472.49 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 472.49 Tm (Search by title or description) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 454.54 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 454.54 Tm (Filter by task status) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 436.59 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 436.59 Tm (Filter by priority) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 418.64 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 418.64 Tm (Open task records) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 400.69 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 400.69 Tm (Edit tasks when permitted) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 382.74 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 382.74 Tm (Mark a task complete or restore it to a previous status) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 364.79 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 364.79 Tm (Create tasks) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 346.84 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 346.84 Tm (Add or remove attachments before submission) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 320.89 Tm (Task-related pages available to users:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 292.94 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 292.94 Tm (`Tasks Dashboard`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 274.99 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 274.99 Tm (`Task Status`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 257.04 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 257.04 Tm (`Task Archive`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 231.09 Tm (Archive behavior in the current build:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 203.14 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 203.14 Tm (Tasks are archived after 31 days of inactivity) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 185.19 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 185.19 Tm (Archived task records remain visible in the archive page) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 167.24 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 167.24 Tm (Archived tasks are read-only) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 133.29 Tm (5.3 Meetings, Attendance, Inbox, and Profile) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 105.29 Tm (Users can manage communication and participation through the remaining user modules.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 77.34 Tm (`Manage Meetings`:) Tj ET
 BT /F1 9 Tf 1 0 0 1 483.12 30.00 Tm (Page 9 of 13) Tj ET
 endstream
 endobj
 12 0 obj
-<< /Length 3740 >>
+<< /Length 3695 >>
 stream
 BT /F1 11 Tf 1 0 0 1 56.00 777.89 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 777.89 Tm (Archived task records remain visible in the archive page) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 777.89 Tm (Create meetings from the user workspace) Tj ET
 BT /F1 11 Tf 1 0 0 1 56.00 759.94 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 759.94 Tm (Archived tasks are read-only) Tj ET
-BT /F2 12 Tf 1 0 0 1 56.00 725.99 Tm (5.3 Meetings, Attendance, Inbox, and Profile) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 697.99 Tm (Users can manage communication and participation through the remaining user modules.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 670.04 Tm (`Manage Meetings`:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 642.09 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 642.09 Tm (Create meetings from the user workspace) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 624.14 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 624.14 Tm (Set title, date, start time, end time, and description) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 606.19 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 606.19 Tm (Assign participants by role or by individual account) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 588.24 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 588.24 Tm (Send meeting notices into the TTCS inbox) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 562.29 Tm (`Assigned Meetings`:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 534.34 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 534.34 Tm (View meetings assigned to the current account) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 516.39 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 516.39 Tm (Review date, time, and description) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 498.44 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 498.44 Tm (Open the meeting room while it is still active) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 472.49 Tm (`Meeting Attendance`:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 444.54 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 444.54 Tm (Review attendance records) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 426.59 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 426.59 Tm (See meeting date and time) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 408.64 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 408.64 Tm (See time-in and time-out) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 390.69 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 390.69 Tm (Check attendance status such as `Pending`, `In Call`, `Completed`, `Closed`, or) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 374.74 Tm (`Missed`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 348.79 Tm (`Inbox`:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 320.84 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 320.84 Tm (Search conversations) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 302.89 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 302.89 Tm (Filter by `All`, `Task`, `Meeting`, `Chat`, and `Trash`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 284.94 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 284.94 Tm (Open a thread to read full message history) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 266.99 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 266.99 Tm (Compose a new message) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 249.04 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 249.04 Tm (Reply to admins or other contacts when allowed) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 231.09 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 231.09 Tm (Forward direct conversations) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 213.14 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 213.14 Tm (Move threads to trash) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 195.19 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 195.19 Tm (Restore trashed threads) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 169.24 Tm (Trash behavior:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 141.29 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 141.29 Tm (Deleted conversations move to trash first) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 123.34 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 123.34 Tm (Trashed conversations are permanently deleted after 31 days) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 97.39 Tm (`Profile`:) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 759.94 Tm (Set title, date, start time, end time, and description) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 741.99 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 741.99 Tm (Assign participants by role or by individual account) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 724.04 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 724.04 Tm (Send meeting notices into the TTCS inbox) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 698.09 Tm (`Assigned Meetings`:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 670.14 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 670.14 Tm (View meetings assigned to the current account) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 652.19 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 652.19 Tm (Review date, time, and description) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 634.24 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 634.24 Tm (Open the meeting room while it is still active) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 608.29 Tm (`Meeting Attendance`:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 580.34 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 580.34 Tm (Review attendance records) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 562.39 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 562.39 Tm (See meeting date and time) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 544.44 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 544.44 Tm (See time-in and time-out) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 526.49 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 526.49 Tm (Check attendance status such as `Pending`, `In Call`, `Completed`, `Closed`, or) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 510.54 Tm (`Missed`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 484.59 Tm (`Inbox`:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 456.64 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 456.64 Tm (Search conversations) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 438.69 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 438.69 Tm (Filter by `All`, `Task`, `Meeting`, `Chat`, and `Trash`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 420.74 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 420.74 Tm (Open a thread to read full message history) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 402.79 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 402.79 Tm (Compose a new message) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 384.84 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 384.84 Tm (Reply to admins or other contacts when allowed) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 366.89 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 366.89 Tm (Forward direct conversations) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 348.94 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 348.94 Tm (Move threads to trash) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 330.99 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 330.99 Tm (Restore trashed threads) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 305.04 Tm (Trash behavior:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 277.09 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 277.09 Tm (Deleted conversations move to trash first) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 259.14 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 259.14 Tm (Trashed conversations are permanently deleted after 31 days) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 233.19 Tm (`Profile`:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 205.24 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 205.24 Tm (Update profile name) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 187.29 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 187.29 Tm (Update email address) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 169.34 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 169.34 Tm (Change password) Tj ET
+BT /F2 15 Tf 1 0 0 1 56.00 133.39 Tm (6. Best Practices) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 99.39 Tm (The following practices help keep TTCS records accurate and useful:) Tj ET
 BT /F1 9 Tf 1 0 0 1 478.44 30.00 Tm (Page 10 of 13) Tj ET
 endstream
 endobj
 13 0 obj
-<< /Length 3567 >>
+<< /Length 3577 >>
 stream
 BT /F1 11 Tf 1 0 0 1 56.00 777.89 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 777.89 Tm (Update profile name) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 777.89 Tm (Update task status as work changes) Tj ET
 BT /F1 11 Tf 1 0 0 1 56.00 759.94 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 759.94 Tm (Update email address) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 759.94 Tm (Write clear task descriptions and deadlines) Tj ET
 BT /F1 11 Tf 1 0 0 1 56.00 741.99 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 741.99 Tm (Change password) Tj ET
-BT /F2 15 Tf 1 0 0 1 56.00 706.04 Tm (6. Best Practices) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 672.04 Tm (The following practices help keep TTCS records accurate and useful:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 644.09 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 644.09 Tm (Update task status as work changes) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 626.14 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 626.14 Tm (Write clear task descriptions and deadlines) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 608.19 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 608.19 Tm (Use attachments when task context depends on files) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 590.24 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 590.24 Tm (Use the TTCS inbox instead of outside channels when a task already has an) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 574.29 Tm (existing thread) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 556.34 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 556.34 Tm (Open meetings through TTCS so attendance is recorded properly) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 538.39 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 538.39 Tm (Share temporary passwords securely when creating accounts manually) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 520.44 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 520.44 Tm (Review archived tasks instead of recreating historical records) Tj ET
-BT /F2 15 Tf 1 0 0 1 56.00 484.49 Tm (7. Troubleshooting Guide) Tj ET
-BT /F2 12 Tf 1 0 0 1 56.00 442.49 Tm (Login Problems) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 414.49 Tm (If login fails:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 386.54 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 386.54 Tm (Confirm that the correct login page is being used) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 368.59 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 368.59 Tm (Verify the email and password) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 350.64 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 350.64 Tm (Check whether the account has been deactivated) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 332.69 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 332.69 Tm (Check whether the account still needs email confirmation) Tj ET
-BT /F2 12 Tf 1 0 0 1 56.00 298.74 Tm (Task Problems) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 270.74 Tm (If a task cannot be edited:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 242.79 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 242.79 Tm (Check whether the task is archived) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 224.84 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 224.84 Tm (Check whether the account has the needed permissions) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 206.89 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 206.89 Tm (Confirm that the record still exists and is visible to the current user) Tj ET
-BT /F2 12 Tf 1 0 0 1 56.00 172.94 Tm (Meeting Problems) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 144.94 Tm (If a meeting room does not open:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 116.99 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 116.99 Tm (Check whether the meeting is assigned to the current account) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 99.04 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 99.04 Tm (Check whether the meeting schedule has already closed) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 81.09 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 81.09 Tm (Open the meeting through TTCS rather than an outside shortcut) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 741.99 Tm (Use attachments when task context depends on files) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 724.04 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 724.04 Tm (Use the TTCS inbox instead of outside channels when a task already has an) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 708.09 Tm (existing thread) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 690.14 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 690.14 Tm (Open meetings through TTCS so attendance is recorded properly) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 672.19 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 672.19 Tm (Share temporary passwords securely when creating accounts manually) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 654.24 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 654.24 Tm (Review archived tasks instead of recreating historical records) Tj ET
+BT /F2 15 Tf 1 0 0 1 56.00 618.29 Tm (7. Troubleshooting Guide) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 576.29 Tm (Login Problems) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 548.29 Tm (If login fails:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 520.34 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 520.34 Tm (Confirm that the correct login page is being used) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 502.39 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 502.39 Tm (Verify the email and password) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 484.44 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 484.44 Tm (Check whether the account has been deactivated) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 466.49 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 466.49 Tm (Check whether the account still needs email confirmation) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 432.54 Tm (Task Problems) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 404.54 Tm (If a task cannot be edited:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 376.59 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 376.59 Tm (Check whether the task is archived) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 358.64 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 358.64 Tm (Check whether the account has the needed permissions) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 340.69 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 340.69 Tm (Confirm that the record still exists and is visible to the current user) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 306.74 Tm (Meeting Problems) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 278.74 Tm (If a meeting room does not open:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 250.79 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 250.79 Tm (Check whether the meeting is assigned to the current account) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 232.84 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 232.84 Tm (Check whether the meeting schedule has already closed) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 214.89 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 214.89 Tm (Open the meeting through TTCS rather than an outside shortcut) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 180.94 Tm (Inbox Problems) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 152.94 Tm (If a conversation appears missing:) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 124.99 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 124.99 Tm (Search the inbox) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 107.04 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 107.04 Tm (Check the `Trash` filter) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 89.09 Tm (-) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 89.09 Tm (Restore the thread before the 31-day retention period ends) Tj ET
 BT /F1 9 Tf 1 0 0 1 478.44 30.00 Tm (Page 11 of 13) Tj ET
 endstream
 endobj
 14 0 obj
-<< /Length 2576 >>
+<< /Length 2516 >>
 stream
-BT /F2 12 Tf 1 0 0 1 56.00 777.89 Tm (Inbox Problems) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 749.89 Tm (If a conversation appears missing:) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 777.89 Tm (Profile Problems) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 749.89 Tm (If email changes do not appear immediately:) Tj ET
 BT /F1 11 Tf 1 0 0 1 56.00 721.94 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 721.94 Tm (Search the inbox) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 721.94 Tm (Check whether email confirmation is still pending) Tj ET
 BT /F1 11 Tf 1 0 0 1 56.00 703.99 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 703.99 Tm (Check the `Trash` filter) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 686.04 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 686.04 Tm (Restore the thread before the 31-day retention period ends) Tj ET
-BT /F2 12 Tf 1 0 0 1 56.00 652.09 Tm (Profile Problems) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 624.09 Tm (If email changes do not appear immediately:) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 596.14 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 596.14 Tm (Check whether email confirmation is still pending) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 578.19 Tm (-) Tj ET
-BT /F1 11 Tf 1 0 0 1 74.00 578.19 Tm (Refresh the session after confirmation) Tj ET
-BT /F2 15 Tf 1 0 0 1 56.00 542.24 Tm (8. Appendices) Tj ET
-BT /F2 12 Tf 1 0 0 1 56.00 500.24 Tm (8.1 Glossary of Terms) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 472.24 Tm (`TTCS`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 452.29 Tm (: Task and Teleconference System.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 424.34 Tm (`Task Archive`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 404.39 Tm (: The read-only view of task records retained after inactivity.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 376.44 Tm (`Assigned Meetings`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 356.49 Tm (: The page that shows meetings scheduled for the current user.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 328.54 Tm (`Meeting Attendance`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 308.59 Tm (: The attendance log that records room join and exit times when the meeting is) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 292.64 Tm (opened through TTCS.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 264.69 Tm (`Monitoring Panel`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 244.74 Tm (: The admin page used to review system events and export logs.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 216.79 Tm (`Inbox Thread`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 196.84 Tm (: A conversation record containing one or more TTCS messages.) Tj ET
-BT /F2 12 Tf 1 0 0 1 56.00 160.89 Tm (8.2 Frequently Asked Questions \(FAQs\)) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 132.89 Tm (`Can regular users create tasks?`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 104.94 Tm (Yes. In the current build, regular users can create tasks from the task dashboard.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 76.99 Tm (`Can admins assign one task to multiple users?`) Tj ET
+BT /F1 11 Tf 1 0 0 1 74.00 703.99 Tm (Refresh the session after confirmation) Tj ET
+BT /F2 15 Tf 1 0 0 1 56.00 668.04 Tm (8. Appendices) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 626.04 Tm (8.1 Glossary of Terms) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 598.04 Tm (`TTCS`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 578.09 Tm (: Task and Teleconference System.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 550.14 Tm (`Task Archive`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 530.19 Tm (: The read-only view of task records retained after inactivity.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 502.24 Tm (`Assigned Meetings`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 482.29 Tm (: The page that shows meetings scheduled for the current user.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 454.34 Tm (`Meeting Attendance`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 434.39 Tm (: The attendance log that records room join and exit times when the meeting is) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 418.44 Tm (opened through TTCS.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 390.49 Tm (`Monitoring Panel`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 370.54 Tm (: The admin page used to review system events and export logs.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 342.59 Tm (`Inbox Thread`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 322.64 Tm (: A conversation record containing one or more TTCS messages.) Tj ET
+BT /F2 12 Tf 1 0 0 1 56.00 286.69 Tm (8.2 Frequently Asked Questions \(FAQs\)) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 258.69 Tm (`Can regular users create tasks?`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 230.74 Tm (Yes. In the current build, regular users can create tasks from the task dashboard.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 202.79 Tm (`Can admins assign one task to multiple users?`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 174.84 Tm (Yes. The admin task form supports multiple assignees.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 146.89 Tm (`How is attendance recorded?`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 118.94 Tm (Attendance is recorded automatically when the meeting room is opened and exited) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 102.99 Tm (through TTCS.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 75.04 Tm (`Can deleted inbox conversations still be recovered?`) Tj ET
 BT /F1 9 Tf 1 0 0 1 478.44 30.00 Tm (Page 12 of 13) Tj ET
 endstream
 endobj
 15 0 obj
-<< /Length 1245 >>
+<< /Length 788 >>
 stream
-BT /F1 11 Tf 1 0 0 1 56.00 777.89 Tm (Yes. The admin task form supports multiple assignees.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 749.94 Tm (`How is attendance recorded?`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 721.99 Tm (Attendance is recorded automatically when the meeting room is opened and exited) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 706.04 Tm (through TTCS.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 678.09 Tm (`Can deleted inbox conversations still be recovered?`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 650.14 Tm (Yes. A deleted conversation can be restored from trash before the 31-day deletion) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 634.19 Tm (period ends.) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 606.24 Tm (`Does TTCS currently have a visible forgot-password page?`) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 578.29 Tm (No. The current visible interface does not expose a dedicated forgot-password page.) Tj ET
-BT /F2 15 Tf 1 0 0 1 56.00 540.34 Tm (Document Note) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 506.34 Tm (This manual follows the structure requested in the provided table of contents while) Tj ET
-BT /F1 11 Tf 1 0 0 1 56.00 490.39 Tm (staying aligned with the TTCS features currently implemented in the repository.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 777.89 Tm (Yes. A deleted conversation can be restored from trash before the 31-day deletion) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 761.94 Tm (period ends.) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 733.99 Tm (`Does TTCS currently have a visible forgot-password page?`) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 706.04 Tm (No. The current visible interface does not expose a dedicated forgot-password page.) Tj ET
+BT /F2 15 Tf 1 0 0 1 56.00 668.09 Tm (Document Note) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 634.09 Tm (This manual follows the structure requested in the provided table of contents while) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.00 618.14 Tm (staying aligned with the TTCS features currently implemented in the repository.) Tj ET
 BT /F1 9 Tf 1 0 0 1 478.44 30.00 Tm (Page 13 of 13) Tj ET
 endstream
 endobj
@@ -807,33 +794,33 @@ xref
 0000000154 00000 n 
 0000002793 00000 n 
 0000006594 00000 n 
-0000010106 00000 n 
-0000013688 00000 n 
-0000017380 00000 n 
-0000020960 00000 n 
-0000024782 00000 n 
-0000028423 00000 n 
-0000031916 00000 n 
-0000035709 00000 n 
-0000039329 00000 n 
-0000041958 00000 n 
-0000043256 00000 n 
-0000043400 00000 n 
-0000043544 00000 n 
-0000043688 00000 n 
-0000043832 00000 n 
-0000043976 00000 n 
-0000044120 00000 n 
-0000044264 00000 n 
-0000044408 00000 n 
-0000044553 00000 n 
-0000044698 00000 n 
-0000044843 00000 n 
-0000044988 00000 n 
-0000045133 00000 n 
-0000045278 00000 n 
+0000009850 00000 n 
+0000013551 00000 n 
+0000017074 00000 n 
+0000020818 00000 n 
+0000024724 00000 n 
+0000028299 00000 n 
+0000031839 00000 n 
+0000035587 00000 n 
+0000039217 00000 n 
+0000041786 00000 n 
+0000042626 00000 n 
+0000042770 00000 n 
+0000042914 00000 n 
+0000043058 00000 n 
+0000043202 00000 n 
+0000043346 00000 n 
+0000043490 00000 n 
+0000043634 00000 n 
+0000043778 00000 n 
+0000043923 00000 n 
+0000044068 00000 n 
+0000044213 00000 n 
+0000044358 00000 n 
+0000044503 00000 n 
+0000044648 00000 n 
 trailer
 << /Size 31 /Root 30 0 R >>
 startxref
-45329
+44699
 %%EOF
