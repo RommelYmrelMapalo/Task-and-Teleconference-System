@@ -1,12 +1,11 @@
 "use client";
 
-import Link from "next/link";
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { initialCreateMeetingState } from "@/app/admin/meetings/action-state";
 import { createMeetingAction } from "@/app/admin/meetings/actions";
-import type { AdminProfileListItem, MeetingItem } from "@/lib/ttcs-data";
+import type { AdminProfileListItem } from "@/lib/ttcs-data";
 
 function CreateMeetingSubmitButton() {
   const { pending } = useFormStatus();
@@ -18,34 +17,21 @@ function CreateMeetingSubmitButton() {
   );
 }
 
-function formatParticipantSummary(meeting: MeetingItem) {
-  if (!meeting.assignees.length) {
-    return "No participants yet";
-  }
-
-  if (meeting.assignees.length <= 3) {
-    return meeting.assignees.map((assignee) => assignee.fullName).join(", ");
-  }
-
-  const visibleNames = meeting.assignees.slice(0, 3).map((assignee) => assignee.fullName);
-  return `${visibleNames.join(", ")} +${meeting.assignees.length - visibleNames.length} more`;
-}
-
 export function AdminMeetingsManager({
-  meetings,
   users,
 }: {
-  meetings: MeetingItem[];
   users: AdminProfileListItem[];
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement | null>(null);
   const [state, formAction] = useActionState(createMeetingAction, initialCreateMeetingState);
-  const [renderedAt] = useState(() => Date.now());
+  const [participantQuery, setParticipantQuery] = useState("");
+  const deferredParticipantQuery = useDeferredValue(participantQuery);
   const selectableUsers = useMemo(
     () => users.filter((user) => user.statusTone !== "deactivated"),
     [users],
   );
+  const normalizedParticipantQuery = deferredParticipantQuery.trim().toLowerCase();
   const roleOptions = useMemo(() => {
     const options = new Map<
       AdminProfileListItem["role"],
@@ -72,6 +58,24 @@ export function AdminMeetingsManager({
 
     return Array.from(options.values());
   }, [selectableUsers]);
+  const filteredParticipants = useMemo(() => {
+    if (!normalizedParticipantQuery) {
+      return selectableUsers;
+    }
+
+    return selectableUsers.filter((user) => {
+      const haystacks = [user.fullName, user.email, user.roleLabel, user.username];
+      return haystacks.some((value) => value.toLowerCase().includes(normalizedParticipantQuery));
+    });
+  }, [normalizedParticipantQuery, selectableUsers]);
+  const filteredAdmins = useMemo(
+    () => filteredParticipants.filter((user) => user.role === "admin"),
+    [filteredParticipants],
+  );
+  const filteredRegularUsers = useMemo(
+    () => filteredParticipants.filter((user) => user.role === "user"),
+    [filteredParticipants],
+  );
 
   useEffect(() => {
     if (state.status === "success") {
@@ -94,30 +98,17 @@ export function AdminMeetingsManager({
         </div>
 
         <form ref={formRef} action={formAction} className="form-stack task-edit-form meeting-create-form">
-          <div className="users-form-grid">
-            <div className="users-form-field">
-              <label className="users-form-label drawer-label" htmlFor="meeting-title">
-                Title
-              </label>
-              <input
-                id="meeting-title"
-                className="field-input"
-                name="title"
-                placeholder="Quarterly planning session"
-                required
-              />
-            </div>
-            <div className="users-form-field">
-              <label className="users-form-label drawer-label" htmlFor="meeting-room">
-                Meeting Room
-              </label>
-              <input
-                id="meeting-room"
-                className="field-input"
-                name="room"
-                placeholder="Conference Room A"
-              />
-            </div>
+          <div className="users-form-field">
+            <label className="users-form-label drawer-label" htmlFor="meeting-title">
+              Title
+            </label>
+            <input
+              id="meeting-title"
+              className="field-input"
+              name="title"
+              placeholder="Quarterly planning session"
+              required
+            />
           </div>
 
           <div className="users-form-grid">
@@ -194,23 +185,79 @@ export function AdminMeetingsManager({
                   <div className="meeting-selection-copy">
                     <div className="meeting-selection-heading">Assign Individually</div>
                     <p className="meeting-card-copy">
-                      Add specific people here. Role and individual selections are merged automatically.
+                      Search and assign specific people here. Role and individual selections are merged automatically.
                     </p>
                   </div>
-                  <div className="meeting-participant-grid">
-                    {selectableUsers.map((user) => (
-                      <label className="meeting-participant-option" key={user.id}>
-                        <input type="checkbox" name="participantIds" value={user.id} />
-                        <span className="meeting-participant-copy">
-                          <strong>{user.fullName}</strong>
-                          <span>{user.roleLabel}</span>
-                        </span>
+                  <div className="meeting-participant-toolbar">
+                    <div className="users-form-field">
+                      <label className="users-form-label drawer-label" htmlFor="participant-search">
+                        Search Participants
                       </label>
-                    ))}
+                      <input
+                        id="participant-search"
+                        className="field-input"
+                        type="search"
+                        value={participantQuery}
+                        onChange={(event) => setParticipantQuery(event.target.value)}
+                        placeholder="Search by name, username, email, or role"
+                      />
+                    </div>
+                    <div className="meeting-selection-meta">
+                      Showing {filteredParticipants.length} of {selectableUsers.length} participant
+                      {selectableUsers.length === 1 ? "" : "s"}
+                    </div>
                   </div>
+                  {filteredParticipants.length ? (
+                    <div className="meeting-people-columns">
+                      <div className="meeting-people-panel">
+                        <div className="meeting-people-panel-head">
+                          <div className="meeting-selection-heading">Admins</div>
+                          <span className="pill task">{filteredAdmins.length}</span>
+                        </div>
+                        <div className="meeting-people-list" role="group" aria-label="Admin participants">
+                          {filteredAdmins.length ? (
+                            filteredAdmins.map((user) => (
+                              <label className="meeting-participant-option" key={user.id}>
+                                <input type="checkbox" name="participantIds" value={user.id} />
+                                <span className="meeting-participant-copy">
+                                  <strong>{user.fullName}</strong>
+                                  <span>{user.email}</span>
+                                </span>
+                              </label>
+                            ))
+                          ) : (
+                            <div className="meeting-empty-copy">No admins match the current search.</div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="meeting-people-panel">
+                        <div className="meeting-people-panel-head">
+                          <div className="meeting-selection-heading">Users</div>
+                          <span className="pill task">{filteredRegularUsers.length}</span>
+                        </div>
+                        <div className="meeting-people-list" role="group" aria-label="User participants">
+                          {filteredRegularUsers.length ? (
+                            filteredRegularUsers.map((user) => (
+                              <label className="meeting-participant-option" key={user.id}>
+                                <input type="checkbox" name="participantIds" value={user.id} />
+                                <span className="meeting-participant-copy">
+                                  <strong>{user.fullName}</strong>
+                                  <span>{user.email}</span>
+                                </span>
+                              </label>
+                            ))
+                          ) : (
+                            <div className="meeting-empty-copy">No users match the current search.</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="meeting-empty-copy">No participants match the current search.</div>
+                  )}
                 </div>
               </div>
-	            ) : (
+            ) : (
 	              <div className="meeting-empty-copy">No active users are currently available for meeting assignments.</div>
 	            )}
 
@@ -221,48 +268,11 @@ export function AdminMeetingsManager({
 	            </div>
 	          </div>
 
-	          {state.message ? (
+          {state.message ? (
             <div className={state.status === "error" ? "field-error" : "field-success"}>{state.message}</div>
           ) : null}
         </form>
       </section>
-
-      {meetings.length ? (
-        <div className="page-grid two-col">
-          {meetings.map((meeting) => {
-            const isPast = new Date(meeting.dateTime).getTime() < renderedAt;
-
-            return (
-              <section className="page-card meeting-record-card" key={meeting.id}>
-                <div className="card-headline">
-                  <div>
-                    <h3>{meeting.title}</h3>
-                    <p className="meeting-card-copy">
-                      Created by {meeting.createdByLabel}
-                    </p>
-                  </div>
-                  <span className={`pill ${isPast ? "task" : "meeting"}`}>{isPast ? "Past" : "Upcoming"}</span>
-                </div>
-                <p>{meeting.dateLabel}</p>
-                <p>{meeting.timeLabel}</p>
-                <p>{meeting.room ? `Meeting room: ${meeting.room}` : "Meeting room: To be announced"}</p>
-                {meeting.joinPath ? <p className="meeting-link-copy">Join link: {meeting.joinPath}</p> : null}
-                <p>{meeting.description}</p>
-                <p className="meeting-participant-summary">
-                  Participants: {formatParticipantSummary(meeting)}
-                </p>
-                {meeting.joinPath ? (
-                  <div className="meeting-link-actions">
-                    <Link className="primary-btn" href={meeting.joinPath}>
-                      Join Meeting
-                    </Link>
-                  </div>
-                ) : null}
-              </section>
-            );
-          })}
-        </div>
-      ) : null}
     </div>
   );
 }

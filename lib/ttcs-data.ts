@@ -131,8 +131,25 @@ export type MeetingItem = {
   timeLabel: string;
   endTimeLabel: string;
   createdAt: string;
+  createdById: string | null;
   createdByLabel: string;
   assignees: ShellUser[];
+};
+
+export type MeetingAttendanceItem = {
+  meetingId: number;
+  meetingTitle: string;
+  meetingDateLabel: string;
+  meetingTimeLabel: string;
+  meetingStartsAt: string;
+  meetingEndsAt: string | null;
+  roomLabel: string;
+  joinPath: string;
+  joinedAt: string | null;
+  leftAt: string | null;
+  joinedLabel: string;
+  leftLabel: string;
+  statusLabel: "Waiting to Join" | "In Call" | "Completed" | "Missed" | "Closed";
 };
 
 export type TaskAuditLogItem = {
@@ -159,6 +176,8 @@ export type TaskItem = {
   dueTimeLabel: string;
   createdLabel: string;
   activityLabel: string;
+  archivedAt: string | null;
+  archivedLabel: string;
   createdByLabel: string;
   lastEditedByLabel: string;
   isDelayed: boolean;
@@ -196,11 +215,15 @@ type TaskRow = {
   deadline: string | null;
   created_by: string | null;
   last_edited_by: string | null;
+  archived_at: string | null;
   created_at: string;
   last_edited_at: string;
 };
 
-type LegacyTaskRow = Omit<TaskRow, "created_by">;
+type PartialTaskRow = Omit<TaskRow, "created_by" | "archived_at"> & {
+  created_by?: string | null;
+  archived_at?: string | null;
+};
 
 type AttachmentRow = {
   id: number;
@@ -264,15 +287,110 @@ function unique<T>(values: T[]) {
   return Array.from(new Set(values));
 }
 
-function hasCreatedBy(row: TaskRow | LegacyTaskRow): row is TaskRow {
-  return "created_by" in row && (typeof row.created_by === "string" || row.created_by === null);
-}
-
-function normalizeTaskRows(rows: TaskRow[] | LegacyTaskRow[] | null | undefined): TaskRow[] {
+function normalizeTaskRows(rows: PartialTaskRow[] | null | undefined): TaskRow[] {
   return (rows ?? []).map((row) => ({
     ...row,
-    created_by: hasCreatedBy(row) ? row.created_by : null,
+    created_by: typeof row.created_by === "string" || row.created_by === null ? row.created_by : null,
+    archived_at: typeof row.archived_at === "string" || row.archived_at === null ? row.archived_at : null,
   }));
+}
+
+function buildTaskSelectQuery(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  {
+    taskIds,
+    archived = false,
+    includeCreatedBy = true,
+    includeArchivedAt = true,
+  }: {
+    taskIds?: number[];
+    archived?: boolean;
+    includeCreatedBy?: boolean;
+    includeArchivedAt?: boolean;
+  },
+) {
+  const columns = [
+    "id",
+    "title",
+    "description",
+    "status",
+    "priority",
+    "deadline",
+    includeCreatedBy ? "created_by" : null,
+    "last_edited_by",
+    includeArchivedAt ? "archived_at" : null,
+    "created_at",
+    "last_edited_at",
+  ]
+    .filter(Boolean)
+    .join(",");
+
+  let query = supabase.from("tasks").select(columns);
+
+  if (taskIds?.length) {
+    query = query.in("id", taskIds);
+  }
+
+  if (includeArchivedAt) {
+    query = archived ? query.not("archived_at", "is", null) : query.is("archived_at", null);
+  }
+
+  return query.order(archived && includeArchivedAt ? "archived_at" : "created_at", { ascending: false });
+}
+
+async function fetchTaskRows(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  {
+    taskIds,
+    archived = false,
+  }: {
+    taskIds?: number[];
+    archived?: boolean;
+  } = {},
+) {
+  let includeCreatedBy = true;
+  let includeArchivedAt = true;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { data, error } = await buildTaskSelectQuery(supabase, {
+      taskIds,
+      archived,
+      includeCreatedBy,
+      includeArchivedAt,
+    });
+
+    if (!error) {
+      return normalizeTaskRows(data as unknown as PartialTaskRow[] | null);
+    }
+
+    if (isMissingSupabaseTable(error)) {
+      return [];
+    }
+
+    let shouldRetry = false;
+
+    if (includeCreatedBy && isMissingSupabaseColumn(error, "created_by")) {
+      includeCreatedBy = false;
+      shouldRetry = true;
+    }
+
+    if (includeArchivedAt && isMissingSupabaseColumn(error, "archived_at")) {
+      if (archived) {
+        return [];
+      }
+
+      includeArchivedAt = false;
+      shouldRetry = true;
+    }
+
+    if (shouldRetry) {
+      continue;
+    }
+
+    throw new Error(`Failed to load tasks: ${error.message}`);
+  }
+
+  return [];
 }
 
 function parseStorageLocation(storagePath: string) {
@@ -643,14 +761,16 @@ export async function requireSessionContext(options?: { admin?: boolean }): Prom
 }
 
 function mapNotificationRow(row: NotificationRow): NotificationItem {
+  const cleanedMessage = sanitizeNotificationMessage(row.message);
+
   return {
     id: row.id,
     title: row.title,
-    message: row.message,
+    message: cleanedMessage,
     isRead: row.is_read,
     createdAt: row.created_at,
     subject: row.title,
-    preview: row.message,
+    preview: cleanedMessage,
     sender: row.title.toLowerCase().includes("system") ? "System" : "TTCS",
     timeLabel: formatWithTz(row.created_at, {
       month: "short",
@@ -659,6 +779,14 @@ function mapNotificationRow(row: NotificationRow): NotificationItem {
       minute: "2-digit",
     }),
   };
+}
+
+function sanitizeNotificationMessage(message: string) {
+  return message
+    .replace(/^\s*Meeting room:\s*.*$/gim, "")
+    .replace(/^\s*Join link:\s*.*$/gim, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function buildInboxThreadPreview(message: string) {
@@ -819,6 +947,16 @@ function mapTaskRow(
     deadline: row.deadline,
     createdAt: row.created_at,
     activityAt: row.last_edited_at || row.created_at,
+    archivedAt: row.archived_at,
+    archivedLabel: row.archived_at
+      ? formatWithTz(row.archived_at, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : "Not archived",
     dueLabel: row.deadline
       ? formatWithTz(row.deadline, {
           month: "short",
@@ -1107,11 +1245,12 @@ export async function getUserInboxThreads(
     const creatorLabel = creatorProfile?.fullName ?? inferredCreatorLabel ?? counterpartLabel;
     const threadState = threadStateMap.get(threadKey);
     const trashExpiration = getTrashExpiration(threadState?.trashed_at ?? null);
+    const latestMessage = sanitizeNotificationMessage(latestRow.message);
 
     threads.push({
       id: threadKey,
       subject: latestRow.title,
-      preview: buildInboxThreadPreview(latestRow.message),
+      preview: buildInboxThreadPreview(latestMessage),
       updatedAt: latestRow.created_at,
       timeLabel: formatWithTz(latestRow.created_at, {
         month: "short",
@@ -1145,6 +1284,7 @@ export async function getUserInboxThreads(
             : row.sender_user_id === userId
               ? profileMap.get(userId) ?? null
               : null;
+        const cleanedMessage = sanitizeNotificationMessage(row.message);
         const fallbackSenderLabel =
           threadType === "task_notification" ? inferTaskCreatorFromMessage(row.message) ?? "TTCS" : "TTCS";
         const senderLabel = row.sender_user_id ? sender?.fullName ?? "TTCS Member" : fallbackSenderLabel;
@@ -1152,7 +1292,7 @@ export async function getUserInboxThreads(
         return {
           id: row.id,
           subject: row.title,
-          body: row.message,
+          body: cleanedMessage,
           createdAt: row.created_at,
           timeLabel: formatWithTz(row.created_at, {
             month: "short",
@@ -1373,6 +1513,7 @@ export function getMeetingItems(notifications: NotificationItem[]) {
       }),
       endTimeLabel: "",
       createdAt: item.createdAt,
+      createdById: null,
       createdByLabel: "TTCS",
       assignees: [],
     }));
@@ -1381,6 +1522,9 @@ export function getMeetingItems(notifications: NotificationItem[]) {
 export async function getUserTasks(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
+  options?: {
+    archived?: boolean;
+  },
 ) {
   const admin = createAdminClient();
   await cleanupExpiredTasks(admin);
@@ -1402,31 +1546,10 @@ export async function getUserTasks(
     return [];
   }
 
-  let { data, error } = await supabase
-    .from("tasks")
-    .select("id,title,description,status,priority,deadline,created_by,last_edited_by,created_at,last_edited_at")
-    .in("id", taskIds)
-    .order("created_at", { ascending: false });
-
-  if (error && isMissingSupabaseColumn(error, "created_by")) {
-    const fallbackResult = await supabase
-      .from("tasks")
-      .select("id,title,description,status,priority,deadline,last_edited_by,created_at,last_edited_at")
-      .in("id", taskIds)
-      .order("created_at", { ascending: false });
-
-    data = normalizeTaskRows(fallbackResult.data as LegacyTaskRow[] | null);
-    error = fallbackResult.error;
-  }
-
-  if (error) {
-    if (isMissingSupabaseTable(error)) {
-      return [];
-    }
-    throw new Error(`Failed to load tasks: ${error.message}`);
-  }
-
-  const taskRows = normalizeTaskRows(data as TaskRow[] | LegacyTaskRow[] | null);
+  const taskRows = await fetchTaskRows(supabase, {
+    taskIds,
+    archived: options?.archived ?? false,
+  });
   const loadedTaskIds = taskRows.map((task) => task.id);
   const attachmentsByTask = await getTaskAttachmentsByTaskId(supabase, loadedTaskIds);
   const commentRowsByTask = await getTaskCommentRowsByTaskId(supabase, loadedTaskIds);
@@ -1477,32 +1600,15 @@ export async function getUserTasks(
 
 export async function getAdminTasks(
   supabase: Awaited<ReturnType<typeof createClient>>,
+  options?: {
+    archived?: boolean;
+  },
 ) {
   const admin = createAdminClient();
   await cleanupExpiredTasks(admin);
-  let { data: taskRows, error: taskError } = await supabase
-    .from("tasks")
-    .select("id,title,description,status,priority,deadline,created_by,last_edited_by,created_at,last_edited_at")
-    .order("created_at", { ascending: false });
-
-  if (taskError && isMissingSupabaseColumn(taskError, "created_by")) {
-    const fallbackResult = await supabase
-      .from("tasks")
-      .select("id,title,description,status,priority,deadline,last_edited_by,created_at,last_edited_at")
-      .order("created_at", { ascending: false });
-
-    taskRows = normalizeTaskRows(fallbackResult.data as LegacyTaskRow[] | null);
-    taskError = fallbackResult.error;
-  }
-
-  if (taskError) {
-    if (isMissingSupabaseTable(taskError)) {
-      return [];
-    }
-    throw new Error(`Failed to load admin tasks: ${taskError.message}`);
-  }
-
-  const tasks = normalizeTaskRows(taskRows as TaskRow[] | LegacyTaskRow[] | null);
+  const tasks = await fetchTaskRows(supabase, {
+    archived: options?.archived ?? false,
+  });
   const taskIds = tasks.map((task) => task.id);
   const attachmentsByTask = await getTaskAttachmentsByTaskId(supabase, taskIds);
   const commentRowsByTask = await getTaskCommentRowsByTaskId(supabase, taskIds);
@@ -1580,9 +1686,9 @@ export async function getAdminTasks(
   );
 }
 
-export async function getVisibleTasks() {
+export async function getVisibleTasks(options?: { archived?: boolean }) {
   const admin = createAdminClient() as unknown as Awaited<ReturnType<typeof createClient>>;
-  return getAdminTasks(admin);
+  return getAdminTasks(admin, options);
 }
 
 export async function getAllProfiles(
@@ -1649,6 +1755,11 @@ export async function getAllProfiles(
       year: "numeric",
     }),
   }));
+}
+
+export async function getAllProfilesForMeetingManagement() {
+  const admin = createAdminClient() as unknown as Awaited<ReturnType<typeof createClient>>;
+  return getAllProfiles(admin);
 }
 
 export async function getInboxContacts(currentUserId: string) {

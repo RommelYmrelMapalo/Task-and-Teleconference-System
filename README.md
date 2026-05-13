@@ -44,4 +44,4 @@ Tasks are automatically removed after 31 days without edits. The app enforces th
 
 - Auth, session redirects, and logout use Supabase.
 - User dashboard, tasks, inbox, profile, meetings, and admin pages read from Supabase.
-- The remaining schema gap is attendance logging for time-in/time-out and any richer meeting model beyond notification-derived meeting notices.
+- Meeting time-in and time-out now rely on the `meeting_attendance` table, which is filled automatically when a user joins and leaves a meeting room through TTCS.

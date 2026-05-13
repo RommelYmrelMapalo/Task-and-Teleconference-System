@@ -1,5 +1,4 @@
 import { createAdminClient } from "@/app/utils/utils/supabase/admin";
-import { buildMeetingJoinPath } from "@/lib/meeting-links";
 import { isMissingSupabaseColumn, isMissingSupabaseTable } from "@/lib/supabase-errors";
 import type { AppRole } from "@/lib/ttcs-data";
 
@@ -21,7 +20,6 @@ type MeetingRecipientRow = {
 type WriterProfile = {
   email: string;
   full_name: string;
-  is_admin: boolean;
 };
 
 export class MeetingMutationError extends Error {
@@ -186,7 +184,7 @@ async function loadWriterContext(userId: string) {
   const admin = createAdminClient();
   const profileResult = await admin
     .from("profiles")
-    .select("email,full_name,is_admin")
+    .select("email,full_name")
     .eq("id", userId)
     .maybeSingle();
 
@@ -195,8 +193,8 @@ async function loadWriterContext(userId: string) {
   }
 
   const profile = (profileResult.data as WriterProfile | null) ?? null;
-  if (!profile?.is_admin) {
-    throw new MeetingMutationError("Only administrators can create meetings.", 403);
+  if (!profile) {
+    throw new MeetingMutationError("Could not load your account details.", 404);
   }
 
   return {
@@ -296,18 +294,14 @@ function buildMeetingSubject(title: string) {
 
 function buildMeetingMessage({
   actorName,
-  meetingId,
   title,
   description,
-  room,
   scheduledFor,
   endsAt,
 }: {
   actorName: string;
-  meetingId: number;
   title: string;
   description: string;
-  room: string;
   scheduledFor: string;
   endsAt: string | null;
 }) {
@@ -334,14 +328,12 @@ function buildMeetingMessage({
     `${actorName} scheduled a meeting for you.`,
     `Meeting: ${title}`,
     `Schedule: ${scheduleLabel}`,
-    `Meeting room: ${room || "TBD"}`,
   ];
 
   if (description) {
     lines.push("", "Meeting details:", description);
   }
 
-  lines.push("", `Join link: ${buildMeetingJoinPath(meetingId)}`);
   lines.push("", "Open the Assigned Meetings page to review the latest meeting schedule.");
   return lines.join("\n");
 }
@@ -354,7 +346,6 @@ async function createMeetingNotifications(
     meetingId,
     title,
     description,
-    room,
     scheduledFor,
     endsAt,
     recipients,
@@ -364,7 +355,6 @@ async function createMeetingNotifications(
     meetingId: number;
     title: string;
     description: string;
-    room: string;
     scheduledFor: string;
     endsAt: string | null;
     recipients: MeetingRecipient[];
@@ -379,15 +369,13 @@ async function createMeetingNotifications(
     sender_user_id: actorUserId,
     thread_key: `meeting:${meetingId}`,
     title: buildMeetingSubject(title),
-    message: buildMeetingMessage({
-      actorName,
-      meetingId,
-      title,
-      description,
-      room,
-      scheduledFor,
-      endsAt,
-    }),
+      message: buildMeetingMessage({
+        actorName,
+        title,
+        description,
+        scheduledFor,
+        endsAt,
+      }),
   }));
   const insertResult = await admin.from("notifications").insert(notificationRows);
 
@@ -485,7 +473,6 @@ export async function createMeetingForUser(userId: string, formData: FormData) {
     meetingId,
     title: values.title,
     description: values.description,
-    room: values.room,
     scheduledFor: values.scheduledFor,
     endsAt: values.endsAt,
     recipients,
@@ -495,5 +482,54 @@ export async function createMeetingForUser(userId: string, formData: FormData) {
     meetingId,
     title: values.title,
     assigneeCount: recipients.length,
+  };
+}
+
+export async function endMeetingForUser(userId: string, meetingId: number) {
+  const { admin } = await loadWriterContext(userId);
+  const meetingResult = await admin
+    .from("meetings")
+    .select("id,title,created_by")
+    .eq("id", meetingId)
+    .maybeSingle();
+
+  if (meetingResult.error) {
+    if (isMissingSupabaseTable(meetingResult.error)) {
+      throw new MeetingMutationError("Meetings are not configured yet.", 500);
+    }
+
+    throw new MeetingMutationError(meetingResult.error.message, 500);
+  }
+
+  const meeting = (meetingResult.data as { id: number; title: string; created_by: string | null } | null) ?? null;
+  if (!meeting) {
+    throw new MeetingMutationError("Meeting not found.", 404);
+  }
+
+  if (meeting.created_by && meeting.created_by !== userId) {
+    throw new MeetingMutationError("Only the meeting creator can end it.", 403);
+  }
+
+  const notificationDeleteResult = await admin.from("notifications").delete().eq("thread_key", `meeting:${meetingId}`);
+  if (
+    notificationDeleteResult.error &&
+    !isMissingSupabaseTable(notificationDeleteResult.error) &&
+    !isMissingSupabaseColumn(notificationDeleteResult.error, "thread_key")
+  ) {
+    throw new MeetingMutationError(notificationDeleteResult.error.message, 500);
+  }
+
+  const deleteResult = await admin.from("meetings").delete().eq("id", meetingId);
+  if (deleteResult.error) {
+    if (isMissingSupabaseTable(deleteResult.error)) {
+      throw new MeetingMutationError("Meetings are not configured yet.", 500);
+    }
+
+    throw new MeetingMutationError(deleteResult.error.message, 500);
+  }
+
+  return {
+    meetingId,
+    title: meeting.title,
   };
 }

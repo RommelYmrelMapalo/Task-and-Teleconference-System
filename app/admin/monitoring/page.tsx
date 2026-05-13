@@ -8,9 +8,67 @@ import { Suspense } from "react";
 import {
   getAdminTaskAuditLogs,
   getAllProfiles,
+  type MonitoringNotificationItem,
   getMonitoringNotifications,
   requireSessionContext,
 } from "@/lib/ttcs-data";
+
+function summarizeRecipients(recipients: string[]) {
+  if (!recipients.length) {
+    return "Unknown recipient";
+  }
+
+  if (recipients.length <= 3) {
+    return recipients.join(", ");
+  }
+
+  return `${recipients.slice(0, 3).join(", ")} +${recipients.length - 3} more`;
+}
+
+function groupMonitoringNotifications(notifications: MonitoringNotificationItem[]) {
+  const grouped = new Map<
+    string,
+    {
+      base: MonitoringNotificationItem;
+      recipients: string[];
+    }
+  >();
+
+  for (const notification of notifications) {
+    const groupKey = notification.isReply
+      ? `reply:${notification.id}`
+      : `${notification.threadKey ?? notification.id}:${notification.title}:${notification.createdAt}:${notification.senderLabel}`;
+    const existing = grouped.get(groupKey);
+
+    if (existing) {
+      if (!existing.recipients.includes(notification.recipientLabel)) {
+        existing.recipients.push(notification.recipientLabel);
+      }
+      continue;
+    }
+
+    grouped.set(groupKey, {
+      base: notification,
+      recipients: [notification.recipientLabel],
+    });
+  }
+
+  return Array.from(grouped.values()).map(({ base, recipients }) => {
+    const meta = base.isReply
+      ? `Reply: ${base.senderLabel} -> ${base.recipientLabel}`
+      : `From ${base.senderLabel} to ${summarizeRecipients(recipients)}`;
+
+    return {
+      id: base.isReply ? `notification:${base.id}` : `notification-group:${base.threadKey ?? base.id}:${base.createdAt}`,
+      kind: "notification" as const,
+      title: base.title || "System notification",
+      detail: base.preview || base.message,
+      meta,
+      createdAt: base.createdAt,
+      createdLabel: base.timeLabel,
+    };
+  });
+}
 
 function buildSystemEvents({
   profiles,
@@ -47,21 +105,7 @@ function buildSystemEvents({
     }
   }
 
-  for (const notification of notifications) {
-    const directionLabel = notification.isReply
-      ? `Reply: ${notification.senderLabel} -> ${notification.recipientLabel}`
-      : `From ${notification.senderLabel} to ${notification.recipientLabel}`;
-
-    events.push({
-      id: `notification:${notification.id}`,
-      kind: "notification",
-      title: notification.title || "System notification",
-      detail: notification.preview || notification.message,
-      meta: directionLabel,
-      createdAt: notification.createdAt,
-      createdLabel: notification.timeLabel,
-    });
-  }
+  events.push(...groupMonitoringNotifications(notifications));
 
   for (const log of auditLogs) {
     events.push({

@@ -34,17 +34,21 @@ const routeBreadcrumbs: Record<string, BreadcrumbEntry[]> = {
     { label: "Home", href: "/dashboard" },
     { label: "Tasks Dashboard" },
   ],
+  "/meetings": [
+    { label: "Home", href: "/dashboard" },
+    { label: "Manage Meetings" },
+  ],
   "/assigned-meetings": [
     { label: "Home", href: "/dashboard" },
     { label: "Assigned Meetings" },
   ],
   "/record-timein": [
     { label: "Home", href: "/dashboard" },
-    { label: "Record Time-in" },
+    { label: "Meeting Attendance" },
   ],
   "/record-timeout": [
     { label: "Home", href: "/dashboard" },
-    { label: "Record Time-out" },
+    { label: "Meeting Attendance" },
   ],
   "/inbox": [
     { label: "Home", href: "/dashboard" },
@@ -69,6 +73,14 @@ const routeBreadcrumbs: Record<string, BreadcrumbEntry[]> = {
   "/admin/meetings": [
     { label: "Admin", href: "/admin" },
     { label: "Manage Meetings" },
+  ],
+  "/admin/record-timein": [
+    { label: "Admin", href: "/admin" },
+    { label: "Meeting Attendance" },
+  ],
+  "/admin/record-timeout": [
+    { label: "Admin", href: "/admin" },
+    { label: "Meeting Attendance" },
   ],
   "/admin/monitoring": [
     { label: "Admin", href: "/admin" },

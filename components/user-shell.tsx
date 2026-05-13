@@ -32,14 +32,18 @@ const navGroups: Array<{ section: string; items: UserNavItem[] }> = [
   },
   {
     section: "TASKS",
-    items: [{ href: "/tasks", label: "Tasks Dashboard", icon: "tasks" as const }],
+    items: [
+      { href: "/tasks", label: "Tasks Dashboard", icon: "tasks" as const },
+      { href: "/task-status", label: "Task Status", icon: "tasks" as const },
+      { href: "/tasks/archive", label: "Task Archive", icon: "tasks" as const },
+    ],
   },
   {
     section: "TELECONFERENCE",
     items: [
+      { href: "/meetings", label: "Manage Meetings", icon: "meetings" as const },
       { href: "/assigned-meetings", label: "Assigned Meetings", icon: "meetings" as const },
-      { href: "/record-timein", label: "Record Time-in", icon: "timein" as const },
-      { href: "/record-timeout", label: "Record Time-out", icon: "timeout" as const },
+      { href: "/record-timein", label: "Meeting Attendance", icon: "timein" as const },
       { href: "/inbox", label: "Inbox", icon: "inbox" as const, badge: "3" },
     ],
   },
@@ -254,7 +258,7 @@ export function UserShell({
 
         <section className="main-area">
           <div className="content-wrap">
-            <div className="main-inner">
+            <div className="main-inner user-main-inner">
               <div className="dashboard-head">
                 <div className="dashboard-head-left">
                   <button

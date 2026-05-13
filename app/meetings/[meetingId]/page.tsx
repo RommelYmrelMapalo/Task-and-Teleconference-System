@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { endMeetingAction } from "@/app/admin/meetings/actions";
 import { MeetingEmbed } from "@/components/meeting-embed";
 import { createJaasJwt, getJaasAppId, hasJaasAppId, hasJaasJwtEnv, buildJaasRoomName } from "@/lib/jaas";
 import { buildMeetingEmbedUrl } from "@/lib/meeting-links";
@@ -53,7 +54,6 @@ export default async function MeetingRoomPage({
   const { meetingId: meetingIdParam } = await params;
   const meetingId = Number(meetingIdParam);
   const { profile, shellUser } = await requireSessionContext();
-  const backHref = profile.is_admin ? "/admin/meetings" : "/assigned-meetings";
 
   if (!Number.isInteger(meetingId) || meetingId <= 0) {
     notFound();
@@ -69,9 +69,9 @@ export default async function MeetingRoomPage({
     notFound();
   }
 
-  const participantSummary = meeting.assignees.length
-    ? meeting.assignees.map((assignee) => assignee.fullName).join(", ")
-    : "No participants listed";
+  const isMeetingCreator = meeting.createdById === profile.id;
+  const backHref = profile.is_admin ? "/admin/record-timein" : "/record-timein";
+
   const hasJaasApp = hasJaasAppId();
   const useJaasJwt = hasJaasJwtEnv();
   const useJaas = hasJaasApp;
@@ -79,6 +79,7 @@ export default async function MeetingRoomPage({
   const embedProps = useJaas
     ? {
         provider: "jaas" as const,
+        meetingId: meeting.id,
         appId: jaasAppId!,
         roomName: buildJaasRoomName(jaasAppId!, meeting.videoRoomCode),
         jwt: useJaasJwt
@@ -87,7 +88,7 @@ export default async function MeetingRoomPage({
               userId: shellUser.id,
               displayName: shellUser.fullName,
               email: shellUser.email,
-              moderator: profile.is_admin,
+              moderator: profile.is_admin || isMeetingCreator,
             })
           : undefined,
         displayName: shellUser.fullName,
@@ -96,6 +97,7 @@ export default async function MeetingRoomPage({
       }
     : {
         provider: "jitsi" as const,
+        meetingId: meeting.id,
         iframeUrl: buildMeetingEmbedUrl(meeting.videoRoomCode, shellUser.fullName),
         title: `${meeting.title} video room`,
       };
@@ -116,8 +118,19 @@ export default async function MeetingRoomPage({
         <p>{meeting.dateLabel}</p>
         <p>{meeting.timeLabel}</p>
         <p>{meeting.room ? `Meeting room: ${meeting.room}` : "Meeting room: To be announced"}</p>
-        <p>Participants: {participantSummary}</p>
       </div>
+
+      {isMeetingCreator ? (
+        <div className="meeting-link-actions">
+          <form action={endMeetingAction}>
+            <input type="hidden" name="meetingId" value={meeting.id} />
+            <input type="hidden" name="redirectTo" value={backHref} />
+            <button type="submit" className="btn-mini ghost meeting-end-btn">
+              End Meeting
+            </button>
+          </form>
+        </div>
+      ) : null}
 
       <MeetingEmbed {...embedProps} />
     </MeetingAccessShell>

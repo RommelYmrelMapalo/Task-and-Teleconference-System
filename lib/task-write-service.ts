@@ -20,6 +20,11 @@ type AttachmentRow = {
   storage_path: string;
 };
 
+type MutableTaskRow = {
+  id: number;
+  archived_at: string | null;
+};
+
 type AssignmentRecipient = {
   id: string;
   email: string | null;
@@ -425,19 +430,7 @@ async function getTaskAccessContext(userId: string, taskId: number) {
   const { admin, isAdmin } = await loadWriterContext(userId);
   await cleanupExpiredTasks(admin);
 
-  const { data: task, error: taskError } = await admin
-    .from("tasks")
-    .select("id")
-    .eq("id", taskId)
-    .maybeSingle();
-
-  if (taskError) {
-    throw new TaskMutationError(taskError.message, 500);
-  }
-
-  if (!task) {
-    throw new TaskMutationError("Task not found.", 404);
-  }
+  assertTaskIsMutable(await loadMutableTask(admin, taskId));
 
   if (isAdmin) {
     return {
@@ -561,6 +554,49 @@ function getFiles(formData: FormData) {
   return formData
     .getAll("attachments")
     .filter((value): value is File => value instanceof File && value.size > 0);
+}
+
+function assertTaskIsMutable(task: MutableTaskRow | null) {
+  if (!task) {
+    throw new TaskMutationError("Task not found.", 404);
+  }
+
+  if (task.archived_at) {
+    throw new TaskMutationError("Task is archived and read-only.", 409);
+  }
+
+  return task;
+}
+
+async function loadMutableTask(
+  admin: ReturnType<typeof createAdminClient>,
+  taskId: number,
+) {
+  const taskResult = await admin
+    .from("tasks")
+    .select("id,archived_at")
+    .eq("id", taskId)
+    .maybeSingle();
+
+  if (taskResult.error && isMissingSupabaseColumn(taskResult.error, "archived_at")) {
+    const fallbackResult = await admin
+      .from("tasks")
+      .select("id")
+      .eq("id", taskId)
+      .maybeSingle();
+
+    if (fallbackResult.error) {
+      throw new TaskMutationError(fallbackResult.error.message, 500);
+    }
+
+    return fallbackResult.data ? ({ id: fallbackResult.data.id, archived_at: null } satisfies MutableTaskRow) : null;
+  }
+
+  if (taskResult.error) {
+    throw new TaskMutationError(taskResult.error.message, 500);
+  }
+
+  return (taskResult.data as MutableTaskRow | null) ?? null;
 }
 
 async function uploadAttachmentFiles(taskId: number, files: File[]) {
@@ -829,19 +865,7 @@ export async function addTaskCommentForUser(userId: string, taskId: number, form
     throw new TaskMutationError(`Comment must be ${COMMENT_MAX_LENGTH} characters or fewer.`);
   }
 
-  const { data: task, error: taskError } = await admin
-    .from("tasks")
-    .select("id")
-    .eq("id", taskId)
-    .maybeSingle();
-
-  if (taskError) {
-    throw new TaskMutationError(taskError.message, 500);
-  }
-
-  if (!task) {
-    throw new TaskMutationError("Task not found.", 404);
-  }
+  assertTaskIsMutable(await loadMutableTask(admin, taskId));
 
   const commentItem = await createTaskCommentEntry(admin, {
     taskId,
@@ -877,19 +901,7 @@ export async function reviewTaskForAdmin(userId: string, taskId: number, formDat
     throw new TaskMutationError(`Reason must be ${COMMENT_MAX_LENGTH} characters or fewer.`);
   }
 
-  const { data: task, error: taskError } = await admin
-    .from("tasks")
-    .select("id")
-    .eq("id", taskId)
-    .maybeSingle();
-
-  if (taskError) {
-    throw new TaskMutationError(taskError.message, 500);
-  }
-
-  if (!task) {
-    throw new TaskMutationError("Task not found.", 404);
-  }
+  assertTaskIsMutable(await loadMutableTask(admin, taskId));
 
   const nextStatus: TaskStatus = decision === "approve" ? "completed" : "for_revision";
   const reviewedAt = new Date().toISOString();

@@ -21,7 +21,10 @@ const navGroups = [
     section: "ADMIN MODULES",
     items: [
       { href: "/admin/tasks", label: "Manage Tasks", icon: "tasks" as const },
+      { href: "/admin/task-status", label: "Task Status", icon: "tasks" as const },
+      { href: "/admin/tasks/archive", label: "Task Archive", icon: "tasks" as const },
       { href: "/admin/meetings", label: "Manage Meetings", icon: "meetings" as const },
+      { href: "/admin/record-timein", label: "Meeting Attendance", icon: "timein" as const },
       { href: "/admin/monitoring", label: "Monitoring Panel", icon: "monitoring" as const },
       { href: "/admin/users", label: "Manage Users", icon: "users" as const },
       { href: "/admin/inbox", label: "Inbox", icon: "inbox" as const, badge: "6" },

@@ -348,6 +348,7 @@ export function UserTasksBoard({
   viewerCanManageAll = false,
   variant = "user",
   assignableUsers = [],
+  archiveView = false,
 }: {
   tasks: TaskItem[];
   viewerId: string;
@@ -359,6 +360,7 @@ export function UserTasksBoard({
     email: string;
     roleLabel: string;
   }>;
+  archiveView?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -397,6 +399,7 @@ export function UserTasksBoard({
   const createAttachmentInputRef = useRef<HTMLInputElement | null>(null);
   const editAttachmentInputRef = useRef<HTMLInputElement | null>(null);
   const isAdminVariant = variant === "admin";
+  const isArchiveView = archiveView;
   const visibleAssignableUsers = isAdminVariant
     ? assignableUsers.filter((user) => user.id !== viewerId)
     : assignableUsers;
@@ -538,10 +541,14 @@ export function UserTasksBoard({
   const recentItems = taskList.slice(0, 3);
   const latestAdminReview = selectedTask ? getLatestAdminReview(selectedTask) : null;
   const canModifyTask = (task: EditableTask) =>
-    viewerCanManageAll || task.assignees.some((assignee) => assignee.id === viewerId);
-  const canToggleTaskWithoutWarning = (task: EditableTask) => canModifyTask(task);
-  const canToggleTask = (task: EditableTask) => Boolean(task);
+    !isArchiveView && (viewerCanManageAll || task.assignees.some((assignee) => assignee.id === viewerId));
+  const canToggleTaskWithoutWarning = (task: EditableTask) => !isArchiveView && canModifyTask(task);
+  const canToggleTask = (task: EditableTask) => !isArchiveView && Boolean(task);
   const requestEditTask = (task: EditableTask) => {
+    if (isArchiveView) {
+      return;
+    }
+
     if (canModifyTask(task)) {
       setEditingTask(task);
       setSelectedTask(null);
@@ -552,6 +559,10 @@ export function UserTasksBoard({
     setPendingEditWarningTask(task);
   };
   const requestToggleTask = (task: EditableTask) => {
+    if (isArchiveView) {
+      return;
+    }
+
     if (canToggleTaskWithoutWarning(task)) {
       void toggleTask(task.id);
       return;
@@ -871,8 +882,8 @@ export function UserTasksBoard({
         <div className="modal-overlay show" onClick={() => setSelectedTask(null)}>
           <div className="task-detail-shell" onClick={(event) => event.stopPropagation()}>
             <div className="modal-popup modern-popup task-detail-modal">
-              <div className="modal-text">Task Details</div>
-              <div className="form-stack task-detail-body">
+            <div className="modal-text">{isArchiveView ? "Archived Task Details" : "Task Details"}</div>
+            <div className="form-stack task-detail-body">
                 <div className="drawer-field task-detail-section-center">
                   <div className="drawer-label">TITLE</div>
                   <div className="field-input task-detail-value">{selectedTask.title}</div>
@@ -895,6 +906,12 @@ export function UserTasksBoard({
                   <div className="drawer-label">DEADLINE</div>
                   <div className="field-input task-detail-value">{selectedTask.dueLabel}</div>
                 </div>
+                {selectedTask.archivedAt ? (
+                  <div className="drawer-field task-detail-section-center">
+                    <div className="drawer-label">ARCHIVED</div>
+                    <div className="field-input task-detail-value">{selectedTask.archivedLabel}</div>
+                  </div>
+                ) : null}
                 {latestAdminReview ? (
                   <div className="drawer-field task-detail-section-center">
                     <div className="drawer-label">
@@ -913,7 +930,7 @@ export function UserTasksBoard({
                     <AttachmentList attachments={selectedTask.attachments} taskId={selectedTask.id} />
                   </div>
                 ) : null}
-                {viewerCanManageAll ? (
+                {viewerCanManageAll && !isArchiveView ? (
                   <form className="drawer-field task-detail-section-center" onSubmit={submitAdminReview}>
                     <div className="drawer-label">ADMIN REVIEW</div>
                     <div className="task-detail-actions">
@@ -988,9 +1005,11 @@ export function UserTasksBoard({
                   </form>
                 ) : null}
                 <div className="task-detail-actions">
-                  <button type="button" className="btn-mini task-detail-edit" onClick={() => requestEditTask(selectedTask)}>
-                    Edit
-                  </button>
+                  {!isArchiveView ? (
+                    <button type="button" className="btn-mini task-detail-edit" onClick={() => requestEditTask(selectedTask)}>
+                      Edit
+                    </button>
+                  ) : null}
                   <button type="button" className="primary-btn task-detail-close" onClick={() => setSelectedTask(null)}>
                     Close
                   </button>
@@ -1031,23 +1050,27 @@ export function UserTasksBoard({
                     <div className="task-comments-empty">No comments yet. Start the discussion here.</div>
                   )}
 
-                  <form className="task-comment-form" onSubmit={postComment}>
-                    <textarea
-                      className="drawer-textarea task-comment-input"
-                      name="body"
-                      rows={3}
-                      value={commentDraft}
-                      onChange={(event) => setCommentDraft(event.target.value)}
-                      placeholder="Write a comment about this task..."
-                      disabled={commentSubmitBusy}
-                    />
-                    {commentSubmitError ? <div className="attachment-note attachment-error">{commentSubmitError}</div> : null}
-                    <div className="task-comment-footer">
-                      <button type="submit" className="btn-mini task-comment-submit" disabled={commentSubmitBusy}>
-                        {commentSubmitBusy ? "Posting..." : "Post comment"}
-                      </button>
-                    </div>
-                  </form>
+                  {isArchiveView ? (
+                    <div className="task-comments-empty">Archived tasks are read-only. Existing comments remain available for reference.</div>
+                  ) : (
+                    <form className="task-comment-form" onSubmit={postComment}>
+                      <textarea
+                        className="drawer-textarea task-comment-input"
+                        name="body"
+                        rows={3}
+                        value={commentDraft}
+                        onChange={(event) => setCommentDraft(event.target.value)}
+                        placeholder="Write a comment about this task..."
+                        disabled={commentSubmitBusy}
+                      />
+                      {commentSubmitError ? <div className="attachment-note attachment-error">{commentSubmitError}</div> : null}
+                      <div className="task-comment-footer">
+                        <button type="submit" className="btn-mini task-comment-submit" disabled={commentSubmitBusy}>
+                          {commentSubmitBusy ? "Posting..." : "Post comment"}
+                        </button>
+                      </div>
+                    </form>
+                  )}
                 </div>
               </div>
             </aside>
@@ -1251,25 +1274,27 @@ export function UserTasksBoard({
         </div>
       ) : null}
 
-      <div className="td-pills">
-        {([
-          ["all", "All Tasks"],
-          ["active", "Active"],
-          ["revision", "For Revision"],
-          ["completed", "Completed"],
-          ["delayed", "Delayed"],
-        ] as Array<[TaskFilter, string]>).map(([key, label]) => (
-          <button
-            key={key}
-            className={`pill-tab${activeFilter === key ? " active" : ""}`}
-            type="button"
-            onClick={() => setActiveFilter(key)}
-          >
-            {label}
-            <span className="pill-count">{counts[key]}</span>
-          </button>
-        ))}
-      </div>
+      {!isArchiveView ? (
+        <div className="td-pills">
+          {([
+            ["all", "All Tasks"],
+            ["active", "Active"],
+            ["revision", "For Revision"],
+            ["completed", "Completed"],
+            ["delayed", "Delayed"],
+          ] as Array<[TaskFilter, string]>).map(([key, label]) => (
+            <button
+              key={key}
+              className={`pill-tab${activeFilter === key ? " active" : ""}`}
+              type="button"
+              onClick={() => setActiveFilter(key)}
+            >
+              {label}
+              <span className="pill-count">{counts[key]}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       <div className="td-toolbar taskdash-toolbar">
         <div className="select-shell td-filter">
@@ -1302,7 +1327,7 @@ export function UserTasksBoard({
 
       <div className="scroll">
         <div className="recent-wrap">
-          <div className="recent-title">Recently created/edited tasks</div>
+          <div className="recent-title">{isArchiveView ? "Recently archived tasks" : "Recently created/edited tasks"}</div>
           {recentItems.length ? (
             <div className="recent-list">
               {recentItems.map((item) => (
@@ -1325,6 +1350,7 @@ export function UserTasksBoard({
                         <span className="recent-task-name">{item.title}</span>
                         <div className="recent-meta">
                           <span>Created: {item.createdLabel}</span>
+                          {item.archivedAt ? <span>Archived: {item.archivedLabel}</span> : null}
                           <span>Priority: {item.priority.toUpperCase()}</span>
                           <span className={`recent-deadline${item.isDelayed ? " delayed" : ""}`}>Deadline: {item.dueLabel}</span>
                         </div>
@@ -1338,7 +1364,7 @@ export function UserTasksBoard({
               ))}
             </div>
           ) : (
-            <div className="recent-time">No recent task activity yet.</div>
+            <div className="recent-time">{isArchiveView ? "No archived tasks yet." : "No recent task activity yet."}</div>
           )}
         </div>
 
@@ -1351,33 +1377,35 @@ export function UserTasksBoard({
                 key={task.id}
               >
                 <div className="task-left">
-                  <button
-                    type="button"
-                    className={`task-check${task.status === "completed" ? " is-done" : ""}`}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      requestToggleTask(task);
-                    }}
-                    disabled={!canToggleTask(task)}
-                    aria-label={
-                      canToggleTaskWithoutWarning(task)
-                        ? task.status === "completed"
-                          ? `Restore ${task.title} to previous status`
-                          : `Mark ${task.title} complete`
-                        : task.status === "completed"
-                          ? "This task is not assigned to you, unmark as complete?"
-                          : "This task is not assigned to you, mark as complete?"
-                    }
-                    title={
-                      canToggleTaskWithoutWarning(task)
-                        ? undefined
-                        : task.status === "completed"
-                          ? "This task is not assigned to you, unmark as complete?"
-                          : "This task is not assigned to you, mark as complete?"
-                    }
-                  >
-                    {"\u2713"}
-                  </button>
+                  {!isArchiveView ? (
+                    <button
+                      type="button"
+                      className={`task-check${task.status === "completed" ? " is-done" : ""}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        requestToggleTask(task);
+                      }}
+                      disabled={!canToggleTask(task)}
+                      aria-label={
+                        canToggleTaskWithoutWarning(task)
+                          ? task.status === "completed"
+                            ? `Restore ${task.title} to previous status`
+                            : `Mark ${task.title} complete`
+                          : task.status === "completed"
+                            ? "This task is not assigned to you, unmark as complete?"
+                            : "This task is not assigned to you, mark as complete?"
+                      }
+                      title={
+                        canToggleTaskWithoutWarning(task)
+                          ? undefined
+                          : task.status === "completed"
+                            ? "This task is not assigned to you, unmark as complete?"
+                            : "This task is not assigned to you, mark as complete?"
+                      }
+                    >
+                      {"\u2713"}
+                    </button>
+                  ) : null}
 
                   <div className="task-info">
                     <button type="button" className="task-title-link" onClick={() => setSelectedTask(task)}>
@@ -1388,6 +1416,7 @@ export function UserTasksBoard({
 
                   <div className="task-tags">
                     <span className={`status ${statusClass(task)}`}>{statusLabel(task)}</span>
+                    {task.archivedAt ? <span className="status st-revision">ARCHIVED</span> : null}
                     <span className={`prio prio-${task.priority}`}>{task.priority.toUpperCase()}</span>
                   </div>
                 </div>
@@ -1404,32 +1433,37 @@ export function UserTasksBoard({
                     >
                       Open
                     </button>
-                    <button
-                      type="button"
-                      className="btn-mini ghost"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        requestEditTask(task);
-                      }}
-                    >
-                      Edit
-                    </button>
+                    {!isArchiveView ? (
+                      <button
+                        type="button"
+                        className="btn-mini ghost"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          requestEditTask(task);
+                        }}
+                      >
+                        Edit
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </article>
             ))
           ) : (
-            <div className="task-empty">No tasks found.</div>
+            <div className="task-empty">{isArchiveView ? "No archived tasks found." : "No tasks found."}</div>
           )}
         </div>
       </div>
 
-      <button type="button" className={`fab-task${drawerOpen ? " fab-hidden" : ""}`} onClick={() => setDrawerOpen(true)}>
-        <span className="fab-plus">+</span>
-      </button>
+      {!isArchiveView ? (
+        <button type="button" className={`fab-task${drawerOpen ? " fab-hidden" : ""}`} onClick={() => setDrawerOpen(true)}>
+          <span className="fab-plus">+</span>
+        </button>
+      ) : null}
 
-      <div className={`drawer-backdrop${drawerOpen ? " open" : ""}`} onClick={() => setDrawerOpen(false)} />
+      {!isArchiveView ? <div className={`drawer-backdrop${drawerOpen ? " open" : ""}`} onClick={() => setDrawerOpen(false)} /> : null}
 
+      {!isArchiveView ? (
       <aside className={`task-drawer${drawerOpen ? " open" : ""}`} aria-hidden={!drawerOpen}>
           <div className="drawer-head">
             <div>
@@ -1640,6 +1674,7 @@ export function UserTasksBoard({
           </div>
         </form>
       </aside>
+      ) : null}
     </div>
   );
 }

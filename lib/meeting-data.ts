@@ -159,6 +159,7 @@ function mapMeetingRow(
       minute: "2-digit",
     }),
     createdAt: row.created_at,
+    createdById: row.created_by,
     createdByLabel: creator?.fullName ?? "TTCS Admin",
     assignees,
   };
@@ -266,7 +267,7 @@ export async function getUserMeetings(
     .from("meetings")
     .select("id,title,description,room,scheduled_for,ends_at,created_by,created_at,updated_at")
     .in("id", meetingIds)
-    .order("scheduled_for", { ascending: true });
+    .order("scheduled_for", { ascending: false });
 
   if (limit) {
     query = query.limit(limit);
@@ -297,7 +298,7 @@ export async function getAdminMeetings(
   let query = admin
     .from("meetings")
     .select("id,title,description,room,scheduled_for,ends_at,created_by,created_at,updated_at")
-    .order("scheduled_for", { ascending: true });
+    .order("scheduled_for", { ascending: false });
 
   if (limit) {
     query = query.limit(limit);
@@ -331,7 +332,27 @@ export async function getMeetingByIdForUser({
 }) {
   const admin = createAdminClient();
 
-  if (!isAdmin) {
+  const meetingResult = await admin
+    .from("meetings")
+    .select("id,title,description,room,scheduled_for,ends_at,created_by,created_at,updated_at")
+    .eq("id", meetingId)
+    .maybeSingle();
+
+  if (meetingResult.error) {
+    if (isMissingSupabaseTable(meetingResult.error)) {
+      return null;
+    }
+
+    throw new Error(`Failed to load meeting record: ${meetingResult.error.message}`);
+  }
+
+  if (!meetingResult.data) {
+    return null;
+  }
+
+  const meetingRow = meetingResult.data as MeetingRow;
+
+  if (!isAdmin && meetingRow.created_by !== userId) {
     const assignmentResult = await admin
       .from("meeting_assignments")
       .select("meeting_id")
@@ -352,24 +373,6 @@ export async function getMeetingByIdForUser({
     }
   }
 
-  const meetingResult = await admin
-    .from("meetings")
-    .select("id,title,description,room,scheduled_for,ends_at,created_by,created_at,updated_at")
-    .eq("id", meetingId)
-    .maybeSingle();
-
-  if (meetingResult.error) {
-    if (isMissingSupabaseTable(meetingResult.error)) {
-      return null;
-    }
-
-    throw new Error(`Failed to load meeting record: ${meetingResult.error.message}`);
-  }
-
-  if (!meetingResult.data) {
-    return null;
-  }
-
-  const hydrated = await hydrateMeetings([meetingResult.data as MeetingRow]);
+  const hydrated = await hydrateMeetings([meetingRow]);
   return hydrated?.[0] ?? null;
 }
