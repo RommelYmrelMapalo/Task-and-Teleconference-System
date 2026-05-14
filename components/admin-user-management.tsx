@@ -5,8 +5,9 @@ import type { AdminProfileListItem } from "@/lib/ttcs-data";
 import { deleteManagedUserAction } from "@/app/admin/users/actions";
 import { AdminUserCreateForm } from "./admin-user-create-form";
 import { AdminUserEditForm } from "./admin-user-edit-form";
+import { TablePagination } from "./ui/table-pagination";
 
-const ROWS_PER_PAGE = 10;
+const USER_ROWS_PER_PAGE_OPTIONS = [10, 25, 50] as const;
 
 function SearchIcon() {
   return (
@@ -82,52 +83,6 @@ function ChevronIcon() {
   );
 }
 
-function PageChevronIcon({ direction }: { direction: "left" | "right" }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d={direction === "left" ? "m14 7-5 5 5 5" : "m10 7 5 5-5 5"}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function getVisiblePages(currentPage: number, totalPages: number) {
-  const pages: Array<number | "ellipsis"> = [];
-
-  if (totalPages <= 7) {
-    for (let page = 1; page <= totalPages; page += 1) {
-      pages.push(page);
-    }
-    return pages;
-  }
-
-  pages.push(1);
-
-  if (currentPage > 3) {
-    pages.push("ellipsis");
-  }
-
-  const start = Math.max(2, currentPage - 1);
-  const end = Math.min(totalPages - 1, currentPage + 1);
-
-  for (let page = start; page <= end; page += 1) {
-    pages.push(page);
-  }
-
-  if (currentPage < totalPages - 2) {
-    pages.push("ellipsis");
-  }
-
-  pages.push(totalPages);
-  return pages;
-}
-
 function buildCsv(users: AdminProfileListItem[]) {
   const rows = [
     ["Full Name", "Email", "Username", "Status", "Role", "Joined Date", "Last Active"],
@@ -157,6 +112,7 @@ export function AdminUserManagement({ users }: { users: AdminProfileListItem[] }
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateOrder, setDateOrder] = useState<"newest" | "oldest">("newest");
   const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState<(typeof USER_ROWS_PER_PAGE_OPTIONS)[number]>(10);
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AdminProfileListItem | null>(null);
 
@@ -177,10 +133,9 @@ export function AdminUserManagement({ users }: { users: AdminProfileListItem[] }
     return dateOrder === "newest" ? rightValue - leftValue : leftValue - rightValue;
   });
 
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ROWS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / rowsPerPage));
   const safePage = Math.min(currentPage, totalPages);
-  const pagedUsers = filteredUsers.slice((safePage - 1) * ROWS_PER_PAGE, safePage * ROWS_PER_PAGE);
-  const visiblePages = getVisiblePages(safePage, totalPages);
+  const pagedUsers = filteredUsers.slice((safePage - 1) * rowsPerPage, safePage * rowsPerPage);
 
   async function handleExport() {
     const csv = buildCsv(filteredUsers);
@@ -372,45 +327,18 @@ export function AdminUserManagement({ users }: { users: AdminProfileListItem[] }
         </div>
 
         <div className="manage-users-footer">
-          <div className="manage-users-count">
-            Rows per page <span>{ROWS_PER_PAGE}</span> of {filteredUsers.length} rows
-          </div>
-          <div className="manage-users-pagination">
-            <button
-              type="button"
-              className="manage-users-page-button"
-              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-              disabled={safePage === 1}
-              aria-label="Previous page"
-            >
-              <PageChevronIcon direction="left" />
-            </button>
-            {visiblePages.map((page, index) =>
-              page === "ellipsis" ? (
-                <span key={`ellipsis-${index}`} className="manage-users-page-ellipsis">
-                  ...
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  key={page}
-                  className={`manage-users-page-button${page === safePage ? " is-active" : ""}`}
-                  onClick={() => setCurrentPage(page)}
-                >
-                  {page}
-                </button>
-              ),
-            )}
-            <button
-              type="button"
-              className="manage-users-page-button"
-              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-              disabled={safePage === totalPages}
-              aria-label="Next page"
-            >
-              <PageChevronIcon direction="right" />
-            </button>
-          </div>
+          <TablePagination
+            currentPage={safePage}
+            rowsPerPage={rowsPerPage}
+            rowsPerPageOptions={USER_ROWS_PER_PAGE_OPTIONS}
+            totalPages={totalPages}
+            onPrevious={() => setCurrentPage((page) => Math.max(1, page - 1))}
+            onNext={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+            onRowsPerPageChange={(value) => {
+              setRowsPerPage(value as (typeof USER_ROWS_PER_PAGE_OPTIONS)[number]);
+              setCurrentPage(1);
+            }}
+          />
         </div>
       </section>
 

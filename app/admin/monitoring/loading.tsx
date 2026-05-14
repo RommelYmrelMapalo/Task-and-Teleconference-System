@@ -51,11 +51,15 @@ export default function AdminMonitoringLoading() {
           </div>
 
           <div className="monitoring-events-footer">
-            <Skeleton className="h-4 w-56" />
-            <div className="monitoring-events-pagination">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <Skeleton className="h-9 w-9 rounded-full" key={index} />
-              ))}
+            <div className="table-pagination">
+              <div className="table-pagination-rows">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-16 rounded-xl" />
+              </div>
+              <div className="table-pagination-actions">
+                <Skeleton className="h-10 w-28 rounded-xl" />
+                <Skeleton className="h-10 w-20 rounded-xl" />
+              </div>
             </div>
           </div>
         </section>

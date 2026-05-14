@@ -3,20 +3,9 @@
 import { randomInt } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/app/utils/utils/supabase/admin";
+import type { CreateManagedUserState } from "./action-state";
 import { requireSessionContext, type AppRole } from "@/lib/ttcs-data";
 import { getEmailConflictMessage, normalizeEmailAddress } from "@/lib/supabase-errors";
-
-export type CreateManagedUserState = {
-  status: "idle" | "success" | "error";
-  message: string | null;
-  temporaryPassword: string | null;
-};
-
-export const initialCreateManagedUserState: CreateManagedUserState = {
-  status: "idle",
-  message: null,
-  temporaryPassword: null,
-};
 
 const VALID_ROLES = new Set<AppRole>(["user", "admin"]);
 const DEACTIVATION_DURATION = "876000h";

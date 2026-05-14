@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { TablePagination } from "./ui/table-pagination";
 
 export type MonitoringSystemEventItem = {
   id: string;
@@ -62,37 +63,6 @@ function buildExportFileName(filter: (typeof FILTERS)[number]["key"]) {
   return `ttcs-system-logs-${filter}-${stamp}.csv`;
 }
 
-function getVisiblePages(currentPage: number, totalPages: number) {
-  const pages: Array<number | "ellipsis"> = [];
-
-  if (totalPages <= 7) {
-    for (let page = 1; page <= totalPages; page += 1) {
-      pages.push(page);
-    }
-    return pages;
-  }
-
-  pages.push(1);
-
-  if (currentPage > 3) {
-    pages.push("ellipsis");
-  }
-
-  const start = Math.max(2, currentPage - 1);
-  const end = Math.min(totalPages - 1, currentPage + 1);
-
-  for (let page = start; page <= end; page += 1) {
-    pages.push(page);
-  }
-
-  if (currentPage < totalPages - 2) {
-    pages.push("ellipsis");
-  }
-
-  pages.push(totalPages);
-  return pages;
-}
-
 export function AdminMonitoringEvents({ events }: { events: MonitoringSystemEventItem[] }) {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]["key"]>("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -104,7 +74,6 @@ export function AdminMonitoringEvents({ events }: { events: MonitoringSystemEven
   );
   const totalPages = Math.max(1, Math.ceil(filteredEvents.length / rowsPerPage));
   const safePage = Math.min(currentPage, totalPages);
-  const visiblePages = getVisiblePages(safePage, totalPages);
   const paginatedEvents = useMemo(() => {
     const startIndex = (safePage - 1) * rowsPerPage;
     return filteredEvents.slice(startIndex, startIndex + rowsPerPage);
@@ -180,62 +149,18 @@ export function AdminMonitoringEvents({ events }: { events: MonitoringSystemEven
       </div>
 
       <div className="monitoring-events-footer">
-        <div className="monitoring-events-count">
-          Rows per page
-          <label className="monitoring-events-rows-select">
-            <select
-              value={rowsPerPage}
-              onChange={(event) => {
-                setRowsPerPage(Number(event.target.value) as (typeof MONITORING_ROWS_PER_PAGE_OPTIONS)[number]);
-                setCurrentPage(1);
-              }}
-              aria-label="Rows per page"
-            >
-              {MONITORING_ROWS_PER_PAGE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-          of {filteredEvents.length} events
-        </div>
-        <div className="monitoring-events-pagination">
-          <button
-            type="button"
-            className="monitoring-events-page-button"
-            onClick={() => setCurrentPage(Math.max(1, safePage - 1))}
-            disabled={safePage === 1}
-            aria-label="Previous page"
-          >
-            {"<"}
-          </button>
-          {visiblePages.map((page, index) =>
-            page === "ellipsis" ? (
-              <span key={`ellipsis-${index}`} className="monitoring-events-page-ellipsis">
-                ...
-              </span>
-            ) : (
-              <button
-                type="button"
-                key={page}
-                className={`monitoring-events-page-button${page === safePage ? " is-active" : ""}`}
-                onClick={() => setCurrentPage(page)}
-              >
-                {page}
-              </button>
-            ),
-          )}
-          <button
-            type="button"
-            className="monitoring-events-page-button"
-            onClick={() => setCurrentPage(Math.min(totalPages, safePage + 1))}
-            disabled={safePage === totalPages}
-            aria-label="Next page"
-          >
-            {">"}
-          </button>
-        </div>
+        <TablePagination
+          currentPage={safePage}
+          rowsPerPage={rowsPerPage}
+          rowsPerPageOptions={MONITORING_ROWS_PER_PAGE_OPTIONS}
+          totalPages={totalPages}
+          onPrevious={() => setCurrentPage(Math.max(1, safePage - 1))}
+          onNext={() => setCurrentPage(Math.min(totalPages, safePage + 1))}
+          onRowsPerPageChange={(value) => {
+            setRowsPerPage(value as (typeof MONITORING_ROWS_PER_PAGE_OPTIONS)[number]);
+            setCurrentPage(1);
+          }}
+        />
       </div>
     </section>
   );

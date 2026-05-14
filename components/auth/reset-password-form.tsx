@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/app/utils/utils/supabase/client";
 import { hasSupabaseEnv, SUPABASE_ENV_HINT } from "@/app/utils/utils/supabase/env";
 
@@ -10,15 +10,144 @@ const isConfigured = hasSupabaseEnv();
 
 export function ResetPasswordForm({ recoveryAllowed }: { recoveryAllowed: boolean }) {
   const router = useRouter();
+  const [recoveryReady, setRecoveryReady] = useState(recoveryAllowed);
+  const [resolvingRecovery, setResolvingRecovery] = useState(isConfigured && !recoveryAllowed);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  useEffect(() => {
+    if (!isConfigured) {
+      return;
+    }
+
+    let cancelled = false;
+    const supabase = createClient();
+    const currentUrl = new URL(window.location.href);
+    const code = currentUrl.searchParams.get("code");
+    const tokenHash = currentUrl.searchParams.get("token_hash");
+    const type = currentUrl.searchParams.get("type");
+    const hashParams = new URLSearchParams(currentUrl.hash.startsWith("#") ? currentUrl.hash.slice(1) : currentUrl.hash);
+    const accessToken = hashParams.get("access_token");
+    const refreshToken = hashParams.get("refresh_token");
+    const hashType = hashParams.get("type");
+    const hasRecoveryParams = Boolean(code || tokenHash || currentUrl.hash);
+
+    const cleanupUrl = () => {
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.delete("code");
+      nextUrl.searchParams.delete("token_hash");
+      nextUrl.searchParams.delete("type");
+      nextUrl.hash = "";
+      window.history.replaceState(window.history.state, "", nextUrl.toString());
+    };
+
+    async function resolveRecoverySession() {
+      setResolvingRecovery(true);
+
+      if (code) {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (exchangeError) {
+          if (!cancelled) {
+            setRecoveryReady(false);
+            setError(exchangeError.message);
+            setResolvingRecovery(false);
+          }
+          return;
+        }
+
+        cleanupUrl();
+      } else if (accessToken && refreshToken && hashType === "recovery") {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+
+        if (sessionError) {
+          if (!cancelled) {
+            setRecoveryReady(false);
+            setError(sessionError.message);
+            setResolvingRecovery(false);
+          }
+          return;
+        }
+
+        cleanupUrl();
+      } else if (tokenHash && type === "recovery") {
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: "recovery",
+        });
+
+        if (verifyError) {
+          if (!cancelled) {
+            setRecoveryReady(false);
+            setError(verifyError.message);
+            setResolvingRecovery(false);
+          }
+          return;
+        }
+
+        cleanupUrl();
+      }
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (cancelled) {
+        return;
+      }
+
+      setRecoveryReady(Boolean(user));
+      if (!user && hasRecoveryParams) {
+        setError("This recovery link is missing or has expired. Request a new password reset email.");
+      }
+      setResolvingRecovery(false);
+    }
+
+    void resolveRecoverySession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) {
+        return;
+      }
+
+      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
+        cleanupUrl();
+      }
+
+      if (event === "PASSWORD_RECOVERY") {
+        setRecoveryReady(true);
+        setError(null);
+        setResolvingRecovery(false);
+        return;
+      }
+
+      if (event === "SIGNED_OUT") {
+        setRecoveryReady(false);
+      }
+
+      if (session?.user) {
+        setRecoveryReady(true);
+        setError(null);
+        setResolvingRecovery(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, [recoveryAllowed]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!recoveryAllowed) {
+    if (!recoveryReady) {
       setError("This recovery link is missing or has expired. Request a new password reset email.");
       return;
     }
@@ -82,10 +211,14 @@ export function ResetPasswordForm({ recoveryAllowed }: { recoveryAllowed: boolea
     router.refresh();
   }
 
-  if (!recoveryAllowed) {
+  if (resolvingRecovery) {
+    return <div className="form-stack"><div>Checking your recovery link...</div></div>;
+  }
+
+  if (!recoveryReady) {
     return (
       <div className="form-stack">
-        <div className="field-error">This recovery session is not active. Request a new password reset email to continue.</div>
+        <div className="field-error">{error ?? "This recovery session is not active. Request a new password reset email to continue."}</div>
         <div className="auth-links-row">
           <Link href="/forgot-password">Request a reset link</Link>
           <Link href="/">Back to login</Link>

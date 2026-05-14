@@ -2,10 +2,8 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
-import {
-  createManagedUserAction,
-  initialCreateManagedUserState,
-} from "@/app/admin/users/actions";
+import { initialCreateManagedUserState } from "@/app/admin/users/action-state";
+import { createManagedUserAction } from "@/app/admin/users/actions";
 
 function CreateUserSubmitButton() {
   const { pending } = useFormStatus();

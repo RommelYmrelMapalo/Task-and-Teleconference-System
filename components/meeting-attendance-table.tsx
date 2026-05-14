@@ -71,23 +71,27 @@ export function MeetingAttendanceTable({
 
                   return (
                     <tr key={record.meetingId}>
-                      <td className="attendance-cell">
+                      <td className="attendance-cell" data-label="Meeting">
                         <div className="attendance-meeting-cell">
                           <span className="attendance-primary">{record.meetingTitle}</span>
                         </div>
                       </td>
-                      <td className="attendance-cell">
+                      <td className="attendance-cell" data-label="Schedule">
                         <div className="attendance-meeting-cell">
                           <span className="attendance-primary">{record.meetingDateLabel}</span>
                           <span className="attendance-secondary">{record.meetingTimeLabel}</span>
                         </div>
                       </td>
-                      <td className="attendance-cell attendance-value-cell">{record.joinedLabel}</td>
-                      <td className="attendance-cell attendance-value-cell">{record.leftLabel}</td>
-                      <td className="attendance-cell">
+                      <td className="attendance-cell attendance-value-cell" data-label="Time-in">
+                        {record.joinedLabel}
+                      </td>
+                      <td className="attendance-cell attendance-value-cell" data-label="Time-out">
+                        {record.leftLabel}
+                      </td>
+                      <td className="attendance-cell" data-label="Status">
                         <span className={getStatusClass(record.statusLabel)}>{record.statusLabel}</span>
                       </td>
-                      <td className="attendance-cell attendance-action-cell">
+                      <td className="attendance-cell attendance-action-cell" data-label="Action">
                         {meetingClosed ? (
                           <span className="attendance-action-link is-disabled" aria-disabled="true">
                             {actionLabel}

@@ -84,7 +84,7 @@ export function TaskStatusOverview({ tasks }: { tasks: TaskItem[] }) {
 
       <section className="page-card task-status-table-card">
         <div className="task-status-table-head">
-          <div>
+          <div className="task-status-table-head-copy">
             <h3>Task Status Overview</h3>
             <p>All active tasks with their current status, assignees, and assignment source.</p>
           </div>

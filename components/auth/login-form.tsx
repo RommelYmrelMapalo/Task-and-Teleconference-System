@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/app/utils/utils/supabase/client";
 import { hasSupabaseEnv, SUPABASE_ENV_HINT } from "@/app/utils/utils/supabase/env";
 import { isMissingSupabaseTable, normalizeEmailAddress } from "@/lib/supabase-errors";
@@ -20,6 +20,54 @@ export function LoginForm({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (!isConfigured) {
+      return;
+    }
+
+    let cancelled = false;
+    const supabase = createClient();
+    const isRecoveryHash = typeof window !== "undefined" && window.location.hash.includes("type=recovery");
+
+    const redirectToRecovery = () => {
+      router.replace("/reset-password");
+      router.refresh();
+    };
+
+    async function detectRecoverySession() {
+      if (!isRecoveryHash) {
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!cancelled && session) {
+        redirectToRecovery();
+      }
+    }
+
+    void detectRecoverySession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (cancelled) {
+        return;
+      }
+
+      if (event === "PASSWORD_RECOVERY") {
+        redirectToRecovery();
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, [router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
