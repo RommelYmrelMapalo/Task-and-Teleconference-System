@@ -28,15 +28,36 @@ export function LoginForm({
 
     let cancelled = false;
     const supabase = createClient();
-    const isRecoveryHash = typeof window !== "undefined" && window.location.hash.includes("type=recovery");
+    const currentUrl = typeof window !== "undefined" ? new URL(window.location.href) : null;
+    const hashParams = currentUrl
+      ? new URLSearchParams(currentUrl.hash.startsWith("#") ? currentUrl.hash.slice(1) : currentUrl.hash)
+      : null;
+    const hasRecoveryTokens = Boolean(
+      !adminOnly &&
+        currentUrl &&
+        (currentUrl.searchParams.get("code") ||
+          currentUrl.searchParams.get("token_hash") ||
+          hashParams?.get("access_token") ||
+          hashParams?.get("type") === "recovery"),
+    );
 
     const redirectToRecovery = () => {
-      router.replace("/reset-password");
+      if (typeof window === "undefined") {
+        return;
+      }
+
+      const suffix = hasRecoveryTokens ? `${window.location.search}${window.location.hash}` : "";
+      router.replace(`/reset-password${suffix}`);
       router.refresh();
     };
 
     async function detectRecoverySession() {
-      if (!isRecoveryHash) {
+      if (hasRecoveryTokens) {
+        redirectToRecovery();
+        return;
+      }
+
+      if (adminOnly || !currentUrl?.hash.includes("type=recovery")) {
         return;
       }
 
@@ -67,7 +88,7 @@ export function LoginForm({
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [router]);
+  }, [adminOnly, router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
